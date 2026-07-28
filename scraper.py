@@ -1,12 +1,19 @@
 import json
 import os
-import requests
-import time
 import re
+import time
 import unicodedata
+
+import requests
 from dotenv import load_dotenv
+
+from html_adapters import (
+    scrape_microsoft,
+    scrape_successfactors,
+    scrape_universal_playwright,
+)
 from main import analyze_job
-from html_adapters import scrape_successfactors, scrape_microsoft, scrape_universal_playwright
+from telegram_notifier import TelegramNotifier
 
 # טעינת משתני הסביבה
 load_dotenv()
@@ -253,41 +260,34 @@ def fetch_jobs_from_company(company):
         print(f"🚧 Skipping {company_id} ({ats_type}) - No adapter available.")
         return []
 
-def send_telegram_message(message, session=None):
-    token = os.getenv("TELEGRAM_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    
-    if not token or not chat_id:
-        print("❌ [דיאגנוסטיקה] חסר טוקן או צ'אט ID.")
-        return
-
-    url = f"https://api.telegram.org/bot{token.strip()}/sendMessage"
-    clean_message = message.replace("**", "*")
-    
-    payload = {
-        "chat_id": chat_id.strip(),
-        "text": clean_message,
-        "parse_mode": "Markdown"
-    }
-    
-    req_method = session.post if session else requests.post
+def send_telegram_message(
+    message: str,
+    session: requests.Session | None = None,
+) -> bool:
+    """Send one Telegram message through the resilient OOP notifier."""
 
     try:
-        response = req_method(url, json=payload, timeout=10)
-        
-        if response.status_code == 400 and "parse_mode" in payload:
-            payload.pop("parse_mode", None)
-            response = req_method(url, json=payload, timeout=10)
-            
-        response.raise_for_status()
-        print("✅ [דיאגנוסטיקה] ההודעה נשלחה בהצלחה לטלגרם!")
-        
-    except (requests.exceptions.ConnectionError, ConnectionResetError) as e:
-        print(f"❌ [דיאגנוסטיקה] השרת ניתק את החיבור בכוח (10054). מדלג כדי לא לבזבז זמן.")
-    except Exception as e:
-        print(f"❌ [דיאגנוסטיקה] שגיאה בשליחה: {e}")
+        with TelegramNotifier.from_environment(session=session) as notifier:
+            result = notifier.send(message)
+    except ValueError as error:
+        print(f"❌ [דיאגנוסטיקה] הגדרת Telegram חסרה: {error}")
+        return False
 
-def run_scraper():
+    if result.success:
+        print("✅ [דיאגנוסטיקה] ההודעה נשלחה בהצלחה לטלגרם!")
+        return True
+
+    print(
+        "❌ [דיאגנוסטיקה] שליחת Telegram נכשלה "
+        f"אחרי {result.attempts} ניסיונות ({result.status.value}, "
+        f"{result.error})."
+    )
+    return False
+
+
+def run_scraper() -> None:
+    """Scan configured companies, analyze new jobs, and send alerts."""
+
     print("🚀 מתחיל סריקת משרות...")
     total_start_time = time.time()  # תחילת המדידה הכוללת
     
@@ -298,6 +298,7 @@ def run_scraper():
 
     history = set(load_json(HISTORY_FILE))
     new_jobs_found = []
+    queued_job_ids = set()
 
     # --- שלב 1: סריקת החברות ---
     for company in companies:
@@ -310,11 +311,14 @@ def run_scraper():
         for job in jobs:
             title_match = is_relevant_job(job["title"])
             location_match = is_in_location(job["location"], location_filters)
-            is_new = job["id"] not in history
+            is_new = (
+                job["id"] not in history
+                and job["id"] not in queued_job_ids
+            )
             
             if title_match and location_match and is_new:
                 new_jobs_found.append(job)
-                history.add(job["id"])
+                queued_job_ids.add(job["id"])
 
     scraping_end_time = time.time()  # סיום שלב הסריקה
 
@@ -322,18 +326,54 @@ def run_scraper():
     if not new_jobs_found:
         print("\n😴 לא נמצאו משרות חדשות רלוונטיות הפעם.")
     else:
-        print(f"\n✅ נמצאו {len(new_jobs_found)} משרות חדשות רלוונטיות. מעביר לסטיב...\n")
+        print(
+            f"\n✅ נמצאו {len(new_jobs_found)} משרות חדשות רלוונטיות. "
+            "מעביר לסטיב...\n"
+        )
         
         with requests.Session() as session:
-            for job in new_jobs_found:
-                print(f"🤖 מנתח את: {job['title']} במיקום {job['location']}")
-                
-                analysis = analyze_job(job["description"])
-                telegram_alert = f"🚨 *משרה חדשה נמצאה: {job['title']}* 🚨\n📍 מיקום: {job['location']}\n\n{analysis}"
-                
-                send_telegram_message(telegram_alert, session=session)
-                print("-" * 40)
-                time.sleep(3)
+            try:
+                notifier = TelegramNotifier.from_environment(session=session)
+            except ValueError as error:
+                print(f"❌ הגדרת Telegram חסרה: {error}")
+            else:
+                for job in new_jobs_found:
+                    print(
+                        f"🤖 מנתח את: {job['title']} "
+                        f"במיקום {job['location']}"
+                    )
+
+                    try:
+                        analysis = analyze_job(job["description"])
+                    except Exception as error:
+                        print(
+                            "❌ ניתוח המשרה נכשל; המשרה לא תסומן "
+                            f"כמעובדת: {type(error).__name__}"
+                        )
+                        continue
+
+                    telegram_alert = (
+                        f"🚨 *משרה חדשה נמצאה: {job['title']}* 🚨\n"
+                        f"📍 מיקום: {job['location']}\n\n{analysis}"
+                    )
+                    result = notifier.send(telegram_alert)
+
+                    if result.success:
+                        history.add(job["id"])
+                        print(
+                            "✅ [דיאגנוסטיקה] ההודעה נשלחה "
+                            "בהצלחה לטלגרם!"
+                        )
+                    else:
+                        print(
+                            "❌ [דיאגנוסטיקה] השליחה נכשלה; "
+                            "המשרה תישאר מחוץ להיסטוריה ותנוסה שוב "
+                            f"בהרצה הבאה ({result.status.value}, "
+                            f"{result.attempts} ניסיונות)."
+                        )
+
+                    print("-" * 40)
+                    time.sleep(3)
         
     save_json(HISTORY_FILE, list(history))
     

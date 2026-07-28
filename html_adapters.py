@@ -1,7 +1,9 @@
 import requests
-import os
+from typing import Any
+
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
+from playwright_scraper import PlaywrightJobScraper, ScrapeStatus
 
 def scrape_successfactors(company):
     """
@@ -107,68 +109,23 @@ def scrape_microsoft(company):
         print(f"❌ שגיאה בסריקת מיקרוסופט: {e}")
         return []
 
-def scrape_universal_playwright(company):
-    """
-    סורק אוניברסלי שכולל יכולות דיאגנוסטיקה (צילומי מסך ושמירת HTML).
-    """
-    url = company.get("api_url")
-    company_id = company.get("company_id")
-    jobs = []
-    
+def scrape_universal_playwright(
+    company: dict[str, Any],
+) -> list[dict[str, str]]:
+    """Run the OOP Playwright scraper while preserving the legacy API."""
+
+    company_id = str(company.get("company_id", "unknown"))
     print(f"🕵️ מפעיל סורק אוניברסלי (Playwright) עבור {company_id}...")
 
-    # יצירת תיקיית דיאגנוסטיקה אם היא לא קיימת
-    debug_dir = "debug_logs"
-    if not os.path.exists(debug_dir):
-        os.makedirs(debug_dir)
+    result = PlaywrightJobScraper().scrape(company)
+    if result.status is ScrapeStatus.WAF_BLOCKED:
+        print(
+            f"🛡️ {company_id} נחסם על ידי אתגר WAF: {result.message}. "
+            "בדוק את debug_logs/api_discovery_log.json."
+        )
+    elif result.status is ScrapeStatus.NO_JOBS:
+        print(f"⚠️ {company_id} החזיר 0 משרות: {result.message}")
+    elif result.status is ScrapeStatus.FAILED:
+        print(f"❌ שגיאה בסריקה אוניברסלית של {company_id}: {result.message}")
 
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            
-            page.goto(url)
-            page.wait_for_timeout(8000)
-            
-            html_content = page.content()
-            
-            # 📸 קסם הדיאגנוסטיקה: מצלמים את המסך ושומרים את ה-HTML
-            screenshot_path = os.path.join(debug_dir, f"{company_id}.png")
-            html_path = os.path.join(debug_dir, f"{company_id}.html")
-            
-            page.screenshot(path=screenshot_path)
-            with open(html_path, "w", encoding="utf-8") as f:
-                f.write(html_content)
-                
-            browser.close()
-
-        soup = BeautifulSoup(html_content, 'lxml')
-        job_link_keywords = ['job', 'career', 'req', 'position', 'role', 'detail']
-        seen_titles = set()
-        
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href'].lower()
-            title = a_tag.text.strip()
-            
-            if len(title) > 5 and any(keyword in href for keyword in job_link_keywords):
-                if title not in seen_titles:
-                    seen_titles.add(title)
-                    
-                    full_link = a_tag['href'] if a_tag['href'].startswith("http") else f"{url.split('.com')[0]}.com{a_tag['href']}"
-                    
-                    jobs.append({
-                        "id": f"{company_id}_{hash(title)}",
-                        "title": title,
-                        "location": "Israel",
-                        "description": f"Full job description available at: {full_link}"
-                    })
-        
-        # אם מצאנו 0 משרות, נדפיס הודעה שמפנה אותך לבדוק את התמונה
-        if not jobs:
-            print(f"⚠️ {company_id} החזיר 0 משרות. מומלץ להציץ בתמונה: {screenshot_path}")
-            
-        return jobs
-        
-    except Exception as e:
-        print(f"❌ שגיאה בסריקה אוניברסלית של {company_id}: {e}")
-        return []
+    return result.jobs
