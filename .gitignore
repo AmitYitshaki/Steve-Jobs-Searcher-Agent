@@ -1,0 +1,11 @@
+# Environments and Secrets
+.env
+__pycache__/
+
+# Local State and Logs
+jobs_history.json
+debug_logs/
+
+# Virtual Environment 
+venv/
+env/
