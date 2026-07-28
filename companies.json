@@ -880,15 +880,15 @@
     "company_name": "Riskified",
     "tier": "C",
     "is_active": true,
-    "ats_type": "custom",
-    "api_url": "https://www.riskified.com/careers/",
+    "ats_type": "greenhouse",
+    "api_url": "https://www.riskified.com/api/get-jobs/v1/jobs/",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Official Riskified careers page. It can legitimately return no open roles; do not treat an empty listing as a scraper failure."
+    "notes": "Public Greenhouse-compatible JSON endpoint discovered and verified through browser network inspection."
   },
   {
     "company_id": "etoro",
@@ -1034,8 +1034,8 @@
     "company_name": "Lightricks",
     "tier": "C",
     "is_active": true,
-    "ats_type": "greenhouse_embedded",
-    "api_url": "https://careers.lightricks.com/",
+    "ats_type": "greenhouse",
+    "api_url": "https://api.greenhouse.io/v1/boards/lightricks/jobs?content=true",
     "location_filters": [
       "Israel",
       "Jerusalem",
@@ -1043,7 +1043,7 @@
       "Tel Aviv"
     ],
     "target_keywords": [],
-    "notes": "Official careers site exposes Greenhouse job IDs through gh_jid parameters. Use an embedded Greenhouse adapter and retain the official page as fallback."
+    "notes": "Standard Greenhouse JSON endpoint discovered and verified through browser network inspection."
   },
   {
     "company_id": "via",
