@@ -3,22 +3,25 @@ import os
 import re
 import time
 import unicodedata
+from typing import Any, Mapping
 
 import requests
 from dotenv import load_dotenv
 
+from alert_queue import PendingAlert, PendingAlertQueue
 from html_adapters import (
     scrape_microsoft,
     scrape_successfactors,
     scrape_universal_playwright,
 )
+from location_filter import LocationFilter
 from main import analyze_job
-from telegram_notifier import TelegramNotifier
 
 # טעינת משתני הסביבה
 load_dotenv()
 
 HISTORY_FILE = "jobs_history.json"
+PENDING_ALERTS_FILE = "pending_alerts.json"
 
 # חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
 EXCLUDE_KEYWORDS = [
@@ -108,10 +111,6 @@ def load_json(filepath):
         return []
     with open(filepath, "r", encoding="utf-8") as f:
         return json.load(f)
-
-def save_json(filepath, data):
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
 
 def is_in_location(job_location, location_filters):
     if not location_filters or not job_location:
@@ -260,36 +259,36 @@ def fetch_jobs_from_company(company):
         print(f"🚧 Skipping {company_id} ({ats_type}) - No adapter available.")
         return []
 
-def send_telegram_message(
-    message: str,
-    session: requests.Session | None = None,
-) -> bool:
-    """Send one Telegram message through the resilient OOP notifier."""
+def extract_job_url(job: Mapping[str, Any]) -> str:
+    """Extract the best available job URL from an adapter result."""
 
-    try:
-        with TelegramNotifier.from_environment(session=session) as notifier:
-            result = notifier.send(message)
-    except ValueError as error:
-        print(f"❌ [דיאגנוסטיקה] הגדרת Telegram חסרה: {error}")
-        return False
+    for key in ("url", "job_url", "absolute_url"):
+        value = job.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
 
-    if result.success:
-        print("✅ [דיאגנוסטיקה] ההודעה נשלחה בהצלחה לטלגרם!")
-        return True
-
-    print(
-        "❌ [דיאגנוסטיקה] שליחת Telegram נכשלה "
-        f"אחרי {result.attempts} ניסיונות ({result.status.value}, "
-        f"{result.error})."
-    )
-    return False
+    description = job.get("description", "")
+    if not isinstance(description, str):
+        return ""
+    match = re.search(r'https?://[^\s<>"]+', description)
+    if match is None:
+        return ""
+    return match.group(0).rstrip(".,);]")
 
 
-def run_scraper() -> None:
-    """Scan configured companies, analyze new jobs, and send alerts."""
+def run_scraper(
+    queue: PendingAlertQueue | None = None,
+    location_filter: LocationFilter | None = None,
+) -> None:
+    """Scan, analyze, and enqueue new jobs without contacting Telegram."""
 
     print("🚀 מתחיל סריקת משרות...")
     total_start_time = time.time()  # תחילת המדידה הכוללת
+    alert_queue = queue or PendingAlertQueue(PENDING_ALERTS_FILE)
+    active_location_filter = (
+        location_filter
+        or LocationFilter(strict_mode=True)
+    )
     
     companies = load_json("companies.json")
     if not companies:
@@ -297,6 +296,7 @@ def run_scraper() -> None:
         return
 
     history = set(load_json(HISTORY_FILE))
+    pending_ids = alert_queue.ids()
     new_jobs_found = []
     queued_job_ids = set()
 
@@ -310,19 +310,49 @@ def run_scraper() -> None:
         
         for job in jobs:
             title_match = is_relevant_job(job["title"])
+            job_url = (
+                extract_job_url(job)
+                or str(company.get("api_url", ""))
+            )
+            if title_match:
+                location_decision = active_location_filter.evaluate(
+                    job_title=job["title"],
+                    job_url=job_url,
+                )
+                if not location_decision.allowed:
+                    match_details = ""
+                    if location_decision.matched_location is not None:
+                        match_details = (
+                            f" '{location_decision.matched_location}'"
+                            f" in {location_decision.source}"
+                        )
+                    print(
+                        f"🚫 Rejecting {job['id']}: "
+                        f"{location_decision.reason}{match_details}."
+                    )
+                    continue
+
             location_match = is_in_location(job["location"], location_filters)
             is_new = (
                 job["id"] not in history
+                and job["id"] not in pending_ids
                 and job["id"] not in queued_job_ids
             )
             
             if title_match and location_match and is_new:
-                new_jobs_found.append(job)
+                new_jobs_found.append({
+                    **job,
+                    "company_name": company.get(
+                        "company_name",
+                        company.get("company_id", "Unknown"),
+                    ),
+                    "job_url": job_url,
+                })
                 queued_job_ids.add(job["id"])
 
     scraping_end_time = time.time()  # סיום שלב הסריקה
 
-    # --- שלב 2: ניתוח ושליחה ---
+    # --- שלב 2: ניתוח והוספה לתור ---
     if not new_jobs_found:
         print("\n😴 לא נמצאו משרות חדשות רלוונטיות הפעם.")
     else:
@@ -331,51 +361,37 @@ def run_scraper() -> None:
             "מעביר לסטיב...\n"
         )
         
-        with requests.Session() as session:
+        for job in new_jobs_found:
+            print(
+                f"🤖 מנתח את: {job['title']} "
+                f"במיקום {job['location']}"
+            )
+
             try:
-                notifier = TelegramNotifier.from_environment(session=session)
-            except ValueError as error:
-                print(f"❌ הגדרת Telegram חסרה: {error}")
+                analysis = analyze_job(job["description"])
+            except Exception as error:
+                print(
+                    "❌ ניתוח המשרה נכשל; המשרה לא תיכנס לתור: "
+                    f"{type(error).__name__}"
+                )
+                continue
+
+            telegram_alert = (
+                f"🚨 *משרה חדשה נמצאה: {job['title']}* 🚨\n"
+                f"📍 מיקום: {job['location']}\n\n{analysis}"
+            )
+            alert = PendingAlert(
+                job_id=job["id"],
+                company_name=job["company_name"],
+                job_url=job["job_url"],
+                llm_summary=telegram_alert,
+            )
+            if alert_queue.append(alert):
+                pending_ids.add(job["id"])
+                print(f"✅ המשרה {job['id']} נשמרה בתור ההתראות.")
             else:
-                for job in new_jobs_found:
-                    print(
-                        f"🤖 מנתח את: {job['title']} "
-                        f"במיקום {job['location']}"
-                    )
-
-                    try:
-                        analysis = analyze_job(job["description"])
-                    except Exception as error:
-                        print(
-                            "❌ ניתוח המשרה נכשל; המשרה לא תסומן "
-                            f"כמעובדת: {type(error).__name__}"
-                        )
-                        continue
-
-                    telegram_alert = (
-                        f"🚨 *משרה חדשה נמצאה: {job['title']}* 🚨\n"
-                        f"📍 מיקום: {job['location']}\n\n{analysis}"
-                    )
-                    result = notifier.send(telegram_alert)
-
-                    if result.success:
-                        history.add(job["id"])
-                        print(
-                            "✅ [דיאגנוסטיקה] ההודעה נשלחה "
-                            "בהצלחה לטלגרם!"
-                        )
-                    else:
-                        print(
-                            "❌ [דיאגנוסטיקה] השליחה נכשלה; "
-                            "המשרה תישאר מחוץ להיסטוריה ותנוסה שוב "
-                            f"בהרצה הבאה ({result.status.value}, "
-                            f"{result.attempts} ניסיונות)."
-                        )
-
-                    print("-" * 40)
-                    time.sleep(3)
-        
-    save_json(HISTORY_FILE, list(history))
+                print(f"ℹ️ המשרה {job['id']} כבר קיימת בתור.")
+            print("-" * 40)
     
     analysis_end_time = time.time()  # סיום שלב הניתוח
     
@@ -387,7 +403,7 @@ def run_scraper() -> None:
     print("\n🏁 הסריקה הושלמה.")
     print("⏱️ דו\"ח ביצועים:")
     print(f"   - זמן סריקת אתרים: {scraping_duration:.1f} שניות")
-    print(f"   - זמן ניתוח (AI) וטלגרם: {analysis_duration:.1f} שניות")
+    print(f"   - זמן ניתוח (AI) ושמירה לתור: {analysis_duration:.1f} שניות")
     print(f"   - סך הכל זמן ריצה: {total_duration:.1f} שניות")
 
 if __name__ == "__main__":

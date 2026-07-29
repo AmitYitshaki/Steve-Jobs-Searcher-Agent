@@ -1,22 +1,21 @@
-"""Integration-style tests for notification-aware job history updates."""
+"""Tests for the Telegram-free scraping producer."""
 
 from __future__ import annotations
 
 import os
+import tempfile
 import unittest
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
 import scraper  # noqa: E402
-from telegram_notifier import (  # noqa: E402
-    NotificationResult,
-    NotificationStatus,
-)
+from alert_queue import PendingAlert, PendingAlertQueue  # noqa: E402
 
 
-class ScraperDeliveryTests(unittest.TestCase):
-    """Verify failed alerts remain eligible for a later scraper run."""
+class ScraperProducerTests(unittest.TestCase):
+    """Verify relevant jobs are analyzed once and durably queued."""
 
     COMPANY = {
         "company_id": "example",
@@ -29,72 +28,161 @@ class ScraperDeliveryTests(unittest.TestCase):
         "id": "example_123",
         "title": "Student Software Engineer",
         "location": "Israel",
-        "description": "Full job description available at: test",
+        "description": (
+            "Full job description available at: "
+            "https://example.test/jobs/israel/123"
+        ),
+    }
+    FOREIGN_JOB = {
+        "id": "example_456",
+        "title": "Student Software Engineer - Budapest, Hungary",
+        "location": "Israel",
+        "description": (
+            "Full job description available at: "
+            "https://example.test/jobs/budapest/456"
+        ),
+    }
+    UNKNOWN_FOREIGN_JOB = {
+        "id": "example_789",
+        "title": "Student Software Engineer - Valparaiso",
+        "location": "Israel",
+        "description": (
+            "Full job description available at: "
+            "https://example.test/jobs/valparaiso/789"
+        ),
     }
 
-    def test_successful_notification_is_added_to_history(self) -> None:
-        """Persist a job ID only after Telegram accepts its alert."""
+    def test_new_job_is_analyzed_and_queued(self) -> None:
+        """Store all required fields without invoking Telegram."""
 
-        result = NotificationResult(
-            status=NotificationStatus.SENT,
-            attempts=1,
-            status_code=200,
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            with (
+                patch(
+                    "scraper.load_json",
+                    side_effect=[[self.COMPANY], []],
+                ),
+                patch(
+                    "scraper.fetch_jobs_from_company",
+                    return_value=[self.JOB],
+                ),
+                patch("scraper.analyze_job", return_value="LLM analysis"),
+                patch("builtins.print"),
+            ):
+                scraper.run_scraper(queue=queue)
+
+            alerts = queue.load()
+
+        self.assertEqual(len(alerts), 1)
+        self.assertEqual(alerts[0].job_id, "example_123")
+        self.assertEqual(alerts[0].company_name, "Example")
+        self.assertEqual(
+            alerts[0].job_url,
+            "https://example.test/jobs/israel/123",
+        )
+        self.assertIn("LLM analysis", alerts[0].llm_summary)
+        self.assertIn("Student Software Engineer", alerts[0].llm_summary)
+
+    def test_pending_job_is_not_analyzed_again(self) -> None:
+        """Avoid repeat LLM cost while an alert is waiting for delivery."""
+
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            queue.append(
+                PendingAlert(
+                    job_id="example_123",
+                    company_name="Example",
+                    job_url="https://example.test/jobs/123",
+                    llm_summary="Already analyzed",
+                )
+            )
+            with (
+                patch(
+                    "scraper.load_json",
+                    side_effect=[[self.COMPANY], []],
+                ),
+                patch(
+                    "scraper.fetch_jobs_from_company",
+                    return_value=[self.JOB],
+                ),
+                patch("scraper.analyze_job") as analyze_job,
+                patch("builtins.print"),
+            ):
+                scraper.run_scraper(queue=queue)
+
+            alerts = queue.load()
+
+        analyze_job.assert_not_called()
+        self.assertEqual(len(alerts), 1)
+        self.assertEqual(alerts[0].llm_summary, "Already analyzed")
+
+    def test_foreign_similar_job_is_rejected_before_analysis(self) -> None:
+        """Drop a geographic leak even when its adapter says Israel."""
+
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            with (
+                patch(
+                    "scraper.load_json",
+                    side_effect=[[self.COMPANY], []],
+                ),
+                patch(
+                    "scraper.fetch_jobs_from_company",
+                    return_value=[self.FOREIGN_JOB],
+                ),
+                patch("scraper.analyze_job") as analyze_job,
+                patch("builtins.print") as print_output,
+            ):
+                scraper.run_scraper(queue=queue)
+
+            alerts = queue.load()
+
+        analyze_job.assert_not_called()
+        self.assertEqual(alerts, [])
+        self.assertTrue(
+            any(
+                "Budapest" in str(call_args)
+                for call_args in print_output.call_args_list
+            )
         )
 
-        saved_history = self._run_scraper_with_notification(result)
+    def test_unknown_foreign_city_is_rejected_by_strict_mode(self) -> None:
+        """Reject an unlisted foreign city without spending LLM tokens."""
 
-        self.assertIn(self.JOB["id"], saved_history)
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            with (
+                patch(
+                    "scraper.load_json",
+                    side_effect=[[self.COMPANY], []],
+                ),
+                patch(
+                    "scraper.fetch_jobs_from_company",
+                    return_value=[self.UNKNOWN_FOREIGN_JOB],
+                ),
+                patch("scraper.analyze_job") as analyze_job,
+                patch("builtins.print") as print_output,
+            ):
+                scraper.run_scraper(queue=queue)
 
-    def test_failed_notification_stays_out_of_history(self) -> None:
-        """Leave failed alerts eligible for retry on the next run."""
+            alerts = queue.load()
 
-        result = NotificationResult(
-            status=NotificationStatus.RETRY_EXHAUSTED,
-            attempts=5,
-            error="ConnectionError",
+        analyze_job.assert_not_called()
+        self.assertEqual(alerts, [])
+        self.assertTrue(
+            any(
+                "strict mode" in str(call_args)
+                for call_args in print_output.call_args_list
+            )
         )
-
-        saved_history = self._run_scraper_with_notification(result)
-
-        self.assertNotIn(self.JOB["id"], saved_history)
-
-    def _run_scraper_with_notification(
-        self,
-        result: NotificationResult,
-    ) -> list[str]:
-        """Run orchestration with mocked external systems and return history."""
-
-        notifier = MagicMock()
-        notifier.send.return_value = result
-        session_manager = MagicMock()
-        session_manager.__enter__.return_value = MagicMock()
-
-        with (
-            patch(
-                "scraper.load_json",
-                side_effect=[[self.COMPANY], []],
-            ),
-            patch(
-                "scraper.fetch_jobs_from_company",
-                return_value=[self.JOB],
-            ),
-            patch("scraper.analyze_job", return_value="analysis"),
-            patch(
-                "scraper.TelegramNotifier.from_environment",
-                return_value=notifier,
-            ),
-            patch(
-                "scraper.requests.Session",
-                return_value=session_manager,
-            ),
-            patch("scraper.save_json") as save_json,
-            patch("scraper.time.sleep"),
-            patch("builtins.print"),
-        ):
-            scraper.run_scraper()
-
-        history_argument = save_json.call_args.args[1]
-        return list(history_argument)
 
 
 if __name__ == "__main__":
