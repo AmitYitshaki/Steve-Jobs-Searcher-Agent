@@ -48,7 +48,66 @@ def load_file(filename):
     with open(filename, "r", encoding="utf-8") as f:
         return f.read()
 
-def analyze_job(job_description):
+def build_job_analysis_prompt(
+    job_title: str,
+    job_location: str,
+    job_content: str | None,
+) -> str:
+    """Build an evidence-bound prompt from real job fields."""
+
+    title = job_title.strip() or "Unknown title"
+    location = job_location.strip() or "Unknown location"
+    content = (job_content or "").strip()
+
+    if content:
+        evidence = f"""
+    VERIFIED JOB POSTING CONTENT:
+    {content}
+
+    Use only the verified fields above. Do not invent requirements,
+    responsibilities, seniority, company details, or technologies.
+        """
+    else:
+        evidence = """
+    NO FULL JOB DESCRIPTION WAS AVAILABLE.
+
+    Analyze only the title and location. Explicitly state that technical
+    requirements and a reliable numeric match percentage cannot be determined.
+    Do not infer or invent any missing job details.
+        """
+
+    return f"""
+    Analyze this job using only the supplied evidence:
+
+    JOB TITLE: {title}
+    JOB LOCATION: {location}
+    {evidence}
+
+    FORMATTING RULES:
+    - Return Telegram-compatible HTML, never Markdown.
+    - Use only these standard formatting tags: <b>, <i>, <u>, <s>,
+      <code>, and <pre>.
+    - Use <b>...</b> for section headings. Never use Markdown bold syntax.
+    - Do not emit links, attributes, custom tags, or raw angle brackets.
+
+    Provide a concise summary in Hebrew with the following structure:
+    1. <b>תפקיד ומיקום</b>: התפקיד והמיקום שסופקו.
+    2. <b>דרישות סף טכניות</b>: רק דרישות שמופיעות בתוכן המאומת; אם אין
+       תוכן, כתוב שאין מספיק מידע.
+    3. <b>אחוז התאמה לפרופיל</b>: הערכה רק אם יש מספיק ראיות בתוכן;
+       אחרת כתוב שלא ניתן לתת אחוז אמין.
+    4. <b>נקודות חוזק להדגשה בקורות החיים</b>: רק נקודות שנתמכות בתוכן
+       ובפרופיל המשתמש.
+    """
+
+
+def analyze_job(
+    job_title: str,
+    job_location: str,
+    job_content: str | None = None,
+) -> str:
+    """Analyze a job without treating a URL as its description."""
+
     # 1. טעינת קבצי ההקשר של סטיב
     soul = load_file("agent_soul.md")
     identity = load_file("agent_identity.md")
@@ -65,17 +124,11 @@ def analyze_job(job_description):
     """
 
     # 3. הנחיות הניתוח למשרה הספציפית
-    user_prompt = f"""
-    Analyze the following job description:
-    
-    {job_description}
-    
-    Provide a concise summary in Hebrew with the following structure:
-    1. **תפקיד וחברה**: שם התפקיד והחברה.
-    2. **דרישות סף טכניות**: מה הדיל-ברייקרים.
-    3. **אחוז התאמה לפרופיל**: הערכת התאמה באחוזים מול המשתמש.
-    4. **נקודות חוזק להדגשה בקורות החיים**: אילו פרויקטים/ניסיון מהפרופיל כדאי להבליט.
-    """
+    user_prompt = build_job_analysis_prompt(
+        job_title=job_title,
+        job_location=job_location,
+        job_content=job_content,
+    )
 
     # 4. קריאה ל-API
     response = client.chat.completions.create(
@@ -111,5 +164,9 @@ if __name__ == "__main__":
     """
     
     print("🤖 סטיב מנתח את המשרה...\n")
-    result = analyze_job(sample_job)
+    result = analyze_job(
+        job_title="Student Developer - Backend",
+        job_location="Raanana, Israel",
+        job_content=sample_job,
+    )
     print("\n" + result)

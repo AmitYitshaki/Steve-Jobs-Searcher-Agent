@@ -27,8 +27,8 @@ py scraper.py           # Full scan
 py main.py              # Sample analysis
 
 # Testing & Diagnostics
-py test_playwright.py   # Opens an interactive browser
-py test_telegram.py     # Sends a real test message
+py manual_playwright_check.py   # Opens an interactive browser
+py manual_telegram_check.py     # Sends a real test message
 
 Architecture & Project Structure
 scraper.py: The main orchestration engine. Loads companies, filters jobs, tracks history, and coordinates the Telegram alerts. (Transitioning to OOP).

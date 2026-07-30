@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import html
 import os
 import random
 import time
 from dataclasses import dataclass
 from enum import Enum
+from html.parser import HTMLParser
 from types import TracebackType
 from typing import Callable, Mapping
 
@@ -15,6 +17,97 @@ from requests import Response
 
 SleepFunction = Callable[[float], None]
 RandomFunction = Callable[[], float]
+
+
+class TelegramHtmlSanitizer(HTMLParser):
+    """Preserve approved Telegram HTML while escaping untrusted markup."""
+
+    ALLOWED_TAGS = frozenset({
+        "b",
+        "blockquote",
+        "code",
+        "del",
+        "em",
+        "i",
+        "ins",
+        "pre",
+        "s",
+        "strike",
+        "strong",
+        "u",
+    })
+
+    def __init__(self) -> None:
+        """Initialize an HTML parser with automatic entity decoding."""
+
+        super().__init__(convert_charrefs=True)
+        self._parts: list[str] = []
+        self._open_tags: list[str] = []
+
+    @classmethod
+    def sanitize(cls, message: str) -> str:
+        """Return valid Telegram HTML containing only approved tags."""
+
+        parser = cls()
+        parser.feed(message)
+        parser.close()
+        while parser._open_tags:
+            parser._parts.append(f"</{parser._open_tags.pop()}>")
+        return "".join(parser._parts)
+
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        """Keep approved tags without attributes and escape all others."""
+
+        normalized_tag = tag.casefold()
+        if normalized_tag in self.ALLOWED_TAGS:
+            self._parts.append(f"<{normalized_tag}>")
+            self._open_tags.append(normalized_tag)
+            return
+
+        original = self.get_starttag_text() or f"<{tag}>"
+        self._parts.append(html.escape(original, quote=False))
+
+    def handle_endtag(self, tag: str) -> None:
+        """Close approved tags safely and escape unsupported end tags."""
+
+        normalized_tag = tag.casefold()
+        if normalized_tag not in self.ALLOWED_TAGS:
+            self._parts.append(html.escape(f"</{tag}>", quote=False))
+            return
+        if normalized_tag not in self._open_tags:
+            return
+
+        while self._open_tags:
+            open_tag = self._open_tags.pop()
+            self._parts.append(f"</{open_tag}>")
+            if open_tag == normalized_tag:
+                break
+
+    def handle_startendtag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        """Escape self-closing tags, which are unnecessary for alerts."""
+
+        original = self.get_starttag_text() or f"<{tag}/>"
+        self._parts.append(html.escape(original, quote=False))
+
+    def handle_data(self, data: str) -> None:
+        """Escape all text content before Telegram parses it."""
+
+        self._parts.append(html.escape(data, quote=False))
+
+    def handle_comment(self, data: str) -> None:
+        """Render comments as harmless escaped text."""
+
+        self._parts.append(
+            html.escape(f"<!--{data}-->", quote=False)
+        )
 
 
 class NotificationStatus(str, Enum):
@@ -156,8 +249,8 @@ class TelegramNotifier:
 
         payload: dict[str, str] = {
             "chat_id": self.chat_id,
-            "text": message.replace("**", "*"),
-            "parse_mode": "Markdown",
+            "text": TelegramHtmlSanitizer.sanitize(message),
+            "parse_mode": "HTML",
         }
         attempts = 0
 
@@ -193,7 +286,10 @@ class TelegramNotifier:
                 )
 
             if response.status_code == 400 and "parse_mode" in payload:
-                payload.pop("parse_mode")
+                payload = {
+                    "chat_id": self.chat_id,
+                    "text": message,
+                }
                 if attempts < self.retry_policy.max_attempts:
                     continue
 

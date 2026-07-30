@@ -1,8 +1,12 @@
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
-import time
+"""Manual interactive Playwright check; excluded from test discovery."""
 
-def test_microsoft_scraping():
+from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
+
+
+def run_microsoft_scraping_check() -> None:
+    """Open a real browser and save diagnostic Microsoft careers HTML."""
+
     url = "https://jobs.careers.microsoft.com/global/en/search?q=Student&lc=Israel"
     
     print("🚀 מתניע דפדפן אוטומטי...")
@@ -47,4 +51,4 @@ def test_microsoft_scraping():
             print(f"{idx}. {job}")
 
 if __name__ == "__main__":
-    test_microsoft_scraping()
+    run_microsoft_scraping_check()

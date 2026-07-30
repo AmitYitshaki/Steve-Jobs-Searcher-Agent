@@ -133,21 +133,47 @@ class TelegramNotifierTests(unittest.TestCase):
         self.assertTrue(result.success)
         self.sleep.assert_called_once_with(7.0)
 
-    def test_retries_bad_markdown_without_parse_mode(self) -> None:
-        """Remove parse_mode and retry immediately after HTTP 400."""
+    def test_retries_html_parse_error_without_parse_mode(self) -> None:
+        """Retry raw plain text if Telegram rejects HTML parsing."""
 
         self.session.post.side_effect = [
             make_response(400),
             make_response(200),
         ]
 
-        result = self.build_notifier().send("**broken markdown**")
+        result = self.build_notifier().send("**broken <markup>**")
 
         self.assertTrue(result.success)
         self.assertEqual(result.attempts, 2)
         self.sleep.assert_not_called()
+        first_payload = self.session.post.call_args_list[0].kwargs["json"]
+        self.assertEqual(first_payload["parse_mode"], "HTML")
+        self.assertEqual(
+            first_payload["text"],
+            "**broken &lt;markup&gt;**",
+        )
         second_payload = self.session.post.call_args_list[1].kwargs["json"]
         self.assertNotIn("parse_mode", second_payload)
+        self.assertEqual(second_payload["text"], "**broken <markup>**")
+
+    def test_escapes_untrusted_text_for_html_parse_mode(self) -> None:
+        """Preserve approved formatting and escape unsupported markup."""
+
+        self.session.post.return_value = make_response(200)
+
+        self.build_notifier().send(
+            "Junior_[R&D] *Intern* `role` "
+            "<script>unsafe</script> <b>safe &amp; bold</b>"
+        )
+
+        payload = self.session.post.call_args.kwargs["json"]
+        self.assertEqual(payload["parse_mode"], "HTML")
+        self.assertEqual(
+            payload["text"],
+            "Junior_[R&amp;D] *Intern* `role` "
+            "&lt;script&gt;unsafe&lt;/script&gt; "
+            "<b>safe &amp; bold</b>",
+        )
 
     def test_does_not_retry_permanent_client_error(self) -> None:
         """Fail immediately for authentication and other permanent errors."""

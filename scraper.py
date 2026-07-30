@@ -1,27 +1,17 @@
 import json
 import os
-import re
-import time
-import unicodedata
-from typing import Any, Mapping
-
 import requests
+import time
+import re
+import unicodedata
 from dotenv import load_dotenv
-
-from alert_queue import PendingAlert, PendingAlertQueue
-from html_adapters import (
-    scrape_microsoft,
-    scrape_successfactors,
-    scrape_universal_playwright,
-)
-from location_filter import LocationFilter
 from main import analyze_job
+from html_adapters import scrape_successfactors, scrape_microsoft, scrape_universal_playwright
 
 # טעינת משתני הסביבה
 load_dotenv()
 
 HISTORY_FILE = "jobs_history.json"
-PENDING_ALERTS_FILE = "pending_alerts.json"
 
 # חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
 EXCLUDE_KEYWORDS = [
@@ -111,6 +101,10 @@ def load_json(filepath):
         return []
     with open(filepath, "r", encoding="utf-8") as f:
         return json.load(f)
+
+def save_json(filepath, data):
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
 
 def is_in_location(job_location, location_filters):
     if not location_filters or not job_location:
@@ -250,7 +244,7 @@ def fetch_jobs_from_company(company):
     elif ats_type in [
         "apple_custom", "google_custom", "meta_custom", "ibm_custom", 
         "oracle_recruiting_cloud", "phenom", "custom", 
-        "greenhouse_embedded", "comeet", "jobvite"
+        "greenhouse_embedded", "comeet", "jobvite", "eightfold"
     ]:
         return scrape_universal_playwright(company)
 
@@ -259,36 +253,43 @@ def fetch_jobs_from_company(company):
         print(f"🚧 Skipping {company_id} ({ats_type}) - No adapter available.")
         return []
 
-def extract_job_url(job: Mapping[str, Any]) -> str:
-    """Extract the best available job URL from an adapter result."""
+def send_telegram_message(message, session=None):
+    token = os.getenv("TELEGRAM_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    
+    if not token or not chat_id:
+        print("❌ [דיאגנוסטיקה] חסר טוקן או צ'אט ID.")
+        return
 
-    for key in ("url", "job_url", "absolute_url"):
-        value = job.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
+    url = f"https://api.telegram.org/bot{token.strip()}/sendMessage"
+    clean_message = message.replace("**", "*")
+    
+    payload = {
+        "chat_id": chat_id.strip(),
+        "text": clean_message,
+        "parse_mode": "Markdown"
+    }
+    
+    req_method = session.post if session else requests.post
 
-    description = job.get("description", "")
-    if not isinstance(description, str):
-        return ""
-    match = re.search(r'https?://[^\s<>"]+', description)
-    if match is None:
-        return ""
-    return match.group(0).rstrip(".,);]")
+    try:
+        response = req_method(url, json=payload, timeout=10)
+        
+        if response.status_code == 400 and "parse_mode" in payload:
+            payload.pop("parse_mode", None)
+            response = req_method(url, json=payload, timeout=10)
+            
+        response.raise_for_status()
+        print("✅ [דיאגנוסטיקה] ההודעה נשלחה בהצלחה לטלגרם!")
+        
+    except (requests.exceptions.ConnectionError, ConnectionResetError) as e:
+        print(f"❌ [דיאגנוסטיקה] השרת ניתק את החיבור בכוח (10054). מדלג כדי לא לבזבז זמן.")
+    except Exception as e:
+        print(f"❌ [דיאגנוסטיקה] שגיאה בשליחה: {e}")
 
-
-def run_scraper(
-    queue: PendingAlertQueue | None = None,
-    location_filter: LocationFilter | None = None,
-) -> None:
-    """Scan, analyze, and enqueue new jobs without contacting Telegram."""
-
+def run_scraper():
     print("🚀 מתחיל סריקת משרות...")
     total_start_time = time.time()  # תחילת המדידה הכוללת
-    alert_queue = queue or PendingAlertQueue(PENDING_ALERTS_FILE)
-    active_location_filter = (
-        location_filter
-        or LocationFilter(strict_mode=True)
-    )
     
     companies = load_json("companies.json")
     if not companies:
@@ -296,9 +297,7 @@ def run_scraper(
         return
 
     history = set(load_json(HISTORY_FILE))
-    pending_ids = alert_queue.ids()
     new_jobs_found = []
-    queued_job_ids = set()
 
     # --- שלב 1: סריקת החברות ---
     for company in companies:
@@ -310,88 +309,33 @@ def run_scraper(
         
         for job in jobs:
             title_match = is_relevant_job(job["title"])
-            job_url = (
-                extract_job_url(job)
-                or str(company.get("api_url", ""))
-            )
-            if title_match:
-                location_decision = active_location_filter.evaluate(
-                    job_title=job["title"],
-                    job_url=job_url,
-                )
-                if not location_decision.allowed:
-                    match_details = ""
-                    if location_decision.matched_location is not None:
-                        match_details = (
-                            f" '{location_decision.matched_location}'"
-                            f" in {location_decision.source}"
-                        )
-                    print(
-                        f"🚫 Rejecting {job['id']}: "
-                        f"{location_decision.reason}{match_details}."
-                    )
-                    continue
-
             location_match = is_in_location(job["location"], location_filters)
-            is_new = (
-                job["id"] not in history
-                and job["id"] not in pending_ids
-                and job["id"] not in queued_job_ids
-            )
+            is_new = job["id"] not in history
             
             if title_match and location_match and is_new:
-                new_jobs_found.append({
-                    **job,
-                    "company_name": company.get(
-                        "company_name",
-                        company.get("company_id", "Unknown"),
-                    ),
-                    "job_url": job_url,
-                })
-                queued_job_ids.add(job["id"])
+                new_jobs_found.append(job)
+                history.add(job["id"])
 
     scraping_end_time = time.time()  # סיום שלב הסריקה
 
-    # --- שלב 2: ניתוח והוספה לתור ---
+    # --- שלב 2: ניתוח ושליחה ---
     if not new_jobs_found:
         print("\n😴 לא נמצאו משרות חדשות רלוונטיות הפעם.")
     else:
-        print(
-            f"\n✅ נמצאו {len(new_jobs_found)} משרות חדשות רלוונטיות. "
-            "מעביר לסטיב...\n"
-        )
+        print(f"\n✅ נמצאו {len(new_jobs_found)} משרות חדשות רלוונטיות. מעביר לסטיב...\n")
         
-        for job in new_jobs_found:
-            print(
-                f"🤖 מנתח את: {job['title']} "
-                f"במיקום {job['location']}"
-            )
-
-            try:
+        with requests.Session() as session:
+            for job in new_jobs_found:
+                print(f"🤖 מנתח את: {job['title']} במיקום {job['location']}")
+                
                 analysis = analyze_job(job["description"])
-            except Exception as error:
-                print(
-                    "❌ ניתוח המשרה נכשל; המשרה לא תיכנס לתור: "
-                    f"{type(error).__name__}"
-                )
-                continue
-
-            telegram_alert = (
-                f"🚨 *משרה חדשה נמצאה: {job['title']}* 🚨\n"
-                f"📍 מיקום: {job['location']}\n\n{analysis}"
-            )
-            alert = PendingAlert(
-                job_id=job["id"],
-                company_name=job["company_name"],
-                job_url=job["job_url"],
-                llm_summary=telegram_alert,
-            )
-            if alert_queue.append(alert):
-                pending_ids.add(job["id"])
-                print(f"✅ המשרה {job['id']} נשמרה בתור ההתראות.")
-            else:
-                print(f"ℹ️ המשרה {job['id']} כבר קיימת בתור.")
-            print("-" * 40)
+                telegram_alert = f"🚨 *משרה חדשה נמצאה: {job['title']}* 🚨\n📍 מיקום: {job['location']}\n\n{analysis}"
+                
+                send_telegram_message(telegram_alert, session=session)
+                print("-" * 40)
+                time.sleep(3)
+        
+    save_json(HISTORY_FILE, list(history))
     
     analysis_end_time = time.time()  # סיום שלב הניתוח
     
@@ -403,7 +347,7 @@ def run_scraper(
     print("\n🏁 הסריקה הושלמה.")
     print("⏱️ דו\"ח ביצועים:")
     print(f"   - זמן סריקת אתרים: {scraping_duration:.1f} שניות")
-    print(f"   - זמן ניתוח (AI) ושמירה לתור: {analysis_duration:.1f} שניות")
+    print(f"   - זמן ניתוח (AI) וטלגרם: {analysis_duration:.1f} שניות")
     print(f"   - סך הכל זמן ריצה: {total_duration:.1f} שניות")
 
 if __name__ == "__main__":

@@ -394,10 +394,11 @@ class PlaywrightJobScraperTests(unittest.TestCase):
 
             self.assertEqual(first_result.status, ScrapeStatus.SUCCESS)
             self.assertEqual(first_result.jobs, second_result.jobs)
-            self.assertIn(
+            self.assertEqual(
+                first_result.jobs[0]["url"],
                 "https://example.test/jobs/123",
-                first_result.jobs[0]["description"],
             )
+            self.assertEqual(first_result.jobs[0]["content"], "")
 
     def test_returns_failed_status_and_closes_after_navigation_error(
         self,
@@ -448,7 +449,8 @@ class UniversalWrapperTests(unittest.TestCase):
                 "id": "example_1",
                 "title": "Student Developer",
                 "location": "Israel",
-                "description": "Full job description available at: test",
+                "url": "https://example.test/jobs/1",
+                "content": "",
             }
         ]
         scraper_class.return_value.scrape.return_value = ScrapeResult(

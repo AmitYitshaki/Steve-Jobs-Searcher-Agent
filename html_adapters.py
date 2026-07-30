@@ -45,6 +45,15 @@ def scrape_successfactors(company):
             # מציאת המיקום
             location_tag = row.find('span', class_='jobLocation')
             location = location_tag.text.strip() if location_tag else "Israel"
+
+            description_tag = row.select_one(
+                ".jobDescription, .job-description, .description"
+            )
+            content = (
+                description_tag.get_text(" ", strip=True)
+                if description_tag
+                else ""
+            )
             
             # יצירת מזהה ייחודי (בדרך כלל נמצא בלינק)
             job_id = job_link.split("/")[-2] if "/" in job_link else title
@@ -53,7 +62,8 @@ def scrape_successfactors(company):
                 "id": f"{company_id}_{job_id}",
                 "title": title,
                 "location": location,
-                "description": f"Full job description available at: {job_link}"
+                "url": job_link,
+                "content": content,
             })
             
         return jobs
@@ -100,7 +110,8 @@ def scrape_microsoft(company):
                     "id": f"{company_id}_{job_id}",
                     "title": title,
                     "location": "Israel", # מיקרוסופט מסננת לפי ישראל ב-URL במילא
-                    "description": f"Full job description available at: {full_link}"
+                    "url": full_link,
+                    "content": "",
                 })
                 
         return jobs
