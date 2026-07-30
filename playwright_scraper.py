@@ -578,9 +578,8 @@ class PlaywrightJobScraper:
                     "id": f"{company_id}_{stable_id}",
                     "title": title,
                     "location": "Israel",
-                    "description": (
-                        f"Full job description available at: {full_url}"
-                    ),
+                    "url": full_url,
+                    "content": "",
                 }
             )
 

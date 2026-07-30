@@ -28,28 +28,29 @@ class ScraperProducerTests(unittest.TestCase):
         "id": "example_123",
         "title": "Student Software Engineer",
         "location": "Israel",
-        "description": (
-            "Full job description available at: "
-            "https://example.test/jobs/israel/123"
-        ),
+        "url": "https://example.test/jobs/israel/123",
+        "content": "Build Python services. B.Sc. students only.",
     }
     FOREIGN_JOB = {
         "id": "example_456",
         "title": "Student Software Engineer - Budapest, Hungary",
         "location": "Israel",
-        "description": (
-            "Full job description available at: "
-            "https://example.test/jobs/budapest/456"
-        ),
+        "url": "https://example.test/jobs/budapest/456",
+        "content": "Build Python services.",
     }
     UNKNOWN_FOREIGN_JOB = {
         "id": "example_789",
         "title": "Student Software Engineer - Valparaiso",
         "location": "Israel",
-        "description": (
-            "Full job description available at: "
-            "https://example.test/jobs/valparaiso/789"
-        ),
+        "url": "https://example.test/jobs/valparaiso/789",
+        "content": "Build Python services.",
+    }
+    HTML_TITLE_JOB = {
+        "id": "example_999",
+        "title": "Student Software Engineer <R&D> - Israel",
+        "location": "Tel Aviv & Central, Israel",
+        "url": "https://example.test/jobs/israel/999",
+        "content": "Build Python services.",
     }
 
     def test_new_job_is_analyzed_and_queued(self) -> None:
@@ -68,7 +69,10 @@ class ScraperProducerTests(unittest.TestCase):
                     "scraper.fetch_jobs_from_company",
                     return_value=[self.JOB],
                 ),
-                patch("scraper.analyze_job", return_value="LLM analysis"),
+                patch(
+                    "scraper.analyze_job",
+                    return_value="LLM analysis",
+                ) as analyze_job,
                 patch("builtins.print"),
             ):
                 scraper.run_scraper(queue=queue)
@@ -84,6 +88,46 @@ class ScraperProducerTests(unittest.TestCase):
         )
         self.assertIn("LLM analysis", alerts[0].llm_summary)
         self.assertIn("Student Software Engineer", alerts[0].llm_summary)
+        analyze_job.assert_called_once_with(
+            job_title="Student Software Engineer",
+            job_location="Israel",
+            job_content="Build Python services. B.Sc. students only.",
+        )
+
+    def test_alert_header_uses_safe_html_formatting(self) -> None:
+        """Bold the header while escaping title and location text."""
+
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            with (
+                patch(
+                    "scraper.load_json",
+                    side_effect=[[self.COMPANY], []],
+                ),
+                patch(
+                    "scraper.fetch_jobs_from_company",
+                    return_value=[self.HTML_TITLE_JOB],
+                ),
+                patch(
+                    "scraper.analyze_job",
+                    return_value="<b>ניתוח</b>",
+                ),
+                patch("builtins.print"),
+            ):
+                scraper.run_scraper(queue=queue)
+
+            summary = queue.load()[0].llm_summary
+
+        self.assertIn(
+            "<b>משרה חדשה נמצאה: Student Software Engineer "
+            "&lt;R&amp;D&gt; - Israel</b>",
+            summary,
+        )
+        self.assertIn("Tel Aviv &amp; Central, Israel", summary)
+        self.assertIn("<b>ניתוח</b>", summary)
+        self.assertNotIn("**", summary)
 
     def test_pending_job_is_not_analyzed_again(self) -> None:
         """Avoid repeat LLM cost while an alert is waiting for delivery."""

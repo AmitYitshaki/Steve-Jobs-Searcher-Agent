@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -9,6 +10,11 @@ from dotenv import load_dotenv
 
 from alert_queue import JobHistoryStore, PendingAlertQueue
 from telegram_notifier import NotificationResult, TelegramNotifier
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 
 
 class AlertSender(Protocol):
