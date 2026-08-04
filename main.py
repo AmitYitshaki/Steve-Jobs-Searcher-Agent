@@ -71,9 +71,11 @@ def build_job_analysis_prompt(
         evidence = """
     NO FULL JOB DESCRIPTION WAS AVAILABLE.
 
-    Analyze only the title and location. Explicitly state that technical
-    requirements and a reliable numeric match percentage cannot be determined.
-    Do not infer or invent any missing job details.
+    Estimate the typical requirements for this job based solely on the title.
+    Then evaluate the user's fit against those estimated requirements.
+    Explicitly state in the output that this is an estimation because the full
+    job description was missing. Never present estimated details as verified
+    facts about this specific opening.
         """
 
     return f"""
@@ -88,14 +90,17 @@ def build_job_analysis_prompt(
     - Use only these standard formatting tags: <b>, <i>, <u>, <s>,
       <code>, and <pre>.
     - Use <b>...</b> for section headings. Never use Markdown bold syntax.
+    - NEVER use Markdown code blocks or triple-backtick fences. Output plain
+      text with only the allowed HTML tags above.
     - Do not emit links, attributes, custom tags, or raw angle brackets.
 
     Provide a concise summary in Hebrew with the following structure:
     1. <b>תפקיד ומיקום</b>: התפקיד והמיקום שסופקו.
-    2. <b>דרישות סף טכניות</b>: רק דרישות שמופיעות בתוכן המאומת; אם אין
-       תוכן, כתוב שאין מספיק מידע.
-    3. <b>אחוז התאמה לפרופיל</b>: הערכה רק אם יש מספיק ראיות בתוכן;
-       אחרת כתוב שלא ניתן לתת אחוז אמין.
+    2. <b>דרישות סף טכניות</b>: דרישות מהתוכן המאומת; אם אין תוכן,
+       דרישות טיפוסיות משוערות לפי שם התפקיד בלבד, עם סימון שהן משוערות.
+    3. <b>אחוז התאמה לפרופיל</b>: הערכה מול הדרישות המאומתות; אם אין
+       תוכן, הערכה חכמה מול הדרישות הטיפוסיות תוך ציון מפורש של מגבלת
+       המידע.
     4. <b>נקודות חוזק להדגשה בקורות החיים</b>: רק נקודות שנתמכות בתוכן
        ובפרופיל המשתמש.
     """

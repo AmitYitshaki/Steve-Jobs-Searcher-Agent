@@ -586,5 +586,264 @@
         "completion_tokens": 136,
         "total_tokens": 1194,
         "cost_usd": 0.00024
+    },
+    {
+        "timestamp": "2026-07-30T20:42:40.541966",
+        "prompt_tokens": 2203,
+        "completion_tokens": 299,
+        "total_tokens": 2502,
+        "cost_usd": 0.00051
+    },
+    {
+        "timestamp": "2026-07-30T20:42:42.396559",
+        "prompt_tokens": 1228,
+        "completion_tokens": 92,
+        "total_tokens": 1320,
+        "cost_usd": 0.000239
+    },
+    {
+        "timestamp": "2026-07-30T21:10:19.653177",
+        "prompt_tokens": 1996,
+        "completion_tokens": 210,
+        "total_tokens": 2206,
+        "cost_usd": 0.000425
+    },
+    {
+        "timestamp": "2026-07-30T21:10:21.907970",
+        "prompt_tokens": 1952,
+        "completion_tokens": 134,
+        "total_tokens": 2086,
+        "cost_usd": 0.000373
+    },
+    {
+        "timestamp": "2026-07-30T21:10:24.588439",
+        "prompt_tokens": 1950,
+        "completion_tokens": 152,
+        "total_tokens": 2102,
+        "cost_usd": 0.000384
+    },
+    {
+        "timestamp": "2026-07-30T21:10:28.058320",
+        "prompt_tokens": 2190,
+        "completion_tokens": 275,
+        "total_tokens": 2465,
+        "cost_usd": 0.000494
+    },
+    {
+        "timestamp": "2026-07-30T21:10:31.296100",
+        "prompt_tokens": 1494,
+        "completion_tokens": 132,
+        "total_tokens": 1626,
+        "cost_usd": 0.000303
+    },
+    {
+        "timestamp": "2026-07-30T21:10:33.800530",
+        "prompt_tokens": 1983,
+        "completion_tokens": 167,
+        "total_tokens": 2150,
+        "cost_usd": 0.000398
+    },
+    {
+        "timestamp": "2026-07-30T21:10:36.484045",
+        "prompt_tokens": 1582,
+        "completion_tokens": 112,
+        "total_tokens": 1694,
+        "cost_usd": 0.000304
+    },
+    {
+        "timestamp": "2026-07-30T21:10:39.855321",
+        "prompt_tokens": 1914,
+        "completion_tokens": 179,
+        "total_tokens": 2093,
+        "cost_usd": 0.000394
+    },
+    {
+        "timestamp": "2026-07-30T21:10:41.988609",
+        "prompt_tokens": 1209,
+        "completion_tokens": 78,
+        "total_tokens": 1287,
+        "cost_usd": 0.000228
+    },
+    {
+        "timestamp": "2026-07-30T21:10:43.427983",
+        "prompt_tokens": 1209,
+        "completion_tokens": 78,
+        "total_tokens": 1287,
+        "cost_usd": 0.000228
+    },
+    {
+        "timestamp": "2026-07-30T21:10:44.896665",
+        "prompt_tokens": 1217,
+        "completion_tokens": 88,
+        "total_tokens": 1305,
+        "cost_usd": 0.000235
+    },
+    {
+        "timestamp": "2026-07-30T21:10:46.554427",
+        "prompt_tokens": 1217,
+        "completion_tokens": 98,
+        "total_tokens": 1315,
+        "cost_usd": 0.000241
+    },
+    {
+        "timestamp": "2026-07-30T21:10:48.949710",
+        "prompt_tokens": 1223,
+        "completion_tokens": 92,
+        "total_tokens": 1315,
+        "cost_usd": 0.000239
+    },
+    {
+        "timestamp": "2026-07-30T21:10:50.818847",
+        "prompt_tokens": 1226,
+        "completion_tokens": 95,
+        "total_tokens": 1321,
+        "cost_usd": 0.000241
+    },
+    {
+        "timestamp": "2026-07-30T21:10:52.160835",
+        "prompt_tokens": 1209,
+        "completion_tokens": 88,
+        "total_tokens": 1297,
+        "cost_usd": 0.000234
+    },
+    {
+        "timestamp": "2026-07-30T21:10:53.540338",
+        "prompt_tokens": 1209,
+        "completion_tokens": 75,
+        "total_tokens": 1284,
+        "cost_usd": 0.000226
+    },
+    {
+        "timestamp": "2026-07-31T11:08:51.535496",
+        "prompt_tokens": 2053,
+        "completion_tokens": 237,
+        "total_tokens": 2290,
+        "cost_usd": 0.00045
+    },
+    {
+        "timestamp": "2026-07-31T11:08:54.348663",
+        "prompt_tokens": 2009,
+        "completion_tokens": 165,
+        "total_tokens": 2174,
+        "cost_usd": 0.0004
+    },
+    {
+        "timestamp": "2026-07-31T11:08:57.838992",
+        "prompt_tokens": 2007,
+        "completion_tokens": 227,
+        "total_tokens": 2234,
+        "cost_usd": 0.000437
+    },
+    {
+        "timestamp": "2026-07-31T11:09:02.631705",
+        "prompt_tokens": 2247,
+        "completion_tokens": 326,
+        "total_tokens": 2573,
+        "cost_usd": 0.000533
+    },
+    {
+        "timestamp": "2026-07-31T11:09:05.498019",
+        "prompt_tokens": 1551,
+        "completion_tokens": 164,
+        "total_tokens": 1715,
+        "cost_usd": 0.000331
+    },
+    {
+        "timestamp": "2026-07-31T11:09:10.085759",
+        "prompt_tokens": 2040,
+        "completion_tokens": 194,
+        "total_tokens": 2234,
+        "cost_usd": 0.000422
+    },
+    {
+        "timestamp": "2026-07-31T11:09:12.178890",
+        "prompt_tokens": 1639,
+        "completion_tokens": 140,
+        "total_tokens": 1779,
+        "cost_usd": 0.00033
+    },
+    {
+        "timestamp": "2026-07-31T11:09:14.957786",
+        "prompt_tokens": 1971,
+        "completion_tokens": 221,
+        "total_tokens": 2192,
+        "cost_usd": 0.000428
+    },
+    {
+        "timestamp": "2026-07-31T11:09:18.741856",
+        "prompt_tokens": 2260,
+        "completion_tokens": 300,
+        "total_tokens": 2560,
+        "cost_usd": 0.000519
+    },
+    {
+        "timestamp": "2026-07-31T11:09:24.294764",
+        "prompt_tokens": 1290,
+        "completion_tokens": 435,
+        "total_tokens": 1725,
+        "cost_usd": 0.000454
+    },
+    {
+        "timestamp": "2026-07-31T11:09:31.100814",
+        "prompt_tokens": 1290,
+        "completion_tokens": 450,
+        "total_tokens": 1740,
+        "cost_usd": 0.000463
+    },
+    {
+        "timestamp": "2026-07-31T11:09:35.539575",
+        "prompt_tokens": 1298,
+        "completion_tokens": 389,
+        "total_tokens": 1687,
+        "cost_usd": 0.000428
+    },
+    {
+        "timestamp": "2026-07-31T11:09:38.254874",
+        "prompt_tokens": 1298,
+        "completion_tokens": 181,
+        "total_tokens": 1479,
+        "cost_usd": 0.000303
+    },
+    {
+        "timestamp": "2026-07-31T11:09:47.036512",
+        "prompt_tokens": 1304,
+        "completion_tokens": 518,
+        "total_tokens": 1822,
+        "cost_usd": 0.000506
+    },
+    {
+        "timestamp": "2026-07-31T11:09:52.705284",
+        "prompt_tokens": 1307,
+        "completion_tokens": 444,
+        "total_tokens": 1751,
+        "cost_usd": 0.000462
+    },
+    {
+        "timestamp": "2026-07-31T11:10:00.260202",
+        "prompt_tokens": 1290,
+        "completion_tokens": 520,
+        "total_tokens": 1810,
+        "cost_usd": 0.000505
+    },
+    {
+        "timestamp": "2026-07-31T11:10:04.677040",
+        "prompt_tokens": 1290,
+        "completion_tokens": 376,
+        "total_tokens": 1666,
+        "cost_usd": 0.000419
+    },
+    {
+        "timestamp": "2026-07-31T11:10:09.512076",
+        "prompt_tokens": 1309,
+        "completion_tokens": 373,
+        "total_tokens": 1682,
+        "cost_usd": 0.00042
+    },
+    {
+        "timestamp": "2026-08-03T15:24:14.054436",
+        "prompt_tokens": 1354,
+        "completion_tokens": 568,
+        "total_tokens": 1922,
+        "cost_usd": 0.000544
     }
 ]
