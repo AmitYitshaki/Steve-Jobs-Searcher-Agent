@@ -30,11 +30,13 @@ class JobAnalysisPromptTests(unittest.TestCase):
         self.assertIn("VERIFIED JOB POSTING CONTENT", prompt)
         self.assertNotIn("Full job description available at:", prompt)
         self.assertIn("Return Telegram-compatible HTML", prompt)
+        self.assertIn("NEVER use Markdown code blocks", prompt)
+        self.assertIn("triple-backtick fences", prompt)
         self.assertIn("<b>תפקיד ומיקום</b>", prompt)
         self.assertNotIn("**", prompt)
 
-    def test_missing_content_forbids_invented_requirements(self) -> None:
-        """Require title-only output when no description was extracted."""
+    def test_missing_content_requests_explicit_smart_estimation(self) -> None:
+        """Estimate from the title while labeling the evidence limitation."""
 
         prompt = main.build_job_analysis_prompt(
             job_title="Software Engineer Intern",
@@ -43,8 +45,23 @@ class JobAnalysisPromptTests(unittest.TestCase):
         )
 
         self.assertIn("NO FULL JOB DESCRIPTION WAS AVAILABLE", prompt)
-        self.assertIn("Do not infer or invent", prompt)
-        self.assertIn("reliable numeric match percentage", prompt)
+        self.assertIn(
+            "Estimate the typical requirements for this job based solely "
+            "on the title",
+            prompt,
+        )
+        self.assertIn(
+            "evaluate the user's fit against those estimated requirements",
+            prompt,
+        )
+        self.assertIn(
+            "this is an estimation because the full",
+            prompt,
+        )
+        self.assertNotIn(
+            "a reliable numeric match percentage cannot be determined",
+            prompt,
+        )
 
     def test_analyze_job_sends_the_evidence_bound_prompt(self) -> None:
         """Send the structured prompt without making a live OpenAI call."""

@@ -8,13 +8,21 @@ import logging
 import os
 import re
 import threading
+import time
 from contextlib import AbstractContextManager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Mapping
-from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
+from urllib.parse import (
+    parse_qsl,
+    unquote,
+    urlencode,
+    urljoin,
+    urlsplit,
+    urlunsplit,
+)
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import (
@@ -24,8 +32,26 @@ from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
     sync_playwright,
 )
+from playwright_stealth import Stealth
 
 LOGGER = logging.getLogger(__name__)
+
+REALISTIC_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/152.0.0.0 Safari/537.36"
+)
+REALISTIC_VIEWPORT = {"width": 1440, "height": 900}
+_STEALTH = Stealth(
+    navigator_user_agent_override=REALISTIC_USER_AGENT,
+)
+
+
+def stealth_sync(page: Page) -> None:
+    """Apply the current playwright-stealth API to one synchronous page."""
+
+    _STEALTH.apply_stealth_sync(page)
+
 
 JobRecord = dict[str, str]
 CompanyConfig = Mapping[str, Any]
@@ -147,6 +173,8 @@ class WafChallengeDetector:
 class NetworkResponseCollector:
     """Persist likely public job API endpoints observed by Playwright."""
 
+    REPLACE_ATTEMPTS = 5
+    REPLACE_RETRY_DELAY_SECONDS = 0.1
     API_KEYWORDS = ("job", "career", "search", "position")
     API_RESOURCE_TYPES = frozenset({"xhr", "fetch"})
     STATIC_RESOURCE_TYPES = frozenset(
@@ -283,7 +311,23 @@ class NetworkResponseCollector:
             )
             with temporary_path.open("w", encoding="utf-8") as log_file:
                 json.dump(records, log_file, ensure_ascii=False, indent=2)
-            os.replace(temporary_path, self.log_path)
+            self._replace_with_retry(temporary_path)
+
+    def _replace_with_retry(self, temporary_path: Path) -> None:
+        """Retry transient Windows file locks during atomic replacement."""
+
+        for attempt in range(1, self.REPLACE_ATTEMPTS + 1):
+            try:
+                os.replace(temporary_path, self.log_path)
+                return
+            except OSError as error:
+                is_windows_lock = (
+                    isinstance(error, PermissionError)
+                    or getattr(error, "winerror", None) == 5
+                )
+                if not is_windows_lock or attempt >= self.REPLACE_ATTEMPTS:
+                    raise
+                time.sleep(self.REPLACE_RETRY_DELAY_SECONDS)
 
     def _load_records(self) -> list[dict[str, Any]]:
         """Read existing discovery entries, tolerating missing files."""
@@ -343,6 +387,14 @@ class PlaywrightJobScraper:
     """Scrape job links while exposing WAF and API discovery outcomes."""
 
     JOB_LINK_KEYWORDS = ("job", "career", "req", "position", "role", "detail")
+    EXCLUDED_PATH_SEGMENTS = frozenset({
+        "blog",
+        "article",
+        "story",
+        "podcast",
+        "meet-our-team",
+    })
+    SELECTOR_TIMEOUT_MS = 10_000
     SENSITIVE_HTML_PATTERN = re.compile(
         r"(?i)([?&](?:access_token|api_key|apikey|auth|authorization|"
         r"code|key|session|sessionid|sig|signature|token)=)"
@@ -372,6 +424,29 @@ class PlaywrightJobScraper:
 
         company_id = str(company.get("company_id", "")).strip()
         url = str(company.get("api_url", "")).strip()
+        configured_selector = company.get("job_selector")
+        job_selector = (
+            configured_selector.strip()
+            if isinstance(configured_selector, str)
+            else ""
+        )
+        configured_selector_timeout = company.get(
+            "selector_timeout_ms",
+            self.SELECTOR_TIMEOUT_MS,
+        )
+        selector_timeout_ms = self.SELECTOR_TIMEOUT_MS
+        if (
+            isinstance(configured_selector_timeout, int)
+            and not isinstance(configured_selector_timeout, bool)
+            and configured_selector_timeout > 0
+        ):
+            selector_timeout_ms = configured_selector_timeout
+        elif "selector_timeout_ms" in company:
+            LOGGER.warning(
+                "Invalid selector_timeout_ms for %s; using %s",
+                company_id,
+                self.SELECTOR_TIMEOUT_MS,
+            )
         if not company_id or not url:
             return ScrapeResult(
                 status=ScrapeStatus.FAILED,
@@ -388,6 +463,8 @@ class PlaywrightJobScraper:
                     playwright=playwright,
                     company_id=company_id,
                     url=url,
+                    job_selector=job_selector,
+                    selector_timeout_ms=selector_timeout_ms,
                 )
         except Exception as error:
             return ScrapeResult(
@@ -402,17 +479,29 @@ class PlaywrightJobScraper:
         playwright: Playwright,
         company_id: str,
         url: str,
+        job_selector: str = "",
+        selector_timeout_ms: int = SELECTOR_TIMEOUT_MS,
     ) -> ScrapeResult:
         """Run one browser session and close all resources before returning."""
 
         browser: Any = None
         context: Any = None
+        page: Any = None
+        html = ""
+        status_code: int | None = None
+        waf_reason: str | None = None
         diagnostic_paths: tuple[str, ...] = ()
 
         try:
             browser = playwright.chromium.launch(headless=True)
-            context = browser.new_context()
+            context = browser.new_context(
+                user_agent=REALISTIC_USER_AGENT,
+                viewport=REALISTIC_VIEWPORT,
+                timezone_id="Asia/Jerusalem",
+                locale="en-US",
+            )
             page = context.new_page()
+            stealth_sync(page)
             collector = NetworkResponseCollector(
                 company_id=company_id,
                 log_path=self.debug_dir / "api_discovery_log.json",
@@ -432,15 +521,15 @@ class PlaywrightJobScraper:
                 else None
             )
             waf_reason = self.detector.detect_reason(html, status_code)
-            diagnostic_paths = self._write_diagnostics(
-                page=page,
-                company_id=company_id,
-                html=html,
-                status_code=status_code,
-                waf_reason=waf_reason,
-            )
 
             if waf_reason:
+                diagnostic_paths = self._write_diagnostics(
+                    page=page,
+                    company_id=company_id,
+                    html=html,
+                    status_code=status_code,
+                    waf_reason=waf_reason,
+                )
                 return ScrapeResult(
                     status=ScrapeStatus.WAF_BLOCKED,
                     jobs=[],
@@ -448,12 +537,38 @@ class PlaywrightJobScraper:
                     diagnostic_paths=diagnostic_paths,
                 )
 
-            jobs = self._extract_jobs(html, url, company_id)
+            if job_selector:
+                self._wait_for_job_selector(
+                    page,
+                    job_selector,
+                    selector_timeout_ms,
+                )
+                html = page.content()
+                jobs = self._extract_jobs_by_selector(
+                    page=page,
+                    selector=job_selector,
+                    base_url=url,
+                    company_id=company_id,
+                )
+            else:
+                jobs = self._extract_jobs(html, url, company_id)
             if not jobs:
+                diagnostic_paths = self._write_diagnostics(
+                    page=page,
+                    company_id=company_id,
+                    html=html,
+                    status_code=status_code,
+                    waf_reason=None,
+                )
+                extraction_method = (
+                    f"configured selector {job_selector!r}"
+                    if job_selector
+                    else "universal rules"
+                )
                 return ScrapeResult(
                     status=ScrapeStatus.NO_JOBS,
                     jobs=[],
-                    message="No job links matched the universal rules",
+                    message=f"No job links matched {extraction_method}",
                     diagnostic_paths=diagnostic_paths,
                 )
 
@@ -463,6 +578,23 @@ class PlaywrightJobScraper:
                 diagnostic_paths=diagnostic_paths,
             )
         except Exception as error:
+            if page is not None:
+                try:
+                    if not html:
+                        html = page.content()
+                    diagnostic_paths = self._write_diagnostics(
+                        page=page,
+                        company_id=company_id,
+                        html=html,
+                        status_code=status_code,
+                        waf_reason=waf_reason,
+                    )
+                except Exception as diagnostic_error:
+                    LOGGER.warning(
+                        "Could not write failure diagnostics for %s: %s",
+                        company_id,
+                        diagnostic_error,
+                    )
             return ScrapeResult(
                 status=ScrapeStatus.FAILED,
                 jobs=[],
@@ -500,6 +632,23 @@ class PlaywrightJobScraper:
         if self.settle_time_ms > 0:
             page.wait_for_timeout(self.settle_time_ms)
 
+    def _wait_for_job_selector(
+        self,
+        page: Page,
+        selector: str,
+        timeout_ms: int = SELECTOR_TIMEOUT_MS,
+    ) -> None:
+        """Wait for SPA job elements while tolerating a bounded timeout."""
+
+        try:
+            page.wait_for_selector(
+                selector,
+                state="visible",
+                timeout=timeout_ms,
+            )
+        except PlaywrightTimeoutError:
+            LOGGER.warning("Selector %s not found in time", selector)
+
     def _write_diagnostics(
         self,
         page: Page,
@@ -522,10 +671,17 @@ class PlaywrightJobScraper:
         html_path.write_text(sanitized_html, encoding="utf-8")
         written_paths.append(str(html_path))
         try:
-            page.screenshot(path=str(screenshot_path))
+            page.screenshot(
+                path=str(screenshot_path),
+                timeout=5000,
+            )
             written_paths.append(str(screenshot_path))
-        except Exception:
-            LOGGER.exception("Could not capture screenshot for %s", company_id)
+        except Exception as error:
+            LOGGER.warning(
+                "Could not capture screenshot for %s: %s",
+                company_id,
+                error,
+            )
 
         with metadata_path.open("w", encoding="utf-8") as metadata_file:
             json.dump(
@@ -543,6 +699,56 @@ class PlaywrightJobScraper:
         written_paths.append(str(metadata_path))
 
         return tuple(written_paths)
+
+    def _extract_jobs_by_selector(
+        self,
+        page: Page,
+        selector: str,
+        base_url: str,
+        company_id: str,
+    ) -> list[JobRecord]:
+        """Extract links from a configured CSS selector without heuristics."""
+
+        jobs: list[JobRecord] = []
+        seen_urls: set[str] = set()
+        elements = page.locator(selector).all()
+
+        for element in elements:
+            try:
+                href = element.get_attribute("href")
+                raw_title = element.inner_text()
+            except Exception as error:
+                LOGGER.debug(
+                    "Skipping failed element for selector %s: %s",
+                    selector,
+                    error,
+                )
+                continue
+            if not isinstance(href, str) or not href.strip():
+                continue
+            title = raw_title.strip() if isinstance(raw_title, str) else ""
+            if not title:
+                continue
+
+            full_url = urljoin(base_url, href.strip())
+            if full_url in seen_urls:
+                continue
+            seen_urls.add(full_url)
+
+            stable_id = hashlib.sha256(
+                full_url.encode("utf-8")
+            ).hexdigest()[:16]
+            jobs.append(
+                {
+                    "id": f"{company_id}_{stable_id}",
+                    "title": title,
+                    "location": "Israel",
+                    "url": full_url,
+                    "content": "",
+                }
+            )
+
+        return jobs
 
     def _extract_jobs(
         self,
@@ -562,6 +768,15 @@ class PlaywrightJobScraper:
             full_url = urljoin(base_url, href)
 
             if len(title) <= 5:
+                continue
+            path_segments = {
+                segment
+                for segment in unquote(
+                    urlsplit(full_url).path
+                ).casefold().split("/")
+                if segment
+            }
+            if not self.EXCLUDED_PATH_SEGMENTS.isdisjoint(path_segments):
                 continue
             if not any(
                 keyword in full_url.casefold()

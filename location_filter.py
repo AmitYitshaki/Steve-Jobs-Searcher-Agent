@@ -41,6 +41,8 @@ BLOCKED_LOCATIONS = frozenset({
     "Netherlands",
     "New York",
     "Paris",
+    "PH",
+    "Philippines",
     "Poland",
     "Prague",
     "Remote - US",

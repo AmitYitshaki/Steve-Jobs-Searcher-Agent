@@ -80,6 +80,35 @@ class LocationFilterTests(unittest.TestCase):
         self.assertEqual(decision.matched_location, "US")
         self.assertEqual(decision.source, "url")
 
+    def test_rejects_philippines_locations(self) -> None:
+        """Reject Philippine country, city, and URL-code variants."""
+
+        cases = (
+            (
+                "Junior QA Engineer - Philippines",
+                "https://example.test/jobs/123",
+                "Philippines",
+            ),
+            (
+                "Junior QA Engineer - Manila",
+                "https://example.test/jobs/456",
+                "Manila",
+            ),
+            (
+                "Junior QA Engineer",
+                "https://example.test/jobs/ph/789",
+                "PH",
+            ),
+        )
+        for title, url, expected_location in cases:
+            with self.subTest(location=expected_location):
+                decision = self.location_filter.evaluate(title, url)
+                self.assertFalse(decision.allowed)
+                self.assertEqual(
+                    decision.matched_location,
+                    expected_location,
+                )
+
     def test_uses_word_boundaries_for_country_names(self) -> None:
         """Avoid matching a blocked location inside a larger word."""
 

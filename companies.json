@@ -191,7 +191,8 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
-    "api_url": "https://careers.checkpoint.com/index.php",
+    "api_url": "https://careers.checkpoint.com/index.php?q=&module=cpcareers&a=search&fa%5B%5D=country_s%3AIsrael&sort=",
+    "job_selector": "#positionResults > div.position > a[href*='m=cpcareers'][href*='a=show'][href*='joborderid=']",
     "location_filters": [
       "Israel",
       "Tel Aviv"
@@ -204,29 +205,14 @@
     "company_name": "Palo Alto Networks",
     "tier": "A",
     "is_active": true,
-    "ats_type": "eightfold",
+    "ats_type": "phenom",
     "api_url": "https://jobs.paloaltonetworks.com/en/search-jobs/Israel/47263/2/294640/31x5/34x75/50/2",
     "location_filters": [
       "Israel",
       "Tel Aviv"
     ],
     "target_keywords": [],
-    "notes": "Official Eightfold-powered search page. Crawl paginated Israel results."
-  },
-  {
-    "company_id": "cyberark",
-    "company_name": "CyberArk",
-    "tier": "A",
-    "is_active": true,
-    "ats_type": "smartrecruiters",
-    "api_url": "https://api.smartrecruiters.com/v1/companies/cyberarksoftware/jobs?limit=100",
-    "location_filters": [
-      "Israel",
-      "Petah Tikva",
-      "Tel Aviv"
-    ],
-    "target_keywords": [],
-    "notes": "SmartRecruiters public API. Follow nextPage links when present."
+    "notes": "Official Phenom-powered search page scoped to Israel. Crawl paginated results."
   },
   {
     "company_id": "amdocs",
@@ -250,15 +236,16 @@
     "company_name": "NICE",
     "tier": "A",
     "is_active": true,
-    "ats_type": "workday",
-    "api_url": "https://nice.wd3.myworkdayjobs.com/wday/cxs/nice/NICE_Careers/jobs",
+    "ats_type": "custom",
+    "api_url": "https://careers.nice.com/",
+    "job_selector": "a.result-item[href*='boards.eu.greenhouse.io/nice/jobs/']:visible",
     "location_filters": [
       "Israel",
       "Raanana",
       "Ra'anana"
     ],
     "target_keywords": [],
-    "notes": "Workday CXS endpoint. Validate site name if NICE changes its Workday career-site slug."
+    "notes": "Official NICE careers frontend linking to Greenhouse job details. Use the configured selector."
   },
   {
     "company_id": "broadcom",
@@ -295,9 +282,10 @@
     "company_id": "texas_instruments",
     "company_name": "Texas Instruments Israel",
     "tier": "A",
-    "is_active": true,
-    "ats_type": "workday",
-    "api_url": "https://ti.wd5.myworkdayjobs.com/wday/cxs/ti/External/jobs",
+    "is_active": false,
+    "ats_type": "custom",
+    "api_url": "https://careers.ti.com/",
+    "job_selector": "div.job-tile > a.job-list-item__link[href*='/sites/CX/job/']",
     "location_filters": [
       "Israel",
       "Raanana",
@@ -305,7 +293,7 @@
       "Herzliya"
     ],
     "target_keywords": [],
-    "notes": "Workday CXS endpoint. Student jobs may be titled intern, working student, or engineering intern."
+    "notes": "Disabled: Configured URL lands on the main search page instead of the Israel results list, causing extraction timeouts."
   },
   {
     "company_id": "applied_materials",
@@ -356,8 +344,9 @@
     "company_name": "Synopsys Israel",
     "tier": "A",
     "is_active": true,
-    "ats_type": "workday",
-    "api_url": "https://synopsys.wd3.myworkdayjobs.com/wday/cxs/synopsys/External/jobs",
+    "ats_type": "custom",
+    "api_url": "https://careers.synopsys.com/location/israel-jobs/44408/294640/2",
+    "job_selector": "#search-results-list a.sr-job-link[data-job-id]",
     "location_filters": [
       "Israel",
       "Herzliya",
@@ -365,22 +354,23 @@
       "Yokneam"
     ],
     "target_keywords": [],
-    "notes": "Workday CXS endpoint. Synopsys may also publish roles inherited from acquired security businesses."
+    "notes": "Official Synopsys Israel search frontend. Use the configured search-result selector."
   },
   {
     "company_id": "qualcomm",
     "company_name": "Qualcomm Israel",
     "tier": "A",
     "is_active": true,
-    "ats_type": "workday",
-    "api_url": "https://qualcomm.wd5.myworkdayjobs.com/wday/cxs/qualcomm/External/jobs",
+    "ats_type": "custom",
+    "api_url": "https://careers.qualcomm.com/",
+    "job_selector": "[data-test-id='job-listing']:not(li [data-test-id='job-listing']) > a[href^='/careers/job/']",
     "location_filters": [
       "Israel",
       "Haifa",
       "Hod Hasharon"
     ],
     "target_keywords": [],
-    "notes": "Workday CXS endpoint. Search software, embedded, modem, AI, verification, and intern roles."
+    "notes": "Official Qualcomm careers frontend. Use the configured top-level job-listing selector."
   },
   {
     "company_id": "cisco",
@@ -417,15 +407,15 @@
     "company_name": "monday.com",
     "tier": "A",
     "is_active": true,
-    "ats_type": "greenhouse",
-    "api_url": "https://boards-api.greenhouse.io/v1/boards/mondaycom/jobs?content=true",
+    "ats_type": "custom",
+    "api_url": "https://monday.com/careers",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Greenhouse public API. Global keywords can catch student, intern, software, data, and product roles."
+    "notes": "Official monday.com careers endpoint. Use the Universal Playwright scraper."
   },
   {
     "company_id": "salesforce",
@@ -448,7 +438,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
-    "api_url": "https://careers.wix.com/positions",
+    "api_url": "https://careers.wix.com/location/tel-aviv",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -462,16 +452,17 @@
     "company_id": "stratasys",
     "company_name": "Stratasys",
     "tier": "A",
-    "is_active": true,
-    "ats_type": "workday",
-    "api_url": "https://stratasys.wd1.myworkdayjobs.com/wday/cxs/stratasys/External_Career_Site/jobs",
+    "is_active": false,
+    "ats_type": "custom",
+    "api_url": "https://www.stratasys.com/en/about-us/careers/",
+    "job_selector": "table[aria-label^='Search results for'] span.jobTitle.hidden-phone > a.jobTitle-link[href^='/job/']",
     "location_filters": [
       "Israel",
       "Rehovot",
       "Kiryat Gat"
     ],
     "target_keywords": [],
-    "notes": "Workday CXS endpoint. Search software, automation, QA, systems, and student roles."
+    "notes": "Disabled: The configured careers URL currently returns a 404."
   }
   ,
   {
@@ -607,7 +598,7 @@
     "company_id": "rubrik",
     "company_name": "Rubrik Israel",
     "tier": "B",
-    "is_active": true,
+    "is_active": false,
     "ats_type": "greenhouse_embedded",
     "api_url": "https://www.rubrik.com/company/careers",
     "location_filters": [
@@ -616,7 +607,7 @@
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Rubrik exposes job listings through its official careers wrapper. Use a Greenhouse-aware embedded-page adapter and retain the official page as fallback."
+    "notes": "Disabled: Consistently blocked by Akamai EdgeSuite WAF despite stealth upgrades."
   },
   {
     "company_id": "sentinelone",
@@ -668,15 +659,16 @@
     "company_name": "Cyera",
     "tier": "B",
     "is_active": true,
-    "ats_type": "comeet",
-    "api_url": "https://www.cyera.com/careers-il",
+    "ats_type": "custom",
+    "api_url": "https://www.cyera.com/careers-il#open-positions",
+    "job_selector": "a[href*='/careers/']",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Official Israel careers page backed by Comeet job links. Use a Comeet-aware page adapter."
+    "notes": "Official Israel careers page. Use the configured selector to extract rendered job links."
   },
   {
     "company_id": "orca_security",
@@ -714,7 +706,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "phenom",
-    "api_url": "https://careers.thalesgroup.com/global/en/search-results?keywords=imperva",
+    "api_url": "https://careers.thalesgroup.com/global/en/search-results?keywords=israel&s=1",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -743,7 +735,8 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "custom",
-    "api_url": "https://bigid.com/company/careers/",
+    "api_url": "https://bigid.com/company/careers/#job-board",
+    "job_selector": "a[href*='/job']",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -819,6 +812,7 @@
     "is_active": true,
     "ats_type": "comeet",
     "api_url": "https://coralogix.com/careers/",
+    "job_selector": "a[href*='/careers/co/ramat-gan-israel/']",
     "location_filters": [
       "Israel",
       "Ramat Gan",
@@ -866,7 +860,8 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
-    "api_url": "https://www.fiverr.com/jobs/teams",
+    "api_url": "https://www.fiverr.com/jobs/offices/tlv?location=tel-aviv-yafo",
+    "job_selector": "a[href^='/jobs/']",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -941,7 +936,7 @@
     "company_id": "lemonade",
     "company_name": "Lemonade",
     "tier": "C",
-    "is_active": true,
+    "is_active": false,
     "ats_type": "custom",
     "api_url": "https://makers.lemonade.com/",
     "location_filters": [
@@ -950,7 +945,7 @@
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Official Lemonade Makers careers site. The page exposes structured departments and locations; parse Tel Aviv roles directly."
+    "notes": "Disabled: Uses React table rows with no href attributes. Does not fit the universal href-based scraper."
   },
   {
     "company_id": "optimove",
@@ -1003,8 +998,8 @@
     "company_name": "Aidoc",
     "tier": "C",
     "is_active": true,
-    "ats_type": "greenhouse_eu",
-    "api_url": "https://boards-api.eu.greenhouse.io/v1/boards/aidocmedical/jobs?content=true",
+    "ats_type": "custom",
+    "api_url": "https://www.aidoc.com/about/careers/#positions",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -1012,22 +1007,7 @@
       "Tel Aviv District"
     ],
     "target_keywords": [],
-    "notes": "Greenhouse European data-center API. The current board identifier is aidocmedical; fall back to Aidoc's official careers page if the API host changes."
-  },
-  {
-    "company_id": "ai21_labs",
-    "company_name": "AI21 Labs",
-    "tier": "C",
-    "is_active": true,
-    "ats_type": "comeet",
-    "api_url": "https://www.comeet.com/jobs/ai21/E6.001",
-    "location_filters": [
-      "Israel",
-      "Tel Aviv",
-      "Tel Aviv-Yafo"
-    ],
-    "target_keywords": [],
-    "notes": "Official Comeet board. It may return no openings during quiet hiring periods; an empty result is valid."
+    "notes": "Aidoc embeds open positions on its official careers page. Use the Universal Playwright scraper."
   },
   {
     "company_id": "lightricks",
@@ -1081,7 +1061,8 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
-    "api_url": "https://careers.kornit.com/",
+    "api_url": "https://careers.kornit.com/all-positions/?search=&dep=0&location=israel",
+    "job_selector": "a[href*='/all-positions/']",
     "location_filters": [
       "Israel",
       "Rosh HaAyin",

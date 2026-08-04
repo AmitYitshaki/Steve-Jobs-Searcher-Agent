@@ -1,9 +1,157 @@
+import hashlib
+import logging
 import requests
-from typing import Any
+from typing import Any, Mapping
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 from playwright_scraper import PlaywrightJobScraper, ScrapeStatus
+
+LOGGER = logging.getLogger(__name__)
+HTTP_TIMEOUT_SECONDS = 15
+
+
+def _eightfold_api_url(url: str) -> str:
+    """Build the conventional Eightfold jobs endpoint on the same origin."""
+
+    parsed_url = urlsplit(url)
+    if not parsed_url.scheme or not parsed_url.netloc:
+        raise ValueError("Eightfold URL must be absolute")
+    return urlunsplit(
+        (
+            parsed_url.scheme,
+            parsed_url.netloc,
+            "/api/apply/v2/jobs",
+            "",
+            "",
+        )
+    )
+
+
+def _eightfold_job_items(payload: Any) -> list[Mapping[str, Any]]:
+    """Extract job objects from common Eightfold response envelopes."""
+
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, Mapping)]
+    if not isinstance(payload, Mapping):
+        return []
+
+    for key in ("positions", "jobs", "results"):
+        value = payload.get(key)
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, Mapping)]
+
+    nested_data = payload.get("data")
+    if isinstance(nested_data, (list, Mapping)):
+        return _eightfold_job_items(nested_data)
+    return []
+
+
+def _flatten_eightfold_text(value: Any) -> str:
+    """Convert nested Eightfold text fields into readable plain text."""
+
+    if isinstance(value, str):
+        return BeautifulSoup(value, "lxml").get_text(" ", strip=True)
+    if isinstance(value, Mapping):
+        parts = [
+            _flatten_eightfold_text(nested_value)
+            for nested_value in value.values()
+        ]
+    elif isinstance(value, list):
+        parts = [_flatten_eightfold_text(item) for item in value]
+    else:
+        return ""
+    return ", ".join(part for part in parts if part)
+
+
+def scrape_eightfold(
+    company_id: str,
+    url: str,
+) -> list[dict[str, str]]:
+    """Use Eightfold's JSON endpoint with Universal Playwright fallback."""
+
+    fallback_company = {
+        "company_id": company_id,
+        "api_url": url,
+    }
+    try:
+        api_url = _eightfold_api_url(url)
+        response = requests.get(
+            api_url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0",
+            },
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        items = _eightfold_job_items(response.json())
+        jobs: list[dict[str, str]] = []
+
+        for item in items:
+            title = _flatten_eightfold_text(
+                item.get("title") or item.get("name")
+            )
+            if not title:
+                continue
+
+            location = _flatten_eightfold_text(
+                item.get("location")
+                or item.get("locations")
+                or item.get("locationName")
+            )
+            raw_job_url = _flatten_eightfold_text(
+                item.get("canonicalPositionUrl")
+                or item.get("jobUrl")
+                or item.get("applyUrl")
+                or item.get("positionUrl")
+                or item.get("url")
+            )
+            job_url = urljoin(url, raw_job_url) if raw_job_url else url
+            content = _flatten_eightfold_text(
+                item.get("description")
+                or item.get("jobDescription")
+                or item.get("content")
+            )
+            raw_job_id = (
+                item.get("id")
+                or item.get("positionId")
+                or item.get("jobId")
+                or item.get("requisitionId")
+            )
+            if raw_job_id is None:
+                raw_job_id = hashlib.sha256(
+                    f"{title}|{location}|{job_url}".encode("utf-8")
+                ).hexdigest()[:16]
+
+            jobs.append(
+                {
+                    "id": f"{company_id}_{raw_job_id}",
+                    "title": title,
+                    "location": location,
+                    "url": job_url,
+                    "content": content,
+                }
+            )
+
+        if jobs:
+            return jobs
+        LOGGER.warning(
+            "Eightfold API returned no usable jobs for %s; using "
+            "Playwright fallback",
+            company_id,
+        )
+    except (requests.RequestException, ValueError, TypeError) as error:
+        LOGGER.warning(
+            "Eightfold API unavailable for %s (%s); using Playwright "
+            "fallback",
+            company_id,
+            error,
+        )
+
+    return scrape_universal_playwright(fallback_company)
+
 
 def scrape_successfactors(company):
     """
