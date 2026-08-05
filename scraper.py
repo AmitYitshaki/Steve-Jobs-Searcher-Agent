@@ -5,7 +5,8 @@ import os
 import re
 import time
 import unicodedata
-from typing import Any, Mapping
+from dataclasses import dataclass, field
+from typing import Any, Callable, Mapping
 
 import requests
 from bs4 import BeautifulSoup
@@ -150,178 +151,216 @@ def normalize_job_content(*values: Any) -> str:
     return "\n".join(content_parts)
 
 
+@dataclass(frozen=True)
+class AtsMapping:
+    """Describe how one JSON ATS is requested and normalized."""
+
+    envelope_key: str
+    id_fn: Callable[[Mapping[str, Any]], Any]
+    title_fn: Callable[[Mapping[str, Any]], Any]
+    location_fn: Callable[[Mapping[str, Any]], Any]
+    url_fn: Callable[[Mapping[str, Any], str], Any]
+    content_fields_fn: Callable[[Mapping[str, Any]], tuple[Any, ...]]
+    method: str = "GET"
+    headers: dict[str, str] | None = None
+    payload_fn: Callable[[dict], dict[str, Any]] | None = None
+    base_url_fn: Callable[[dict], str] | None = None
+    http_error_status_map: frozenset[int] = field(
+        default_factory=frozenset
+    )
+
+
+ATS_FIELD_MAP: dict[str, AtsMapping] = {
+    "greenhouse": AtsMapping(
+        envelope_key="jobs",
+        id_fn=lambda job: job.get("id"),
+        title_fn=lambda job: job.get("title", ""),
+        location_fn=lambda job: (
+            (job.get("location") or {}).get("name", "")
+        ),
+        url_fn=lambda job, _base_url: job.get("absolute_url", ""),
+        content_fields_fn=lambda job: (
+            job.get("content"),
+            job.get("description"),
+        ),
+    ),
+    "amazon_jobs": AtsMapping(
+        envelope_key="jobs",
+        id_fn=lambda job: job.get("id_ic", job.get("id", "")),
+        title_fn=lambda job: job.get("title", ""),
+        location_fn=lambda job: job.get("city", ""),
+        url_fn=lambda job, base_url: (
+            f"{base_url}{job.get('job_path', '')}"
+        ),
+        content_fields_fn=lambda job: (
+            job.get("description"),
+            job.get("basic_qualifications"),
+            job.get("preferred_qualifications"),
+        ),
+        base_url_fn=lambda _company: "https://www.amazon.jobs",
+    ),
+    "smartrecruiters": AtsMapping(
+        envelope_key="content",
+        id_fn=lambda job: job.get("id", ""),
+        title_fn=lambda job: job.get("name", ""),
+        location_fn=lambda job: (
+            (job.get("location") or {}).get("city", "")
+        ),
+        url_fn=lambda job, _base_url: job.get("ref", ""),
+        content_fields_fn=lambda job: (
+            job.get("jobAd"),
+            job.get("description"),
+        ),
+    ),
+    "ashby": AtsMapping(
+        envelope_key="jobs",
+        id_fn=lambda job: job.get("id", ""),
+        title_fn=lambda job: job.get("title", ""),
+        location_fn=lambda job: job.get("location", ""),
+        url_fn=lambda job, _base_url: job.get("jobUrl", ""),
+        content_fields_fn=lambda job: (
+            job.get("descriptionPlain"),
+            job.get("descriptionHtml"),
+            job.get("description"),
+        ),
+    ),
+    "workday": AtsMapping(
+        envelope_key="jobPostings",
+        id_fn=lambda job: job.get("bulletinId", job.get("id", "")),
+        title_fn=lambda job: job.get("title", ""),
+        location_fn=lambda job: job.get("locationsText", ""),
+        url_fn=lambda job, base_url: (
+            f"{base_url}{job.get('externalPath', '')}"
+        ),
+        content_fields_fn=lambda job: (
+            job.get("jobDescription"),
+            job.get("description"),
+        ),
+        method="POST",
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+        payload_fn=lambda _company: {
+            "limit": 20,
+            "offset": 0,
+            "appliedFacets": {},
+        },
+        base_url_fn=lambda company: str(
+            company.get("api_url", "")
+        ).split("/wday/cxs")[0],
+        http_error_status_map=frozenset({401, 403, 422}),
+    ),
+}
+ATS_FIELD_MAP["greenhouse_eu"] = ATS_FIELD_MAP["greenhouse"]
+
+
+def fetch_ats_jobs(
+    company: dict,
+    mapping: AtsMapping,
+) -> list[dict]:
+    """Fetch and normalize jobs for one mapping-driven JSON ATS."""
+
+    api_url = company.get("api_url")
+    company_id = company.get("company_id")
+    ats_type = company.get("ats_type")
+    request_kwargs: dict[str, Any] = {
+        "timeout": HTTP_TIMEOUT_SECONDS,
+    }
+    if mapping.headers is not None:
+        request_kwargs["headers"] = mapping.headers
+
+    try:
+        method = mapping.method.upper()
+        if method == "GET":
+            response = requests.get(api_url, **request_kwargs)
+        elif method == "POST":
+            payload = (
+                mapping.payload_fn(company)
+                if mapping.payload_fn is not None
+                else {}
+            )
+            response = requests.post(
+                api_url,
+                json=payload,
+                **request_kwargs,
+            )
+        else:
+            raise ValueError(f"Unsupported ATS request method: {method}")
+
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, Mapping):
+            return []
+
+        items = payload.get(mapping.envelope_key, [])
+        if not isinstance(items, list):
+            return []
+
+        base_url = (
+            mapping.base_url_fn(company)
+            if mapping.base_url_fn is not None
+            else ""
+        )
+        jobs: list[dict] = []
+        for item in items:
+            if not isinstance(item, Mapping):
+                continue
+            raw_id = mapping.id_fn(item)
+            title = mapping.title_fn(item)
+            location = mapping.location_fn(item)
+            job_url = mapping.url_fn(item, base_url)
+            jobs.append(
+                {
+                    "id": f"{company_id}_{raw_id}",
+                    "title": str(title or ""),
+                    "location": str(location or ""),
+                    "url": str(job_url or ""),
+                    "content": normalize_job_content(
+                        *mapping.content_fields_fn(item)
+                    ),
+                }
+            )
+        return jobs
+    except requests.exceptions.HTTPError as error:
+        response = error.response
+        status_code = (
+            response.status_code if response is not None else None
+        )
+        if status_code in mapping.http_error_status_map:
+            print(
+                f"⚠️ {company_id} API returned {status_code} "
+                "(Requires specific payload or auth)."
+            )
+        elif status_code is not None:
+            print(f"❌ Network error on {company_id}: {status_code}")
+        else:
+            print(f"❌ Error scanning {ats_type} {company_id}: {error}")
+        return []
+    except Exception as error:
+        print(f"❌ Error scanning {ats_type} {company_id}: {error}")
+        return []
+
+
 def fetch_jobs_from_company(company):
     ats_type = company.get("ats_type")
     api_url = company.get("api_url")
     company_id = company.get("company_id")
-    
+
     print(f"🔍 Scanning {company.get('company_name')} (ATS: {ats_type})...")
-    
-    # 1. Greenhouse (Regular & EU)
-    if ats_type in ["greenhouse", "greenhouse_eu"]:
-        try:
-            response = requests.get(
-                api_url,
-                timeout=HTTP_TIMEOUT_SECONDS,
-            )
-            response.raise_for_status()
-            data = response.json()
-            jobs = []
-            
-            for job in data.get("jobs", []):
-                jobs.append({
-                    "id": f"{company_id}_{job.get('id')}",
-                    "title": job.get("title", ""),
-                    "location": job.get("location", {}).get("name", ""),
-                    "url": job.get("absolute_url", ""),
-                    "content": normalize_job_content(
-                        job.get("content"),
-                        job.get("description"),
-                    ),
-                })
-            return jobs
-        except Exception as e:
-            print(f"❌ Error scanning Greenhouse {company_id}: {e}")
-            return []
-            
-    # 2. Workday
-    elif ats_type == "workday":
-        try:
-            headers = {"Accept": "application/json", "Content-Type": "application/json"}
-            payload = {"limit": 20, "offset": 0, "appliedFacets": {}}
-            
-            response = requests.post(
-                api_url,
-                json=payload,
-                headers=headers,
-                timeout=HTTP_TIMEOUT_SECONDS,
-            )
-            response.raise_for_status()
-            data = response.json()
-            jobs = []
-            
-            base_url = api_url.split("/wday/cxs")[0]
-            
-            for job in data.get("jobPostings", []):
-                job_url = f"{base_url}{job.get('externalPath', '')}"
-                jobs.append({
-                    "id": f"{company_id}_{job.get('bulletinId', job.get('id', ''))}",
-                    "title": job.get("title", ""),
-                    "location": job.get("locationsText", ""),
-                    "url": job_url,
-                    "content": normalize_job_content(
-                        job.get("jobDescription"),
-                        job.get("description"),
-                    ),
-                })
-            return jobs
-        except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code
-            if status_code in [401, 403, 422]:
-                print(f"⚠️ {company_id} API returned {status_code} (Requires specific payload or auth).")
-            else:
-                print(f"❌ Network error on {company_id}: {status_code}")
-            return []
-        except Exception as e:
-            print(f"❌ Error scanning Workday {company_id}: {e}")
-            return []
 
-    # 3. Amazon Jobs (JSON API)
-    elif ats_type == "amazon_jobs":
-        try:
-            response = requests.get(
-                api_url,
-                timeout=HTTP_TIMEOUT_SECONDS,
-            )
-            response.raise_for_status()
-            data = response.json()
-            jobs = []
-            
-            for job in data.get("jobs", []):
-                job_url = (
-                    f"https://www.amazon.jobs"
-                    f"{job.get('job_path', '')}"
-                )
-                jobs.append({
-                    "id": f"{company_id}_{job.get('id_ic', job.get('id', ''))}",
-                    "title": job.get("title", ""),
-                    "location": job.get("city", ""),
-                    "url": job_url,
-                    "content": normalize_job_content(
-                        job.get("description"),
-                        job.get("basic_qualifications"),
-                        job.get("preferred_qualifications"),
-                    ),
-                })
-            return jobs
-        except Exception as e:
-            print(f"❌ Error scanning Amazon {company_id}: {e}")
-            return []
+    if ats_type in ATS_FIELD_MAP:
+        return fetch_ats_jobs(company, ATS_FIELD_MAP[ats_type])
 
-    # 4. SmartRecruiters
-    elif ats_type == "smartrecruiters":
-        try:
-            response = requests.get(
-                api_url,
-                timeout=HTTP_TIMEOUT_SECONDS,
-            )
-            response.raise_for_status()
-            data = response.json()
-            jobs = []
-            
-            for job in data.get("content", []):
-                jobs.append({
-                    "id": f"{company_id}_{job.get('id', '')}",
-                    "title": job.get("name", ""),
-                    "location": job.get("location", {}).get("city", ""),
-                    "url": job.get("ref", ""),
-                    "content": normalize_job_content(
-                        job.get("jobAd"),
-                        job.get("description"),
-                    ),
-                })
-            return jobs
-        except Exception as e:
-            print(f"❌ Error scanning SmartRecruiters {company_id}: {e}")
-            return []
-
-    # 5. Ashby
-    elif ats_type == "ashby":
-        try:
-            response = requests.get(
-                api_url,
-                timeout=HTTP_TIMEOUT_SECONDS,
-            )
-            response.raise_for_status()
-            data = response.json()
-            jobs = []
-            
-            for job in data.get("jobs", []):
-                jobs.append({
-                    "id": f"{company_id}_{job.get('id', '')}",
-                    "title": job.get("title", ""),
-                    "location": job.get("location", ""),
-                    "url": job.get("jobUrl", ""),
-                    "content": normalize_job_content(
-                        job.get("descriptionPlain"),
-                        job.get("descriptionHtml"),
-                        job.get("description"),
-                    ),
-                })
-            return jobs
-        except Exception as e:
-            print(f"❌ Error scanning Ashby {company_id}: {e}")
-            return []
-
-    # 6. SuccessFactors (HTML)
+    # 1. SuccessFactors (HTML)
     elif ats_type == "successfactors":
         return scrape_successfactors(company)
 
-    # 7. Eightfold API with Universal Playwright fallback
+    # 2. Eightfold API with Universal Playwright fallback
     elif ats_type == "eightfold":
         return scrape_eightfold(str(company_id), str(api_url))
 
-    # 8. כל שאר חברות הביג-טק והמערכות הסגורות (Universal Playwright)
+    # 3. כל שאר חברות הביג-טק והמערכות הסגורות (Universal Playwright)
     elif ats_type in [
         "apple_custom",
         "microsoft_custom",
@@ -337,7 +376,7 @@ def fetch_jobs_from_company(company):
     ]:
         return scrape_universal_playwright(company)
 
-    # 9. אם מסיבה כלשהי משהו נפל בין הכיסאות
+    # 4. אם מסיבה כלשהי משהו נפל בין הכיסאות
     else:
         logging.warning(
             "No adapter available; skipping company_id=%s ats_type=%s",

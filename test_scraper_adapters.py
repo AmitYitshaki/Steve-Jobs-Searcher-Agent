@@ -12,6 +12,226 @@ import html_adapters  # noqa: E402
 import scraper  # noqa: E402
 
 
+class FetchAtsJobsTests(unittest.TestCase):
+    """Verify the mapping-driven JSON ATS interface directly."""
+
+    def test_get_mappings_normalize_jobs(self) -> None:
+        """Normalize every GET-based ATS through one fetching interface."""
+
+        cases = (
+            (
+                "greenhouse",
+                {
+                    "jobs": [
+                        {
+                            "id": 101,
+                            "title": "Student Developer",
+                            "location": {"name": "Tel Aviv, Israel"},
+                            "absolute_url": "https://jobs.test/101",
+                            "content": "<p>Build APIs.</p>",
+                            "description": "Support production.",
+                        }
+                    ]
+                },
+                {
+                    "id": "example_101",
+                    "title": "Student Developer",
+                    "location": "Tel Aviv, Israel",
+                    "url": "https://jobs.test/101",
+                    "content": "Build APIs.\nSupport production.",
+                },
+            ),
+            (
+                "amazon_jobs",
+                {
+                    "jobs": [
+                        {
+                            "id_ic": "A-102",
+                            "title": "Software Engineer Intern",
+                            "city": "Haifa",
+                            "job_path": "/en/jobs/A-102",
+                            "description": "Build services.",
+                            "basic_qualifications": "Study CS.",
+                            "preferred_qualifications": "Know Python.",
+                        }
+                    ]
+                },
+                {
+                    "id": "example_A-102",
+                    "title": "Software Engineer Intern",
+                    "location": "Haifa",
+                    "url": "https://www.amazon.jobs/en/jobs/A-102",
+                    "content": (
+                        "Build services.\nStudy CS.\nKnow Python."
+                    ),
+                },
+            ),
+            (
+                "smartrecruiters",
+                {
+                    "content": [
+                        {
+                            "id": "SR-103",
+                            "name": "Junior Data Analyst",
+                            "location": {"city": "Jerusalem"},
+                            "ref": "https://jobs.test/SR-103",
+                            "jobAd": "Analyze data.",
+                            "description": "Create reports.",
+                        }
+                    ]
+                },
+                {
+                    "id": "example_SR-103",
+                    "title": "Junior Data Analyst",
+                    "location": "Jerusalem",
+                    "url": "https://jobs.test/SR-103",
+                    "content": "Analyze data.\nCreate reports.",
+                },
+            ),
+            (
+                "ashby",
+                {
+                    "jobs": [
+                        {
+                            "id": "ASH-104",
+                            "title": "Student Backend Engineer",
+                            "location": "Ramat Gan",
+                            "jobUrl": "https://jobs.test/ASH-104",
+                            "descriptionPlain": "Build backends.",
+                            "descriptionHtml": "<p>Work in Python.</p>",
+                            "description": "Learn quickly.",
+                        }
+                    ]
+                },
+                {
+                    "id": "example_ASH-104",
+                    "title": "Student Backend Engineer",
+                    "location": "Ramat Gan",
+                    "url": "https://jobs.test/ASH-104",
+                    "content": (
+                        "Build backends.\nWork in Python.\nLearn quickly."
+                    ),
+                },
+            ),
+        )
+
+        for ats_type, payload, expected_job in cases:
+            with self.subTest(ats_type=ats_type):
+                response = MagicMock()
+                response.json.return_value = payload
+                company = self._company(ats_type)
+                with patch(
+                    "scraper.requests.get",
+                    return_value=response,
+                ) as get:
+                    jobs = scraper.fetch_ats_jobs(
+                        company,
+                        scraper.ATS_FIELD_MAP[ats_type],
+                    )
+
+                self.assertEqual(jobs, [expected_job])
+                get.assert_called_once_with(
+                    "https://example.test/api",
+                    timeout=15,
+                )
+                response.raise_for_status.assert_called_once_with()
+
+    def test_workday_mapping_posts_payload_and_builds_job_url(self) -> None:
+        """Use Workday's POST configuration and derived career base URL."""
+
+        response = MagicMock()
+        response.json.return_value = {
+            "jobPostings": [
+                {
+                    "bulletinId": "WD-105",
+                    "title": "Student Software Engineer",
+                    "locationsText": "Israel",
+                    "externalPath": "/job/WD-105",
+                    "jobDescription": "Build software.",
+                    "description": "Join the platform team.",
+                }
+            ]
+        }
+        company = {
+            **self._company("workday"),
+            "api_url": (
+                "https://example.test/wday/cxs/example/jobs"
+            ),
+        }
+
+        with patch(
+            "scraper.requests.post",
+            return_value=response,
+        ) as post:
+            jobs = scraper.fetch_ats_jobs(
+                company,
+                scraper.ATS_FIELD_MAP["workday"],
+            )
+
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "example_WD-105",
+                    "title": "Student Software Engineer",
+                    "location": "Israel",
+                    "url": "https://example.test/job/WD-105",
+                    "content": (
+                        "Build software.\nJoin the platform team."
+                    ),
+                }
+            ],
+        )
+        post.assert_called_once_with(
+            "https://example.test/wday/cxs/example/jobs",
+            json={"limit": 20, "offset": 0, "appliedFacets": {}},
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
+            timeout=15,
+        )
+
+    def test_workday_mapping_handles_configured_http_status(self) -> None:
+        """Return no jobs for Workday's configured auth error statuses."""
+
+        response = MagicMock()
+        response.status_code = 403
+        error = scraper.requests.exceptions.HTTPError(response=response)
+        response.raise_for_status.side_effect = error
+
+        with (
+            patch("scraper.requests.post", return_value=response),
+            patch("builtins.print") as print_output,
+        ):
+            jobs = scraper.fetch_ats_jobs(
+                self._company("workday"),
+                scraper.ATS_FIELD_MAP["workday"],
+            )
+
+        self.assertEqual(jobs, [])
+        self.assertIn("403", str(print_output.call_args))
+
+    def test_greenhouse_eu_reuses_greenhouse_mapping(self) -> None:
+        """Keep the EU ATS name as a true alias of Greenhouse rules."""
+
+        self.assertIs(
+            scraper.ATS_FIELD_MAP["greenhouse_eu"],
+            scraper.ATS_FIELD_MAP["greenhouse"],
+        )
+
+    @staticmethod
+    def _company(ats_type: str) -> dict[str, object]:
+        """Return minimal company configuration for direct ATS fetching."""
+
+        return {
+            "company_id": "example",
+            "company_name": "Example",
+            "ats_type": ats_type,
+            "api_url": "https://example.test/api",
+        }
+
+
 class ScraperAdapterTests(unittest.TestCase):
     """Verify adapter transport bounds and factual content extraction."""
 
