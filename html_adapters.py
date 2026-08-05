@@ -5,7 +5,6 @@ from typing import Any, Mapping
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
 from playwright_scraper import PlaywrightJobScraper, ScrapeStatus
 
 LOGGER = logging.getLogger(__name__)
@@ -218,54 +217,6 @@ def scrape_successfactors(company):
         
     except Exception as e:
         print(f"❌ Error scraping HTML for {company_id}: {e}")
-        return []
-
-def scrape_microsoft(company):
-    """
-    סורק אתר המשרות של מיקרוסופט באמצעות Playwright
-    """
-    url = company.get("api_url")
-    company_id = company.get("company_id")
-    jobs = []
-    
-    print(f"🕵️ מפעיל סורק עומק (Playwright) עבור {company_id}...")
-
-    try:
-        with sync_playwright() as p:
-            # headless=True אומר שהדפדפן ירוץ ברקע בלי להפריע לך במסך
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(url)
-            
-            # המתנה שהמשרות ייטענו
-            page.wait_for_timeout(8000)
-            html_content = page.content()
-            browser.close()
-
-        soup = BeautifulSoup(html_content, 'lxml')
-        
-        # אסטרטגיה למיקרוסופט: כל משרה היא לינק שמכיל /job/ בכתובת שלו
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href']
-            title = a_tag.text.strip()
-            
-            if '/job/' in href.lower() and len(title) > 3:
-                # הרכבת הלינק המלא במידה וזה לינק יחסי
-                full_link = href if href.startswith("http") else f"https://jobs.careers.microsoft.com{href}"
-                job_id = href.split('/')[-1] if '/' in href else title
-                
-                jobs.append({
-                    "id": f"{company_id}_{job_id}",
-                    "title": title,
-                    "location": "Israel", # מיקרוסופט מסננת לפי ישראל ב-URL במילא
-                    "url": full_link,
-                    "content": "",
-                })
-                
-        return jobs
-        
-    except Exception as e:
-        print(f"❌ שגיאה בסריקת מיקרוסופט: {e}")
         return []
 
 def scrape_universal_playwright(

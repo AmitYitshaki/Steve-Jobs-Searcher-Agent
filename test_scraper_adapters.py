@@ -207,6 +207,23 @@ class ScraperAdapterTests(unittest.TestCase):
             "https://example.test/api",
         )
 
+    def test_microsoft_ats_routes_to_universal_playwright(self) -> None:
+        """Route Microsoft through the universal Playwright adapter."""
+
+        company = self._company("microsoft_custom")
+        expected_jobs = [{"id": "example_123"}]
+        with (
+            patch(
+                "scraper.scrape_universal_playwright",
+                return_value=expected_jobs,
+            ) as universal_playwright,
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        universal_playwright.assert_called_once_with(company)
+
     def test_unknown_ats_emits_logging_warning(self) -> None:
         """Make unsupported ATS types visible through standard logging."""
 
