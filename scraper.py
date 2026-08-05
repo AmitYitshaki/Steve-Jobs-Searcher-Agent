@@ -14,7 +14,6 @@ from dotenv import load_dotenv
 from alert_queue import PendingAlert, PendingAlertQueue
 from html_adapters import (
     scrape_eightfold,
-    scrape_microsoft,
     scrape_successfactors,
     scrape_universal_playwright,
 )
@@ -318,23 +317,27 @@ def fetch_jobs_from_company(company):
     elif ats_type == "successfactors":
         return scrape_successfactors(company)
 
-    # 7. Microsoft Careers (Playwright)
-    elif ats_type == "microsoft_custom":
-        return scrape_microsoft(company)
-
-    # 8. Eightfold API with Universal Playwright fallback
+    # 7. Eightfold API with Universal Playwright fallback
     elif ats_type == "eightfold":
         return scrape_eightfold(str(company_id), str(api_url))
 
-    # 9. כל שאר חברות הביג-טק והמערכות הסגורות (Universal Playwright)
+    # 8. כל שאר חברות הביג-טק והמערכות הסגורות (Universal Playwright)
     elif ats_type in [
-        "apple_custom", "google_custom", "meta_custom", "ibm_custom", 
-        "oracle_recruiting_cloud", "phenom", "custom", 
-        "greenhouse_embedded", "comeet", "jobvite"
+        "apple_custom",
+        "microsoft_custom",
+        "google_custom",
+        "meta_custom",
+        "ibm_custom",
+        "oracle_recruiting_cloud",
+        "phenom",
+        "custom",
+        "greenhouse_embedded",
+        "comeet",
+        "jobvite",
     ]:
         return scrape_universal_playwright(company)
 
-    # 10. אם מסיבה כלשהי משהו נפל בין הכיסאות
+    # 9. אם מסיבה כלשהי משהו נפל בין הכיסאות
     else:
         logging.warning(
             "No adapter available; skipping company_id=%s ats_type=%s",

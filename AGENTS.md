@@ -65,3 +65,17 @@ Security & Configuration
 Store OPENAI_API_KEY, TELEGRAM_TOKEN, and TELEGRAM_CHAT_ID strictly in the .env file. Never commit secrets.
 
 Sanitization: Always sanitize debug HTML, screenshots, logs, and job history files before sharing them in pull requests or external debugging sessions.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five canonical labels (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
