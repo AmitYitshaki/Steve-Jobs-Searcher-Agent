@@ -11,7 +11,11 @@ from unittest.mock import patch
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
 import scraper  # noqa: E402
-from alert_queue import PendingAlert, PendingAlertQueue  # noqa: E402
+from alert_queue import (  # noqa: E402
+    JobHistoryStore,
+    PendingAlert,
+    PendingAlertQueue,
+)
 
 
 class ScraperProducerTests(unittest.TestCase):
@@ -63,10 +67,13 @@ class ScraperProducerTests(unittest.TestCase):
             queue = PendingAlertQueue(
                 Path(directory) / "pending_alerts.json"
             )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
             with (
                 patch(
                     "scraper.load_json",
-                    side_effect=[[self.COMPANY], []],
+                    side_effect=[[self.COMPANY]],
                 ),
                 patch(
                     "scraper.fetch_jobs_from_company",
@@ -78,7 +85,10 @@ class ScraperProducerTests(unittest.TestCase):
                 ) as analyze_job,
                 patch("builtins.print"),
             ):
-                scraper.run_scraper(queue=queue)
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                )
 
             alerts = queue.load()
 
@@ -104,6 +114,9 @@ class ScraperProducerTests(unittest.TestCase):
             queue = PendingAlertQueue(
                 Path(directory) / "pending_alerts.json"
             )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
             html_company = {
                 **self.COMPANY,
                 "company_name": "Example <Labs> & Co",
@@ -111,7 +124,7 @@ class ScraperProducerTests(unittest.TestCase):
             with (
                 patch(
                     "scraper.load_json",
-                    side_effect=[[html_company], []],
+                    side_effect=[[html_company]],
                 ),
                 patch(
                     "scraper.fetch_jobs_from_company",
@@ -123,7 +136,10 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch("builtins.print"),
             ):
-                scraper.run_scraper(queue=queue)
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                )
 
             summary = queue.load()[0].llm_summary
 
@@ -152,6 +168,9 @@ class ScraperProducerTests(unittest.TestCase):
             queue = PendingAlertQueue(
                 Path(directory) / "pending_alerts.json"
             )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
             queue.append(
                 PendingAlert(
                     job_id="example_123",
@@ -163,7 +182,7 @@ class ScraperProducerTests(unittest.TestCase):
             with (
                 patch(
                     "scraper.load_json",
-                    side_effect=[[self.COMPANY], []],
+                    side_effect=[[self.COMPANY]],
                 ),
                 patch(
                     "scraper.fetch_jobs_from_company",
@@ -172,7 +191,10 @@ class ScraperProducerTests(unittest.TestCase):
                 patch("scraper.analyze_job") as analyze_job,
                 patch("builtins.print"),
             ):
-                scraper.run_scraper(queue=queue)
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                )
 
             alerts = queue.load()
 
@@ -187,10 +209,13 @@ class ScraperProducerTests(unittest.TestCase):
             queue = PendingAlertQueue(
                 Path(directory) / "pending_alerts.json"
             )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
             with (
                 patch(
                     "scraper.load_json",
-                    side_effect=[[self.COMPANY], []],
+                    side_effect=[[self.COMPANY]],
                 ),
                 patch(
                     "scraper.fetch_jobs_from_company",
@@ -199,7 +224,10 @@ class ScraperProducerTests(unittest.TestCase):
                 patch("scraper.analyze_job") as analyze_job,
                 patch("builtins.print") as print_output,
             ):
-                scraper.run_scraper(queue=queue)
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                )
 
             alerts = queue.load()
 
@@ -219,10 +247,13 @@ class ScraperProducerTests(unittest.TestCase):
             queue = PendingAlertQueue(
                 Path(directory) / "pending_alerts.json"
             )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
             with (
                 patch(
                     "scraper.load_json",
-                    side_effect=[[self.COMPANY], []],
+                    side_effect=[[self.COMPANY]],
                 ),
                 patch(
                     "scraper.fetch_jobs_from_company",
@@ -234,7 +265,10 @@ class ScraperProducerTests(unittest.TestCase):
                 ) as analyze_job,
                 patch("builtins.print"),
             ):
-                scraper.run_scraper(queue=queue)
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                )
 
             alerts = queue.load()
 

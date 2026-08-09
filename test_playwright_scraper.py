@@ -18,14 +18,13 @@ from playwright.sync_api import (
 )
 
 from html_adapters import scrape_universal_playwright
+from models.results import ScrapeResult, ScrapeStatus
 from playwright_scraper import (
     ApiDiscoveryRecord,
     NetworkResponseCollector,
     PlaywrightJobScraper,
     REALISTIC_USER_AGENT,
     REALISTIC_VIEWPORT,
-    ScrapeResult,
-    ScrapeStatus,
     WafChallengeDetector,
 )
 
@@ -98,7 +97,7 @@ class NetworkResponseCollectorTests(unittest.TestCase):
         page = MagicMock()
         collector = NetworkResponseCollector(
             "example",
-            "debug_logs/api_discovery_log.json",
+            "logs/api_discovery_log.json",
         )
 
         collector.attach(page)

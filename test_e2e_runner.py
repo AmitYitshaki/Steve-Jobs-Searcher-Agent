@@ -23,7 +23,9 @@ class E2ERunnerTests(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.project_root = Path(self.temporary_directory.name)
         for filename in E2ERunner.STATE_FILES:
-            (self.project_root / filename).write_text(
+            state_path = self.project_root / filename
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            state_path.write_text(
                 '["existing-job"]',
                 encoding="utf-8",
             )

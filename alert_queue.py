@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from paths import DATA_DIR
+
 SleepFunction = Callable[[float], None]
 
 
@@ -163,7 +165,10 @@ class AtomicJsonListStore:
 class PendingAlertQueue:
     """Persist pending alerts with job-ID deduplication."""
 
-    def __init__(self, path: str | Path = "pending_alerts.json") -> None:
+    def __init__(
+        self,
+        path: str | Path = DATA_DIR / "pending_alerts.json",
+    ) -> None:
         """Initialize a queue backed by one local JSON file."""
 
         self.store = AtomicJsonListStore(path)
@@ -209,7 +214,10 @@ class PendingAlertQueue:
 class JobHistoryStore:
     """Persist the IDs of jobs whose alerts were delivered."""
 
-    def __init__(self, path: str | Path = "jobs_history.json") -> None:
+    def __init__(
+        self,
+        path: str | Path = DATA_DIR / "jobs_history.json",
+    ) -> None:
         """Initialize a history store backed by one local JSON file."""
 
         self.store = AtomicJsonListStore(path)
