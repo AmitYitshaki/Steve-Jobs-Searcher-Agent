@@ -34,7 +34,7 @@ class E2ERunner:
     WARP_TIMEOUT_SECONDS = 30
     SCRIPT_TIMEOUTS = {
         "scrapers.orchestrator": 900,
-        "send_alerts.py": 300,
+        "notifications.dispatcher": 300,
     }
 
     def __init__(
@@ -107,7 +107,7 @@ class E2ERunner:
                     )
                     self.sleep_function(3)
                     consumer_code = self._run_python_script(
-                        script_name="send_alerts.py",
+                        script_name="notifications.dispatcher",
                         phase_name="Consumer alerting phase",
                         emoji="📨",
                     )
@@ -227,11 +227,7 @@ class E2ERunner:
 
         timeout = self.SCRIPT_TIMEOUTS[script_name]
         LOGGER.info("%s Starting %s: %s", emoji, phase_name, script_name)
-        command = (
-            [sys.executable, "-m", script_name]
-            if script_name == "scrapers.orchestrator"
-            else [sys.executable, script_name]
-        )
+        command = [sys.executable, "-m", script_name]
         try:
             result = self.command_runner(
                 command,
