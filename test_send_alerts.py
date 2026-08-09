@@ -7,13 +7,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
+from notifications.dispatcher import AlertConsumer
 from notifications.telegram.bot import (
     NotificationResult,
     NotificationStatus,
 )
 from storage.history import JobHistoryStore
 from storage.queue import PendingAlert, PendingAlertQueue
-from send_alerts import AlertConsumer
 
 
 class AlertConsumerTests(unittest.TestCase):

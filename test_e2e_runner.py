@@ -149,7 +149,9 @@ class E2ERunnerTests(unittest.TestCase):
                 timeout=900,
             ),
             self._completed(["warp-cli", "connect"]),
-            self._completed([sys.executable, "send_alerts.py"]),
+            self._completed(
+                [sys.executable, "-m", "notifications.dispatcher"]
+            ),
         ]
 
         exit_code = self._runner().run()
@@ -245,7 +247,9 @@ class E2ERunnerTests(unittest.TestCase):
                 [sys.executable, "-m", "scrapers.orchestrator"]
             ),
             self._completed(["warp-cli", "connect"]),
-            self._completed([sys.executable, "send_alerts.py"]),
+            self._completed(
+                [sys.executable, "-m", "notifications.dispatcher"]
+            ),
         ]
 
     def _expected_successful_calls(self) -> list[call]:
@@ -268,7 +272,7 @@ class E2ERunnerTests(unittest.TestCase):
                 timeout=30,
             ),
             call(
-                [sys.executable, "send_alerts.py"],
+                [sys.executable, "-m", "notifications.dispatcher"],
                 cwd=self.project_root,
                 timeout=300,
             ),
