@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
-import html_adapters  # noqa: E402
 import scraper  # noqa: E402
+from scrapers.browser import custom_adapters  # noqa: E402
 
 
 class FetchAtsJobsTests(unittest.TestCase):
@@ -362,10 +362,10 @@ class ScraperAdapterTests(unittest.TestCase):
         response = MagicMock()
         response.text = "<html></html>"
         with patch(
-            "html_adapters.requests.get",
+            "scrapers.browser.custom_adapters.requests.get",
             return_value=response,
         ) as get:
-            html_adapters.scrape_successfactors(
+            custom_adapters.scrape_successfactors(
                 self._company("successfactors")
             )
 
@@ -398,14 +398,15 @@ class ScraperAdapterTests(unittest.TestCase):
         )
         with (
             patch(
-                "html_adapters.requests.get",
+                "scrapers.browser.custom_adapters.requests.get",
                 return_value=response,
             ) as get,
             patch(
-                "html_adapters.scrape_universal_playwright"
+                "scrapers.browser.custom_adapters."
+                "scrape_universal_playwright"
             ) as fallback,
         ):
-            jobs = html_adapters.scrape_eightfold(
+            jobs = custom_adapters.scrape_eightfold(
                 "palo_alto_networks",
                 career_url,
             )
@@ -434,17 +435,18 @@ class ScraperAdapterTests(unittest.TestCase):
         career_url = "https://jobs.paloaltonetworks.com/en/search-jobs"
         with (
             patch(
-                "html_adapters.requests.get",
-                side_effect=html_adapters.requests.ConnectionError(
+                "scrapers.browser.custom_adapters.requests.get",
+                side_effect=custom_adapters.requests.ConnectionError(
                     "API unavailable"
                 ),
             ),
             patch(
-                "html_adapters.scrape_universal_playwright",
+                "scrapers.browser.custom_adapters."
+                "scrape_universal_playwright",
                 return_value=expected_jobs,
             ) as fallback,
         ):
-            jobs = html_adapters.scrape_eightfold(
+            jobs = custom_adapters.scrape_eightfold(
                 "palo_alto_networks",
                 career_url,
             )

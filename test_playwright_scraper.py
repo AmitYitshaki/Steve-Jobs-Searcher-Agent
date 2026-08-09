@@ -17,9 +17,9 @@ from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
-from html_adapters import scrape_universal_playwright
 from models.results import ScrapeResult, ScrapeStatus
-from playwright_scraper import (
+from scrapers.browser.custom_adapters import scrape_universal_playwright
+from scrapers.browser.playwright_driver import (
     ApiDiscoveryRecord,
     NetworkResponseCollector,
     PlaywrightJobScraper,
@@ -352,10 +352,12 @@ class NetworkResponseCollectorTests(unittest.TestCase):
 
             with (
                 patch(
-                    "playwright_scraper.os.replace",
+                    "scrapers.browser.playwright_driver.os.replace",
                     side_effect=replace_after_two_locks,
                 ) as replace,
-                patch("playwright_scraper.time.sleep") as sleep,
+                patch(
+                    "scrapers.browser.playwright_driver.time.sleep"
+                ) as sleep,
             ):
                 collector._append_record(record)
 
@@ -374,7 +376,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
     def setUp(self) -> None:
         """Mock stealth application so browser tests stay deterministic."""
 
-        stealth_patcher = patch("playwright_scraper.stealth_sync")
+        stealth_patcher = patch(
+            "scrapers.browser.playwright_driver.stealth_sync"
+        )
         self.stealth = stealth_patcher.start()
         self.addCleanup(stealth_patcher.stop)
 
@@ -520,7 +524,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             self.stealth.side_effect = lambda target: events.append(
                 "stealth"
             )
-            with patch("playwright_scraper.LOGGER.debug") as debug:
+            with patch(
+                "scrapers.browser.playwright_driver.LOGGER.debug"
+            ) as debug:
                 result = scraper.scrape(
                     {
                         "company_id": "example",
@@ -567,7 +573,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         )
         scraper = PlaywrightJobScraper(playwright_factory=MagicMock())
 
-        with patch("playwright_scraper.LOGGER.warning") as warning:
+        with patch(
+            "scrapers.browser.playwright_driver.LOGGER.warning"
+        ) as warning:
             scraper._wait_for_job_selector(page, ".late-job")
 
         page.wait_for_selector.assert_called_once_with(
@@ -666,7 +674,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
                 playwright_factory=MagicMock(),
             )
 
-            with patch("playwright_scraper.LOGGER.warning") as warning:
+            with patch(
+                "scrapers.browser.playwright_driver.LOGGER.warning"
+            ) as warning:
                 paths = scraper._write_diagnostics(
                     page=page,
                     company_id="taboola",
@@ -698,7 +708,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
 class UniversalWrapperTests(unittest.TestCase):
     """Verify the legacy function returns only the discovered jobs."""
 
-    @patch("html_adapters.PlaywrightJobScraper")
+    @patch(
+        "scrapers.browser.custom_adapters.PlaywrightJobScraper"
+    )
     def test_wrapper_preserves_list_return_type(
         self,
         scraper_class: MagicMock,

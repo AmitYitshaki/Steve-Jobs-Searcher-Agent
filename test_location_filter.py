@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from location_filter import LocationFilter
+from analysis.filters.location import LocationFilter
 
 
 class LocationFilterTests(unittest.TestCase):

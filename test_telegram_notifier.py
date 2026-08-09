@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import requests
 from requests import Response
 
-from telegram_notifier import (
+from notifications.telegram.bot import (
     NotificationStatus,
     RetryPolicy,
     TelegramNotifier,

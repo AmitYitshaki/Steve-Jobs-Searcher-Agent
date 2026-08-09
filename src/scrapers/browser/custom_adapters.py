@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from models.results import ScrapeStatus
-from playwright_scraper import PlaywrightJobScraper
+from scrapers.browser.playwright_driver import PlaywrightJobScraper
 
 LOGGER = logging.getLogger(__name__)
 HTTP_TIMEOUT_SECONDS = 15
