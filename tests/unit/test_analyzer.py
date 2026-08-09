@@ -9,7 +9,10 @@ from unittest.mock import patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
-import main  # noqa: E402
+from analysis.ai.analyzer import (  # noqa: E402
+    analyze_job,
+    build_job_analysis_prompt,
+)
 
 
 class JobAnalysisPromptTests(unittest.TestCase):
@@ -18,7 +21,7 @@ class JobAnalysisPromptTests(unittest.TestCase):
     def test_prompt_contains_real_structured_job_fields(self) -> None:
         """Include factual title, location, and posting content."""
 
-        prompt = main.build_job_analysis_prompt(
+        prompt = build_job_analysis_prompt(
             job_title="Student Backend Developer",
             job_location="Tel Aviv, Israel",
             job_content="Build Python APIs. Requires two study semesters.",
@@ -38,7 +41,7 @@ class JobAnalysisPromptTests(unittest.TestCase):
     def test_missing_content_requests_explicit_smart_estimation(self) -> None:
         """Estimate from the title while labeling the evidence limitation."""
 
-        prompt = main.build_job_analysis_prompt(
+        prompt = build_job_analysis_prompt(
             job_title="Software Engineer Intern",
             job_location="Haifa, Israel",
             job_content="",
@@ -78,15 +81,18 @@ class JobAnalysisPromptTests(unittest.TestCase):
             ],
         )
         with (
-            patch("main.load_file", return_value="context"),
             patch(
-                "main.client.chat.completions.create",
+                "analysis.ai.analyzer.load_file",
+                return_value="context",
+            ),
+            patch(
+                "analysis.ai.analyzer.client.chat.completions.create",
                 return_value=response,
             ) as create,
-            patch("main.log_cost", return_value=0.0),
+            patch("analysis.ai.analyzer.log_cost", return_value=0.0),
             patch("builtins.print"),
         ):
-            result = main.analyze_job(
+            result = analyze_job(
                 job_title="Student Data Analyst",
                 job_location="Jerusalem, Israel",
                 job_content=None,

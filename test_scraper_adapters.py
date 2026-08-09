@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
-import scraper  # noqa: E402
+from scrapers import orchestrator as scraper  # noqa: E402
 from scrapers.browser import custom_adapters  # noqa: E402
 
 
@@ -121,7 +121,7 @@ class FetchAtsJobsTests(unittest.TestCase):
                 response.json.return_value = payload
                 company = self._company(ats_type)
                 with patch(
-                    "scraper.requests.get",
+                    "scrapers.orchestrator.requests.get",
                     return_value=response,
                 ) as get:
                     jobs = scraper.fetch_ats_jobs(
@@ -160,7 +160,7 @@ class FetchAtsJobsTests(unittest.TestCase):
         }
 
         with patch(
-            "scraper.requests.post",
+            "scrapers.orchestrator.requests.post",
             return_value=response,
         ) as post:
             jobs = scraper.fetch_ats_jobs(
@@ -201,7 +201,10 @@ class FetchAtsJobsTests(unittest.TestCase):
         response.raise_for_status.side_effect = error
 
         with (
-            patch("scraper.requests.post", return_value=response),
+            patch(
+                "scrapers.orchestrator.requests.post",
+                return_value=response,
+            ),
             patch("builtins.print") as print_output,
         ):
             jobs = scraper.fetch_ats_jobs(
@@ -305,7 +308,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ]
         }
         with (
-            patch("scraper.requests.get", return_value=response) as get,
+            patch(
+                "scrapers.orchestrator.requests.get",
+                return_value=response,
+            ) as get,
             patch("builtins.print"),
         ):
             jobs = scraper.fetch_jobs_from_company(
@@ -334,7 +340,7 @@ class ScraperAdapterTests(unittest.TestCase):
 
         with (
             patch(
-                "scraper.requests.post",
+                "scrapers.orchestrator.requests.post",
                 return_value=response,
             ) as post,
             patch("builtins.print"),
@@ -346,7 +352,7 @@ class ScraperAdapterTests(unittest.TestCase):
             with self.subTest(ats_type=ats_type):
                 with (
                     patch(
-                        "scraper.requests.get",
+                        "scrapers.orchestrator.requests.get",
                         return_value=response,
                     ) as get,
                     patch("builtins.print"),
@@ -465,7 +471,7 @@ class ScraperAdapterTests(unittest.TestCase):
         company = self._company("eightfold")
         with (
             patch(
-                "scraper.scrape_eightfold",
+                "scrapers.orchestrator.scrape_eightfold",
                 return_value=[{"id": "example_123"}],
             ) as eightfold,
             patch("builtins.print"),
@@ -488,7 +494,7 @@ class ScraperAdapterTests(unittest.TestCase):
         expected_jobs = [{"id": "example_123"}]
         with (
             patch(
-                "scraper.scrape_universal_playwright",
+                "scrapers.orchestrator.scrape_universal_playwright",
                 return_value=expected_jobs,
             ) as universal_playwright,
             patch("builtins.print"),
@@ -502,7 +508,7 @@ class ScraperAdapterTests(unittest.TestCase):
         """Make unsupported ATS types visible through standard logging."""
 
         with (
-            patch("scraper.logging.warning") as warning,
+            patch("scrapers.orchestrator.logging.warning") as warning,
             patch("builtins.print"),
         ):
             jobs = scraper.fetch_jobs_from_company(
