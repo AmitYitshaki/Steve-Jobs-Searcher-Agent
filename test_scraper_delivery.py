@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
-import scraper  # noqa: E402
+from scrapers import orchestrator as scraper  # noqa: E402
 from storage.history import JobHistoryStore  # noqa: E402
 from storage.queue import PendingAlert, PendingAlertQueue  # noqa: E402
 
@@ -69,15 +69,15 @@ class ScraperProducerTests(unittest.TestCase):
             )
             with (
                 patch(
-                    "scraper.load_json",
+                    "scrapers.orchestrator.load_json",
                     side_effect=[[self.COMPANY]],
                 ),
                 patch(
-                    "scraper.fetch_jobs_from_company",
+                    "scrapers.orchestrator.fetch_jobs_from_company",
                     return_value=[self.JOB],
                 ),
                 patch(
-                    "scraper.analyze_job",
+                    "scrapers.orchestrator.analyze_job",
                     return_value="LLM analysis",
                 ) as analyze_job,
                 patch("builtins.print"),
@@ -120,15 +120,15 @@ class ScraperProducerTests(unittest.TestCase):
             }
             with (
                 patch(
-                    "scraper.load_json",
+                    "scrapers.orchestrator.load_json",
                     side_effect=[[html_company]],
                 ),
                 patch(
-                    "scraper.fetch_jobs_from_company",
+                    "scrapers.orchestrator.fetch_jobs_from_company",
                     return_value=[self.HTML_TITLE_JOB],
                 ),
                 patch(
-                    "scraper.analyze_job",
+                    "scrapers.orchestrator.analyze_job",
                     return_value="<b>ניתוח</b>",
                 ),
                 patch("builtins.print"),
@@ -178,14 +178,16 @@ class ScraperProducerTests(unittest.TestCase):
             )
             with (
                 patch(
-                    "scraper.load_json",
+                    "scrapers.orchestrator.load_json",
                     side_effect=[[self.COMPANY]],
                 ),
                 patch(
-                    "scraper.fetch_jobs_from_company",
+                    "scrapers.orchestrator.fetch_jobs_from_company",
                     return_value=[self.JOB],
                 ),
-                patch("scraper.analyze_job") as analyze_job,
+                patch(
+                    "scrapers.orchestrator.analyze_job"
+                ) as analyze_job,
                 patch("builtins.print"),
             ):
                 scraper.run_scraper(
@@ -211,14 +213,16 @@ class ScraperProducerTests(unittest.TestCase):
             )
             with (
                 patch(
-                    "scraper.load_json",
+                    "scrapers.orchestrator.load_json",
                     side_effect=[[self.COMPANY]],
                 ),
                 patch(
-                    "scraper.fetch_jobs_from_company",
+                    "scrapers.orchestrator.fetch_jobs_from_company",
                     return_value=[self.FOREIGN_JOB],
                 ),
-                patch("scraper.analyze_job") as analyze_job,
+                patch(
+                    "scrapers.orchestrator.analyze_job"
+                ) as analyze_job,
                 patch("builtins.print") as print_output,
             ):
                 scraper.run_scraper(
@@ -249,15 +253,15 @@ class ScraperProducerTests(unittest.TestCase):
             )
             with (
                 patch(
-                    "scraper.load_json",
+                    "scrapers.orchestrator.load_json",
                     side_effect=[[self.COMPANY]],
                 ),
                 patch(
-                    "scraper.fetch_jobs_from_company",
+                    "scrapers.orchestrator.fetch_jobs_from_company",
                     return_value=[self.UNKNOWN_FOREIGN_JOB],
                 ),
                 patch(
-                    "scraper.analyze_job",
+                    "scrapers.orchestrator.analyze_job",
                     return_value="LLM analysis",
                 ) as analyze_job,
                 patch("builtins.print"),

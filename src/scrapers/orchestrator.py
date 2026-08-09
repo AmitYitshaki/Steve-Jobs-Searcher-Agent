@@ -12,13 +12,13 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
+from analysis.ai.analyzer import analyze_job
 from analysis.filters.location import LocationFilter
 from scrapers.browser.custom_adapters import (
     scrape_eightfold,
     scrape_successfactors,
     scrape_universal_playwright,
 )
-from main import analyze_job
 from paths import CONFIG_DIR, DATA_DIR
 from storage.history import JobHistoryStore
 from storage.queue import PendingAlert, PendingAlertQueue

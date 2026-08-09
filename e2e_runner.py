@@ -33,7 +33,7 @@ class E2ERunner:
     )
     WARP_TIMEOUT_SECONDS = 30
     SCRIPT_TIMEOUTS = {
-        "scraper.py": 900,
+        "scrapers.orchestrator": 900,
         "send_alerts.py": 300,
     }
 
@@ -87,7 +87,7 @@ class E2ERunner:
                 pipeline_aborted = True
             else:
                 producer_code = self._run_python_script(
-                    script_name="scraper.py",
+                    script_name="scrapers.orchestrator",
                     phase_name="Producer scraping phase",
                     emoji="🔎",
                 )
@@ -227,9 +227,14 @@ class E2ERunner:
 
         timeout = self.SCRIPT_TIMEOUTS[script_name]
         LOGGER.info("%s Starting %s: %s", emoji, phase_name, script_name)
+        command = (
+            [sys.executable, "-m", script_name]
+            if script_name == "scrapers.orchestrator"
+            else [sys.executable, script_name]
+        )
         try:
             result = self.command_runner(
-                [sys.executable, script_name],
+                command,
                 cwd=self.project_root,
                 timeout=timeout,
             )

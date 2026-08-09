@@ -145,7 +145,7 @@ class E2ERunnerTests(unittest.TestCase):
         self.command_runner.side_effect = [
             self._completed(["warp-cli", "disconnect"]),
             subprocess.TimeoutExpired(
-                cmd=[sys.executable, "scraper.py"],
+                cmd=[sys.executable, "-m", "scrapers.orchestrator"],
                 timeout=900,
             ),
             self._completed(["warp-cli", "connect"]),
@@ -161,7 +161,7 @@ class E2ERunnerTests(unittest.TestCase):
         )
         self.logger.error.assert_any_call(
             "⏱️ %s timed out after %s seconds.",
-            "scraper.py",
+            "scrapers.orchestrator",
             900,
         )
 
@@ -241,7 +241,9 @@ class E2ERunnerTests(unittest.TestCase):
 
         return [
             self._completed(["warp-cli", "disconnect"]),
-            self._completed([sys.executable, "scraper.py"]),
+            self._completed(
+                [sys.executable, "-m", "scrapers.orchestrator"]
+            ),
             self._completed(["warp-cli", "connect"]),
             self._completed([sys.executable, "send_alerts.py"]),
         ]
@@ -256,7 +258,7 @@ class E2ERunnerTests(unittest.TestCase):
                 timeout=30,
             ),
             call(
-                [sys.executable, "scraper.py"],
+                [sys.executable, "-m", "scrapers.orchestrator"],
                 cwd=self.project_root,
                 timeout=900,
             ),
