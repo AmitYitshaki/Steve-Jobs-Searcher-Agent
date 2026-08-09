@@ -10,8 +10,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
-import e2e_runner
-from e2e_runner import E2ERunner
+import pipeline
+from pipeline import E2ERunner
 
 
 class E2ERunnerTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class E2ERunnerTests(unittest.TestCase):
         self.command_runner = MagicMock()
         self.input_function = MagicMock(return_value="")
         self.sleep_function = MagicMock()
-        self.logger_patch = patch("e2e_runner.LOGGER")
+        self.logger_patch = patch("pipeline.LOGGER")
         self.logger = self.logger_patch.start()
 
     def tearDown(self) -> None:
@@ -212,10 +212,10 @@ class E2ERunnerTests(unittest.TestCase):
     def test_main_maps_command_line_flags_to_runner(self) -> None:
         """Pass argparse flags into the orchestrator."""
 
-        with patch("e2e_runner.E2ERunner") as runner_class:
+        with patch("pipeline.E2ERunner") as runner_class:
             runner_class.return_value.run.return_value = 0
 
-            exit_code = e2e_runner.main(
+            exit_code = pipeline.main(
                 ["--reset-state", "--non-interactive"]
             )
 

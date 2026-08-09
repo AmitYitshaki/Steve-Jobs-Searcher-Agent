@@ -17,31 +17,34 @@ Use Windows PowerShell and the Python launcher for setup and execution:
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-# Install Dependencies
+# Install Dependencies (editable install puts src/ on the path in every context)
 py -m pip install -r requirements.txt
 py -m pip install beautifulsoup4 lxml playwright
 py -m playwright install chromium
+py -m pip install -e .
 
-# Run Application
-py scraper.py           # Full scan
-py main.py              # Sample analysis
+# Run Application (all app code lives under src/, invoked as modules)
+python -m scrapers.orchestrator     # Producer: full scan -> data/pending_alerts.json
+python -m notifications.dispatcher  # Consumer: deliver queued alerts to Telegram
+python -m pipeline                  # End-to-end producer + consumer (WARP toggling)
+python -m analysis.ai.analyzer      # Sample LLM analysis
 
 # Testing & Diagnostics
-py manual_playwright_check.py   # Opens an interactive browser
-py manual_telegram_check.py     # Sends a real test message
+pytest                                       # Full test suite
+py tests/manual/manual_playwright_check.py   # Opens an interactive browser
+py tests/manual/manual_telegram_check.py     # Sends a real test message
 
-Architecture & Project Structure
-scraper.py: The main orchestration engine. Loads companies, filters jobs, tracks history, and coordinates the Telegram alerts. (Transitioning to OOP).
-
-html_adapters.py: Contains BeautifulSoup and Playwright adapters for sites without usable JSON APIs or behind WAFs.
-
-main.py: Builds prompts, calls OpenAI (LLM integration), and records token costs.
-
-companies.json: The source-of-truth company/ATS configuration and pre-filtered URLs.
-
-agent_identity.md, agent_soul.md, user_profile.md: Provide system prompt context for the LLM.
-
-debug_logs/, jobs_history.json, costs_log.json: Runtime state and artifacts. Do not commit generated changes from these files.
+Architecture & Project Structure (see docs/adr/0006 and docs/CONTEXT.md)
+src/scrapers/orchestrator.py: Producer orchestration engine. Loads companies, filters jobs, tracks history, enqueues alerts.
+src/scrapers/api/: Declarative ATS mapping table (mappings.py) and generic JSON fetcher (client.py).
+src/scrapers/browser/: Playwright driver (playwright_driver.py) and custom/WAF HTML adapters (custom_adapters.py).
+src/notifications/dispatcher.py: Consumer; delivers queued alerts via src/notifications/telegram/bot.py.
+src/analysis/ai/analyzer.py: Builds prompts, calls OpenAI (LLM integration), records token costs.
+src/storage/: Atomic JSON stores for pending alerts (queue.py) and delivered-job history (history.py).
+src/pipeline.py: End-to-end runner (WARP toggling; launches producer/consumer as modules).
+config/companies.json: The source-of-truth company/ATS configuration and pre-filtered URLs.
+config/prompts/ (agent_identity.md, agent_soul.md, user_profile.md): System-prompt context for the LLM.
+data/ (jobs_history.json, pending_alerts.json, costs_log.json) and logs/artifacts/: Runtime state and diagnostics. Gitignored; do not commit.
 
 Development & Coding Rules
 Strict OOP Paradigm: Strongly prefer Object-Oriented Programming. Refactor procedural code into modular classes (e.g., JobScraper, TelegramNotifier, JobFilter) applying SOLID principles.
