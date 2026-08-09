@@ -12,7 +12,6 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-from alert_queue import JobHistoryStore, PendingAlert, PendingAlertQueue
 from html_adapters import (
     scrape_eightfold,
     scrape_successfactors,
@@ -21,6 +20,8 @@ from html_adapters import (
 from location_filter import LocationFilter
 from main import analyze_job
 from paths import CONFIG_DIR, DATA_DIR
+from storage.history import JobHistoryStore
+from storage.queue import PendingAlert, PendingAlertQueue
 
 logging.basicConfig(
     level=logging.INFO,

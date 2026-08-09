@@ -10,8 +10,8 @@ import time
 from pathlib import Path
 from typing import Callable, Sequence
 
-from alert_queue import AtomicJsonListStore
 from paths import DATA_DIR, PROJECT_ROOT
+from storage.drivers.atomic_json import AtomicJsonListStore
 
 logging.basicConfig(
     level=logging.INFO,

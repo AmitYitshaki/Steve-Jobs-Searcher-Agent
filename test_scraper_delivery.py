@@ -11,11 +11,8 @@ from unittest.mock import patch
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
 import scraper  # noqa: E402
-from alert_queue import (  # noqa: E402
-    JobHistoryStore,
-    PendingAlert,
-    PendingAlertQueue,
-)
+from storage.history import JobHistoryStore  # noqa: E402
+from storage.queue import PendingAlert, PendingAlertQueue  # noqa: E402
 
 
 class ScraperProducerTests(unittest.TestCase):

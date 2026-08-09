@@ -8,12 +8,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from alert_queue import (
-    AtomicJsonListStore,
-    JobHistoryStore,
-    PendingAlert,
-    PendingAlertQueue,
-)
+from storage.drivers.atomic_json import AtomicJsonListStore
+from storage.history import JobHistoryStore
+from storage.queue import PendingAlert, PendingAlertQueue
 
 
 class AlertQueueTests(unittest.TestCase):
@@ -110,7 +107,7 @@ class AlertQueueTests(unittest.TestCase):
             real_replace(source, destination)
 
         with patch(
-            "alert_queue.os.replace",
+            "storage.drivers.atomic_json.os.replace",
             side_effect=replace_after_two_locks,
         ):
             store.write(["job-1"])
@@ -134,7 +131,7 @@ class AlertQueueTests(unittest.TestCase):
 
         with (
             patch(
-                "alert_queue.os.replace",
+                "storage.drivers.atomic_json.os.replace",
                 side_effect=PermissionError(5, "Access is denied"),
             ) as replace,
             self.assertRaises(PermissionError),
