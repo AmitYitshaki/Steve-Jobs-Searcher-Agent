@@ -7,7 +7,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
-from alert_queue import JobHistoryStore, PendingAlert, PendingAlertQueue
+from storage.history import JobHistoryStore
+from storage.queue import PendingAlert, PendingAlertQueue
 from send_alerts import AlertConsumer
 from telegram_notifier import NotificationResult, NotificationStatus
 

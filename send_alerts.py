@@ -8,7 +8,8 @@ from typing import Protocol
 
 from dotenv import load_dotenv
 
-from alert_queue import JobHistoryStore, PendingAlertQueue
+from storage.history import JobHistoryStore
+from storage.queue import PendingAlertQueue
 from telegram_notifier import NotificationResult, TelegramNotifier
 
 logging.basicConfig(
