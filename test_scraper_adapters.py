@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
 from scrapers import orchestrator as scraper  # noqa: E402
+from scrapers.api import client as api_client  # noqa: E402
 from scrapers.browser import custom_adapters  # noqa: E402
 
 
@@ -121,7 +122,7 @@ class FetchAtsJobsTests(unittest.TestCase):
                 response.json.return_value = payload
                 company = self._company(ats_type)
                 with patch(
-                    "scrapers.orchestrator.requests.get",
+                    "scrapers.api.client.requests.get",
                     return_value=response,
                 ) as get:
                     jobs = scraper.fetch_ats_jobs(
@@ -160,7 +161,7 @@ class FetchAtsJobsTests(unittest.TestCase):
         }
 
         with patch(
-            "scrapers.orchestrator.requests.post",
+            "scrapers.api.client.requests.post",
             return_value=response,
         ) as post:
             jobs = scraper.fetch_ats_jobs(
@@ -197,12 +198,12 @@ class FetchAtsJobsTests(unittest.TestCase):
 
         response = MagicMock()
         response.status_code = 403
-        error = scraper.requests.exceptions.HTTPError(response=response)
+        error = api_client.requests.exceptions.HTTPError(response=response)
         response.raise_for_status.side_effect = error
 
         with (
             patch(
-                "scrapers.orchestrator.requests.post",
+                "scrapers.api.client.requests.post",
                 return_value=response,
             ),
             patch("builtins.print") as print_output,
@@ -309,7 +310,7 @@ class ScraperAdapterTests(unittest.TestCase):
         }
         with (
             patch(
-                "scrapers.orchestrator.requests.get",
+                "scrapers.api.client.requests.get",
                 return_value=response,
             ) as get,
             patch("builtins.print"),
@@ -340,7 +341,7 @@ class ScraperAdapterTests(unittest.TestCase):
 
         with (
             patch(
-                "scrapers.orchestrator.requests.post",
+                "scrapers.api.client.requests.post",
                 return_value=response,
             ) as post,
             patch("builtins.print"),
@@ -352,7 +353,7 @@ class ScraperAdapterTests(unittest.TestCase):
             with self.subTest(ats_type=ats_type):
                 with (
                     patch(
-                        "scrapers.orchestrator.requests.get",
+                        "scrapers.api.client.requests.get",
                         return_value=response,
                     ) as get,
                     patch("builtins.print"),
