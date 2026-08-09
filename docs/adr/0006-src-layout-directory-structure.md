@@ -12,21 +12,30 @@ Adopt an `src/`-layout with domain-oriented packages and clear separation of cod
 
 ```
 src/
-  scrapers/   orchestrator.py, ats_mappings.py, playwright_scraper.py, html_adapters.py
-  storage/    atomic_store.py, queue_store.py, history_store.py
-  alerts/     telegram_notifier.py, alert_consumer.py
-  ai/         analyzer.py
-  filters/    location_filter.py
-  pipeline.py
-tests/        mirror src modules
-scripts/      manual_*.py
+  paths.py                     PROJECT_ROOT anchor (top-level module, like pipeline.py)
+  models/       results.py (ScrapeResult/ScrapeStatus), job.py (JobRecord)
+  scrapers/
+    orchestrator.py            Producer: routing + run_scraper
+    api/        mappings.py (AtsMapping, ATS_FIELD_MAP), client.py (fetch_ats_jobs)
+    browser/    playwright_driver.py, custom_adapters.py
+  analysis/
+    ai/         analyzer.py (analyze_job, log_cost, prompt building)
+    filters/    location.py (LocationFilter)
+  storage/
+    drivers/    atomic_json.py (AtomicJsonListStore)
+    queue.py    (PendingAlertQueue), history.py (JobHistoryStore), health.py (ADR-0005, pending)
+  notifications/
+    dispatcher.py              Consumer: AlertConsumer
+    telegram/   bot.py (TelegramNotifier)
+  pipeline.py                  End-to-end runner (launches producer/consumer via `-m`)
+tests/        root test_*.py + tests/unit/ + tests/manual/ (consolidation into tests/unit/ pending)
 config/       companies.json, prompts/ (agent_*.md, user_profile.md)
 data/         jobs_history.json, pending_alerts.json, costs_log.json, scraper_health.json  (gitignored)
 logs/         artifacts/ (diagnostic html/png), api_discovery_log.json  (gitignored)
 docs/         CONTEXT.md, adr/
 ```
 
-- Packaging via `pyproject.toml`; tests resolve modules through `pythonpath = ["src"]`.
+- Packaging via `pyproject.toml` with an editable install (`pip install -e .`), so `src/` is importable in every context — direct runs, `python -m …`, and pytest — not only under pytest's `pythonpath`.
 - Runtime paths anchor to a single `PROJECT_ROOT` constant rather than staying CWD-relative, so module invocation from any directory works.
 - The move is behavior-preserving: no logic changes land in the same tickets as relocations; the existing test suite is the green gate.
 

@@ -10,7 +10,7 @@ dynamic = ["dependencies"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["paths"]
+py-modules = ["paths", "pipeline"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -20,4 +20,4 @@ dependencies = {file = ["requirements.txt"]}
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-# Temporarily discover root tests until later tickets move them to tests/unit/.
+testpaths = ["tests"]
