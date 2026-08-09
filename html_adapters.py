@@ -5,7 +5,8 @@ from typing import Any, Mapping
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
-from playwright_scraper import PlaywrightJobScraper, ScrapeStatus
+from models.results import ScrapeStatus
+from playwright_scraper import PlaywrightJobScraper
 
 LOGGER = logging.getLogger(__name__)
 HTTP_TIMEOUT_SECONDS = 15
@@ -231,7 +232,7 @@ def scrape_universal_playwright(
     if result.status is ScrapeStatus.WAF_BLOCKED:
         print(
             f"🛡️ {company_id} נחסם על ידי אתגר WAF: {result.message}. "
-            "בדוק את debug_logs/api_discovery_log.json."
+            "בדוק את logs/api_discovery_log.json."
         )
     elif result.status is ScrapeStatus.NO_JOBS:
         print(f"⚠️ {company_id} החזיר 0 משרות: {result.message}")

@@ -40,6 +40,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "apple_custom",
+    "fetch_strategy": "browser",
     "api_url": "https://jobs.apple.com/en-il/search?location=israel-ISR",
     "location_filters": [
       "Israel",
@@ -73,6 +74,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "microsoft_custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.microsoft.com/v2/global/en/locations/israel.html",
     "location_filters": [
       "Israel",
@@ -90,6 +92,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "google_custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.google.com/about/careers/applications/jobs/results/?location=Israel",
     "location_filters": [
       "Israel",
@@ -121,6 +124,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.mobileye.com/jobs",
     "location_filters": [
       "Israel",
@@ -158,6 +162,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://jobs.iai.co.il/",
     "location_filters": [
       "Israel",
@@ -174,6 +179,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://career.rafael.co.il/",
     "location_filters": [
       "Israel",
@@ -191,6 +197,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.checkpoint.com/index.php?q=&module=cpcareers&a=search&fa%5B%5D=country_s%3AIsrael&sort=",
     "job_selector": "#positionResults > div.position > a[href*='m=cpcareers'][href*='a=show'][href*='joborderid=']",
     "location_filters": [
@@ -206,6 +213,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "phenom",
+    "fetch_strategy": "browser",
     "api_url": "https://jobs.paloaltonetworks.com/en/search-jobs/Israel/47263/2/294640/31x5/34x75/50/2",
     "location_filters": [
       "Israel",
@@ -237,6 +245,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.nice.com/",
     "job_selector": "a.result-item[href*='boards.eu.greenhouse.io/nice/jobs/']:visible",
     "location_filters": [
@@ -284,6 +293,7 @@
     "tier": "A",
     "is_active": false,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.ti.com/",
     "job_selector": "div.job-tile > a.job-list-item__link[href*='/sites/CX/job/']",
     "location_filters": [
@@ -345,6 +355,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.synopsys.com/location/israel-jobs/44408/294640/2",
     "job_selector": "#search-results-list a.sr-job-link[data-job-id]",
     "location_filters": [
@@ -362,6 +373,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.qualcomm.com/",
     "job_selector": "[data-test-id='job-listing']:not(li [data-test-id='job-listing']) > a[href^='/careers/job/']",
     "location_filters": [
@@ -378,6 +390,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://jobs.cisco.com/jobs/SearchJobs/?21178=%5B169482%5D&21178_format=6020",
     "location_filters": [
       "Israel",
@@ -394,6 +407,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.towersemi.com/",
     "location_filters": [
       "Israel",
@@ -408,6 +422,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://monday.com/careers",
     "location_filters": [
       "Israel",
@@ -438,6 +453,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.wix.com/location/tel-aviv",
     "location_filters": [
       "Israel",
@@ -454,6 +470,7 @@
     "tier": "A",
     "is_active": false,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.stratasys.com/en/about-us/careers/",
     "job_selector": "table[aria-label^='Search results for'] span.jobTitle.hidden-phone > a.jobTitle-link[href^='/job/']",
     "location_filters": [
@@ -488,6 +505,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "ibm_custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.ibm.com/careers/search",
     "location_filters": [
       "Israel",
@@ -505,6 +523,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "meta_custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.metacareers.com/jobsearch",
     "location_filters": [
       "Israel",
@@ -520,6 +539,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "oracle_recruiting_cloud",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.oracle.com/jobs/",
     "location_filters": [
       "Israel",
@@ -538,6 +558,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "phenom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.servicenow.com/jobs/",
     "location_filters": [
       "Israel",
@@ -554,6 +575,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "phenom",
+    "fetch_strategy": "browser",
     "api_url": "https://jobs.intuit.com/location/israel-jobs/27595/294640/2/",
     "location_filters": [
       "Israel",
@@ -585,6 +607,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "oracle_recruiting_cloud",
+    "fetch_strategy": "browser",
     "api_url": "https://jobs.akamai.com/en/sites/CX_1/jobs?location=Israel&locationId=300000000469279&locationLevel=country&mode=location",
     "location_filters": [
       "Israel",
@@ -600,6 +623,7 @@
     "tier": "B",
     "is_active": false,
     "ats_type": "greenhouse_embedded",
+    "fetch_strategy": "browser",
     "api_url": "https://www.rubrik.com/company/careers",
     "location_filters": [
       "Israel",
@@ -630,6 +654,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "greenhouse_embedded",
+    "fetch_strategy": "browser",
     "api_url": "https://www.catonetworks.com/careers/",
     "location_filters": [
       "Israel",
@@ -660,6 +685,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.cyera.com/careers-il#open-positions",
     "job_selector": "a[href*='/careers/']",
     "location_filters": [
@@ -676,6 +702,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "greenhouse_embedded",
+    "fetch_strategy": "browser",
     "api_url": "https://orca.security/about/careers/",
     "location_filters": [
       "Israel",
@@ -691,6 +718,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "comeet",
+    "fetch_strategy": "browser",
     "api_url": "https://www.silverfort.com/careers/",
     "location_filters": [
       "Israel",
@@ -706,6 +734,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "phenom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.thalesgroup.com/global/en/search-results?keywords=israel&s=1",
     "location_filters": [
       "Israel",
@@ -721,6 +750,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "jobvite",
+    "fetch_strategy": "browser",
     "api_url": "https://jobs.jobvite.com/varonis-internal/search",
     "location_filters": [
       "Israel",
@@ -735,6 +765,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://bigid.com/company/careers/#job-board",
     "job_selector": "a[href*='/job']",
     "location_filters": [
@@ -751,6 +782,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "greenhouse_embedded",
+    "fetch_strategy": "browser",
     "api_url": "https://www.wiz.io/careers",
     "location_filters": [
       "Israel",
@@ -781,6 +813,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://join.jfrog.com/positions/",
     "location_filters": [
       "Israel",
@@ -811,6 +844,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "comeet",
+    "fetch_strategy": "browser",
     "api_url": "https://coralogix.com/careers/",
     "job_selector": "a[href*='/careers/co/ramat-gan-israel/']",
     "location_filters": [
@@ -827,6 +861,7 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.taboola.com/careers/jobs",
     "location_filters": [
       "Israel",
@@ -860,6 +895,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.fiverr.com/jobs/offices/tlv?location=tel-aviv-yafo",
     "job_selector": "a[href^='/jobs/']",
     "location_filters": [
@@ -891,6 +927,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.etoro.com/about/careers/",
     "location_filters": [
       "Israel",
@@ -907,6 +944,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.payoneer.com/jobs",
     "location_filters": [
       "Israel",
@@ -923,6 +961,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://tipalti.com/company/jobs/",
     "location_filters": [
       "Israel",
@@ -938,6 +977,7 @@
     "tier": "C",
     "is_active": false,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://makers.lemonade.com/",
     "location_filters": [
       "Israel",
@@ -953,6 +993,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.optimove.com/careers",
     "location_filters": [
       "Israel",
@@ -983,6 +1024,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "comeet",
+    "fetch_strategy": "browser",
     "api_url": "https://www.comeet.com/jobs/wsc-sports/93.007",
     "location_filters": [
       "Israel",
@@ -999,6 +1041,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://www.aidoc.com/about/careers/#positions",
     "location_filters": [
       "Israel",
@@ -1046,6 +1089,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "comeet",
+    "fetch_strategy": "browser",
     "api_url": "https://www.comeet.com/jobs/optibus/D1.00C",
     "location_filters": [
       "Israel",
@@ -1061,6 +1105,7 @@
     "tier": "C",
     "is_active": true,
     "ats_type": "custom",
+    "fetch_strategy": "browser",
     "api_url": "https://careers.kornit.com/all-positions/?search=&dep=0&location=israel",
     "job_selector": "a[href*='/all-positions/']",
     "location_filters": [

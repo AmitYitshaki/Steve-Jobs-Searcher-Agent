@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Callable, Sequence
 
 from alert_queue import AtomicJsonListStore
+from paths import DATA_DIR, PROJECT_ROOT
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,7 +27,10 @@ SleepFunction = Callable[[float], None]
 class E2ERunner:
     """Orchestrate optional reset, scraping, WARP, and alert delivery."""
 
-    STATE_FILES = ("jobs_history.json", "pending_alerts.json")
+    STATE_FILES = (
+        DATA_DIR.relative_to(PROJECT_ROOT) / "jobs_history.json",
+        DATA_DIR.relative_to(PROJECT_ROOT) / "pending_alerts.json",
+    )
     WARP_TIMEOUT_SECONDS = 30
     SCRIPT_TIMEOUTS = {
         "scraper.py": 900,
@@ -46,7 +50,7 @@ class E2ERunner:
         self.project_root = (
             Path(project_root)
             if project_root is not None
-            else Path(__file__).resolve().parent
+            else PROJECT_ROOT
         )
         self.command_runner = command_runner
         self.input_function = input_function
@@ -61,7 +65,8 @@ class E2ERunner:
             self._reset_state()
         else:
             LOGGER.info(
-                "🧾 Preserving jobs_history.json and pending_alerts.json."
+                "🧾 Preserving data/jobs_history.json and "
+                "data/pending_alerts.json."
             )
 
         producer_code: int | None = None
@@ -270,7 +275,8 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--reset-state",
         action="store_true",
         help=(
-            "Clear jobs_history.json and pending_alerts.json before running."
+            "Clear data/jobs_history.json and data/pending_alerts.json "
+            "before running."
         ),
     )
     parser.add_argument(

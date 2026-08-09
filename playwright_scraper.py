@@ -12,7 +12,6 @@ import time
 from contextlib import AbstractContextManager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib.parse import (
@@ -34,6 +33,10 @@ from playwright.sync_api import (
 )
 from playwright_stealth import Stealth
 
+from models.job import JobRecord
+from models.results import ScrapeResult, ScrapeStatus
+from paths import ARTIFACTS_DIR, LOGS_DIR
+
 LOGGER = logging.getLogger(__name__)
 
 REALISTIC_USER_AGENT = (
@@ -53,28 +56,8 @@ def stealth_sync(page: Page) -> None:
     _STEALTH.apply_stealth_sync(page)
 
 
-JobRecord = dict[str, str]
 CompanyConfig = Mapping[str, Any]
 PlaywrightFactory = Callable[[], AbstractContextManager[Playwright]]
-
-
-class ScrapeStatus(str, Enum):
-    """Represent the outcome of one browser scrape."""
-
-    SUCCESS = "success"
-    NO_JOBS = "no_jobs"
-    WAF_BLOCKED = "waf_blocked"
-    FAILED = "failed"
-
-
-@dataclass(frozen=True)
-class ScrapeResult:
-    """Return jobs together with an explicit browser scrape outcome."""
-
-    status: ScrapeStatus
-    jobs: list[JobRecord]
-    message: str = ""
-    diagnostic_paths: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -403,7 +386,7 @@ class PlaywrightJobScraper:
 
     def __init__(
         self,
-        debug_dir: Path | str = "debug_logs",
+        debug_dir: Path | str = ARTIFACTS_DIR,
         detector: WafChallengeDetector | None = None,
         playwright_factory: PlaywrightFactory = sync_playwright,
         navigation_timeout_ms: int = 30_000,
@@ -504,7 +487,7 @@ class PlaywrightJobScraper:
             stealth_sync(page)
             collector = NetworkResponseCollector(
                 company_id=company_id,
-                log_path=self.debug_dir / "api_discovery_log.json",
+                log_path=LOGS_DIR / "api_discovery_log.json",
             )
             collector.attach(page)
 

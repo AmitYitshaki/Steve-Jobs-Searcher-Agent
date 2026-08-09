@@ -232,6 +232,55 @@ class FetchAtsJobsTests(unittest.TestCase):
         }
 
 
+class CompanyRoutingValidationTests(unittest.TestCase):
+    """Verify startup validation identifies active unroutable configs."""
+
+    def test_valid_active_companies_have_no_routing_errors(self) -> None:
+        """Accept JSON, direct, and browser-backed routing strategies."""
+
+        companies = [
+            {
+                "company_id": "greenhouse-company",
+                "ats_type": "greenhouse",
+                "is_active": True,
+            },
+            {
+                "company_id": "successfactors-company",
+                "ats_type": "successfactors",
+                "is_active": True,
+            },
+            {
+                "company_id": "eightfold-company",
+                "ats_type": "eightfold",
+                "is_active": True,
+            },
+            {
+                "company_id": "browser-company",
+                "ats_type": "custom",
+                "fetch_strategy": "browser",
+                "is_active": True,
+            },
+        ]
+
+        self.assertEqual(scraper.validate_company_routing(companies), [])
+
+    def test_bad_active_config_returns_company_id(self) -> None:
+        """Report active configs that have no available fetch route."""
+
+        companies = [
+            {
+                "company_id": "unroutable-company",
+                "ats_type": "unsupported",
+                "is_active": True,
+            }
+        ]
+
+        self.assertEqual(
+            scraper.validate_company_routing(companies),
+            ["unroutable-company"],
+        )
+
+
 class ScraperAdapterTests(unittest.TestCase):
     """Verify adapter transport bounds and factual content extraction."""
 
@@ -430,7 +479,10 @@ class ScraperAdapterTests(unittest.TestCase):
     def test_microsoft_ats_routes_to_universal_playwright(self) -> None:
         """Route Microsoft through the universal Playwright adapter."""
 
-        company = self._company("microsoft_custom")
+        company = {
+            **self._company("microsoft_custom"),
+            "fetch_strategy": "browser",
+        }
         expected_jobs = [{"id": "example_123"}]
         with (
             patch(

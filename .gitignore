@@ -1,12 +1,18 @@
 # Environments and Secrets
 .env
 __pycache__/
+.pytest_cache/
+*.egg-info/
 
 # Local State and Logs
-jobs_history.json
-pending_alerts.json
+data/
+logs/*
+!logs/artifacts/
+logs/artifacts/*
+!logs/artifacts/.gitkeep
 debug_logs/
 
 # Virtual Environment 
+.venv/
 venv/
 env/

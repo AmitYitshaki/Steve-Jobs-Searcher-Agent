@@ -4,11 +4,13 @@ from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from paths import DATA_DIR, PROMPTS_DIR
+
 # טעינת מפתח ה-API מקובץ .env
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-COSTS_FILE = "costs_log.json"
+COSTS_FILE = DATA_DIR / "costs_log.json"
 
 def log_cost(prompt_tokens, completion_tokens):
     """מחשב את עלות הקריאה ורושם אותה לקובץ לוג"""
@@ -38,6 +40,7 @@ def log_cost(prompt_tokens, completion_tokens):
 
     # הוספת הרשומה החדשה ושמירה
     logs.append(log_entry)
+    COSTS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(COSTS_FILE, "w", encoding="utf-8") as f:
         json.dump(logs, f, indent=4)
 
@@ -114,9 +117,9 @@ def analyze_job(
     """Analyze a job without treating a URL as its description."""
 
     # 1. טעינת קבצי ההקשר של סטיב
-    soul = load_file("agent_soul.md")
-    identity = load_file("agent_identity.md")
-    user_profile = load_file("user_profile.md")
+    soul = load_file(PROMPTS_DIR / "agent_soul.md")
+    identity = load_file(PROMPTS_DIR / "agent_identity.md")
+    user_profile = load_file(PROMPTS_DIR / "user_profile.md")
 
     # 2. הרכבת ה-System Prompt המלא
     system_prompt = f"""

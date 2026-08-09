@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-from alert_queue import PendingAlert, PendingAlertQueue
+from alert_queue import JobHistoryStore, PendingAlert, PendingAlertQueue
 from html_adapters import (
     scrape_eightfold,
     scrape_successfactors,
@@ -20,6 +20,7 @@ from html_adapters import (
 )
 from location_filter import LocationFilter
 from main import analyze_job
+from paths import CONFIG_DIR, DATA_DIR
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,8 +30,8 @@ logging.basicConfig(
 # טעינת משתני הסביבה
 load_dotenv()
 
-HISTORY_FILE = "jobs_history.json"
-PENDING_ALERTS_FILE = "pending_alerts.json"
+HISTORY_FILE = DATA_DIR / "jobs_history.json"
+PENDING_ALERTS_FILE = DATA_DIR / "pending_alerts.json"
 HTTP_TIMEOUT_SECONDS = 15
 
 # חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
@@ -255,6 +256,30 @@ ATS_FIELD_MAP: dict[str, AtsMapping] = {
 ATS_FIELD_MAP["greenhouse_eu"] = ATS_FIELD_MAP["greenhouse"]
 
 
+def validate_company_routing(companies: list[dict]) -> list[str]:
+    """Return active company IDs without a configured fetch route."""
+
+    directly_routed_ats_types = frozenset({"successfactors", "eightfold"})
+    unroutable_company_ids: list[str] = []
+
+    for company in companies:
+        if not company.get("is_active", True):
+            continue
+
+        ats_type = company.get("ats_type")
+        has_route = (
+            ats_type in ATS_FIELD_MAP
+            or ats_type in directly_routed_ats_types
+            or company.get("fetch_strategy") == "browser"
+        )
+        if not has_route:
+            unroutable_company_ids.append(
+                str(company.get("company_id", "<missing>"))
+            )
+
+    return unroutable_company_ids
+
+
 def fetch_ats_jobs(
     company: dict,
     mapping: AtsMapping,
@@ -360,20 +385,8 @@ def fetch_jobs_from_company(company):
     elif ats_type == "eightfold":
         return scrape_eightfold(str(company_id), str(api_url))
 
-    # 3. כל שאר חברות הביג-טק והמערכות הסגורות (Universal Playwright)
-    elif ats_type in [
-        "apple_custom",
-        "microsoft_custom",
-        "google_custom",
-        "meta_custom",
-        "ibm_custom",
-        "oracle_recruiting_cloud",
-        "phenom",
-        "custom",
-        "greenhouse_embedded",
-        "comeet",
-        "jobvite",
-    ]:
+    # 3. Browser-configured career sites (Universal Playwright)
+    elif company.get("fetch_strategy") == "browser":
         return scrape_universal_playwright(company)
 
     # 4. אם מסיבה כלשהי משהו נפל בין הכיסאות
@@ -405,23 +418,31 @@ def extract_job_url(job: Mapping[str, Any]) -> str:
 def run_scraper(
     queue: PendingAlertQueue | None = None,
     location_filter: LocationFilter | None = None,
+    history_store: JobHistoryStore | None = None,
 ) -> None:
     """Scan, analyze, and enqueue new jobs without contacting Telegram."""
 
     print("🚀 מתחיל סריקת משרות...")
     total_start_time = time.time()  # תחילת המדידה הכוללת
     alert_queue = queue or PendingAlertQueue(PENDING_ALERTS_FILE)
+    active_history_store = history_store or JobHistoryStore(HISTORY_FILE)
     active_location_filter = (
         location_filter
         or LocationFilter(strict_mode=False)
     )
     
-    companies = load_json("companies.json")
+    companies = load_json(CONFIG_DIR / "companies.json")
+    unroutable_company_ids = validate_company_routing(companies)
+    if unroutable_company_ids:
+        logging.error(
+            "Unroutable active company configurations: %s",
+            ", ".join(unroutable_company_ids),
+        )
     if not companies:
-        print("⚠️ קובץ companies.json ריק.")
+        print("⚠️ קובץ config/companies.json ריק.")
         return
 
-    history = set(load_json(HISTORY_FILE))
+    history = active_history_store.load()
     pending_ids = alert_queue.ids()
     new_jobs_found = []
     queued_job_ids = set()
