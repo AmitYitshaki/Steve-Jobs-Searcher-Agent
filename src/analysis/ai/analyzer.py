@@ -1,16 +1,37 @@
 import os
 import json
+import logging
 from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
 
 from paths import DATA_DIR, PROMPTS_DIR
 
+LOGGER = logging.getLogger(__name__)
+
 # טעינת מפתח ה-API מקובץ .env
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 COSTS_FILE = DATA_DIR / "costs_log.json"
+
+# Generic fallbacks used when a prompt/context file is absent on a fresh
+# deployment (e.g. config/prompts/user_profile.md is gitignored as personal
+# data and never reaches the production server). Analysis then degrades to a
+# generic prompt instead of crashing, so jobs still get analyzed and queued.
+DEFAULT_IDENTITY_PROMPT = (
+    "You are Steve, an AI assistant that helps a software engineering "
+    "student find relevant entry-level and student positions."
+)
+DEFAULT_SOUL_PROMPT = (
+    "Be concise, factual, and encouraging. Never invent job requirements; "
+    "evaluate fit honestly against the supplied evidence only."
+)
+DEFAULT_USER_PROFILE_PROMPT = (
+    "You are an AI assistant helping a software engineering student find "
+    "relevant entry-level/student jobs. Analyze the job description and "
+    "evaluate its relevance."
+)
 
 def log_cost(prompt_tokens, completion_tokens):
     """מחשב את עלות הקריאה ורושם אותה לקובץ לוג"""
@@ -46,10 +67,24 @@ def log_cost(prompt_tokens, completion_tokens):
 
     return cost
 
-def load_file(filename):
-    """פונקציית עזר שטוענת קובץ טקסט/מרקדאון"""
-    with open(filename, "r", encoding="utf-8") as f:
-        return f.read()
+def load_file(filename, fallback: str = "", label: str = "Prompt") -> str:
+    """Load a prompt/context file, degrading to a fallback when it is missing.
+
+    Personal context (like ``user_profile.md``) is gitignored and may never
+    reach a fresh server, so a missing file must not crash analysis.
+    """
+
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        LOGGER.warning(
+            "%s file not found at %s; falling back to the default generic "
+            "prompt.",
+            label,
+            filename,
+        )
+        return fallback
 
 def build_job_analysis_prompt(
     job_title: str,
@@ -116,10 +151,22 @@ def analyze_job(
 ) -> str:
     """Analyze a job without treating a URL as its description."""
 
-    # 1. טעינת קבצי ההקשר של סטיב
-    soul = load_file(PROMPTS_DIR / "agent_soul.md")
-    identity = load_file(PROMPTS_DIR / "agent_identity.md")
-    user_profile = load_file(PROMPTS_DIR / "user_profile.md")
+    # 1. טעינת קבצי ההקשר של סטיב (עם fallback אם קובץ חסר בשרת)
+    soul = load_file(
+        PROMPTS_DIR / "agent_soul.md",
+        fallback=DEFAULT_SOUL_PROMPT,
+        label="Agent soul",
+    )
+    identity = load_file(
+        PROMPTS_DIR / "agent_identity.md",
+        fallback=DEFAULT_IDENTITY_PROMPT,
+        label="Agent identity",
+    )
+    user_profile = load_file(
+        PROMPTS_DIR / "user_profile.md",
+        fallback=DEFAULT_USER_PROFILE_PROMPT,
+        label="User profile",
+    )
 
     # 2. הרכבת ה-System Prompt המלא
     system_prompt = f"""
