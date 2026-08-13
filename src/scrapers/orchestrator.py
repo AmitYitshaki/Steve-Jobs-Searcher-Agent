@@ -5,12 +5,13 @@ import os
 import re
 import time
 import unicodedata
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 
 from dotenv import load_dotenv
 
 from analysis.ai.analyzer import analyze_job
 from analysis.filters.location import LocationFilter
+from notifications.telegram.bot import TelegramNotifier
 from scrapers.api.client import fetch_ats_jobs
 from scrapers.api.mappings import ATS_FIELD_MAP
 from scrapers.browser.custom_adapters import (
@@ -32,6 +33,17 @@ load_dotenv()
 
 HISTORY_FILE = DATA_DIR / "jobs_history.json"
 PENDING_ALERTS_FILE = DATA_DIR / "pending_alerts.json"
+
+# Operational heartbeat: proves the scheduler is alive when a scan legitimately
+# finds nothing, distinguishing "ran fine, no new jobs" from a silent failure.
+HEARTBEAT_MESSAGE = "Scraping cycle completed. 0 new jobs found."
+
+
+class HeartbeatSender(Protocol):
+    """Minimal transport contract used to deliver the zero-result heartbeat."""
+
+    def send(self, message: str) -> Any:
+        """Send one operational heartbeat message."""
 
 # חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
 EXCLUDE_KEYWORDS = [
@@ -201,12 +213,35 @@ def extract_job_url(job: Mapping[str, Any]) -> str:
     return match.group(0).rstrip(".,);]")
 
 
+def _send_heartbeat(notifier: HeartbeatSender | None) -> None:
+    """Notify operators that the cycle succeeded with zero new jobs."""
+
+    if notifier is None:
+        return
+    try:
+        result = notifier.send(HEARTBEAT_MESSAGE)
+    except Exception as error:
+        logging.warning(
+            "Heartbeat delivery raised %s; the cycle still succeeded.",
+            type(error).__name__,
+        )
+        return
+    if not getattr(result, "success", True):
+        logging.warning("Heartbeat delivery did not succeed.")
+
+
 def run_scraper(
     queue: PendingAlertQueue | None = None,
     location_filter: LocationFilter | None = None,
     history_store: JobHistoryStore | None = None,
+    heartbeat_notifier: HeartbeatSender | None = None,
 ) -> None:
-    """Scan, analyze, and enqueue new jobs without contacting Telegram."""
+    """Scan, analyze, and enqueue new jobs without contacting Telegram.
+
+    A successful scan that finds zero new jobs sends an operational heartbeat
+    through ``heartbeat_notifier`` (when provided) so an alive but quiet
+    scheduler is never mistaken for a silent failure.
+    """
 
     print("🚀 מתחיל סריקת משרות...")
     total_start_time = time.time()  # תחילת המדידה הכוללת
@@ -288,6 +323,7 @@ def run_scraper(
     # --- שלב 2: ניתוח והוספה לתור ---
     if not new_jobs_found:
         print("\n😴 לא נמצאו משרות חדשות רלוונטיות הפעם.")
+        _send_heartbeat(heartbeat_notifier)
     else:
         print(f"\n✅ נמצאו {len(new_jobs_found)} משרות חדשות רלוונטיות. מעביר לסטיב...\n")
         
@@ -348,4 +384,14 @@ def run_scraper(
     print(f"   - סך הכל זמן ריצה: {total_duration:.1f} שניות")
 
 if __name__ == "__main__":
-    run_scraper()
+    heartbeat_notifier: TelegramNotifier | None = None
+    try:
+        heartbeat_notifier = TelegramNotifier.from_environment()
+    except ValueError as error:
+        logging.warning("Heartbeat disabled: %s", error)
+
+    try:
+        run_scraper(heartbeat_notifier=heartbeat_notifier)
+    finally:
+        if heartbeat_notifier is not None:
+            heartbeat_notifier.close()
