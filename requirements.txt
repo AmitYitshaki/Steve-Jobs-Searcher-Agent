@@ -3,5 +3,6 @@ python-dotenv
 requests
 beautifulsoup4
 lxml
-playwright
+playwright==1.62.0
 playwright-stealth==2.0.3
+schedule==1.2.2
