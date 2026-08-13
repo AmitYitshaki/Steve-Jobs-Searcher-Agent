@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -12,6 +13,7 @@ os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 from analysis.ai.analyzer import (  # noqa: E402
     analyze_job,
     build_job_analysis_prompt,
+    load_file,
 )
 
 
@@ -102,6 +104,59 @@ class JobAnalysisPromptTests(unittest.TestCase):
         user_message = create.call_args.kwargs["messages"][1]["content"]
         self.assertIn("Student Data Analyst", user_message)
         self.assertIn("NO FULL JOB DESCRIPTION WAS AVAILABLE", user_message)
+
+
+    def test_load_file_falls_back_when_missing(self) -> None:
+        """Return the fallback and warn instead of raising on a missing file."""
+
+        missing_path = Path("/nonexistent/prompts/user_profile.md")
+        with patch("analysis.ai.analyzer.LOGGER.warning") as warn:
+            result = load_file(
+                missing_path,
+                fallback="FALLBACK-PROMPT",
+                label="User profile",
+            )
+
+        self.assertEqual(result, "FALLBACK-PROMPT")
+        warn.assert_called_once()
+
+    def test_analyze_job_uses_fallback_prompts_when_files_missing(
+        self,
+    ) -> None:
+        """Keep analyzing with generic prompts when context files are absent."""
+
+        response = SimpleNamespace(
+            usage=SimpleNamespace(
+                prompt_tokens=10,
+                completion_tokens=5,
+            ),
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(content="analysis")
+                )
+            ],
+        )
+        with (
+            patch(
+                "analysis.ai.analyzer.PROMPTS_DIR",
+                Path("/nonexistent/prompts"),
+            ),
+            patch(
+                "analysis.ai.analyzer.client.chat.completions.create",
+                return_value=response,
+            ) as create,
+            patch("analysis.ai.analyzer.log_cost", return_value=0.0),
+            patch("builtins.print"),
+        ):
+            result = analyze_job(
+                job_title="Student Software Engineer",
+                job_location="Haifa, Israel",
+                job_content="Build services.",
+            )
+
+        self.assertEqual(result, "analysis")
+        system_message = create.call_args.kwargs["messages"][0]["content"]
+        self.assertIn("software engineering student", system_message)
 
 
 if __name__ == "__main__":
