@@ -10,7 +10,7 @@ dynamic = ["dependencies"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["paths", "pipeline"]
+py-modules = ["paths", "pipeline", "scheduler"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
