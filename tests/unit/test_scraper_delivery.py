@@ -6,7 +6,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
@@ -280,6 +280,77 @@ class ScraperProducerTests(unittest.TestCase):
         )
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0].job_id, "example_789")
+
+
+    def test_heartbeat_sent_when_no_new_jobs(self) -> None:
+        """Emit the heartbeat so a quiet, successful run is never silent."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=[],
+                ),
+                patch(
+                    "scrapers.orchestrator.analyze_job"
+                ) as analyze_job,
+                patch("builtins.print"),
+            ):
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        analyze_job.assert_not_called()
+        notifier.send.assert_called_once_with(
+            "Scraping cycle completed. 0 new jobs found."
+        )
+
+    def test_heartbeat_not_sent_when_new_jobs_found(self) -> None:
+        """Stay silent on the heartbeat channel when real jobs were queued."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=[self.JOB],
+                ),
+                patch(
+                    "scrapers.orchestrator.analyze_job",
+                    return_value="LLM analysis",
+                ),
+                patch("builtins.print"),
+            ):
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_not_called()
 
 
 if __name__ == "__main__":
