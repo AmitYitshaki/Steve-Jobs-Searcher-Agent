@@ -53,44 +53,82 @@ def _request_jobs_response(
     mapping: AtsMapping,
     request_kwargs: dict[str, Any],
 ) -> requests.Response:
-    """Send one ATS request and retry one Cloudflare edge failure."""
+    """Send one ATS request and retry one transient failure."""
 
     method = mapping.method.upper()
-    for attempt in range(MAX_REQUEST_ATTEMPTS):
-        if method == "GET":
-            response = requests.get(api_url, **request_kwargs)
-        elif method == "POST":
-            payload = (
-                mapping.payload_fn(company)
-                if mapping.payload_fn is not None
-                else {}
-            )
-            response = requests.post(
-                api_url,
-                json=payload,
-                **request_kwargs,
-            )
-        else:
-            raise ValueError(f"Unsupported ATS request method: {method}")
+    if method not in {"GET", "POST"}:
+        raise ValueError(f"Unsupported ATS request method: {method}")
 
+    attempt = 0
+    while True:
         try:
+            if method == "GET":
+                response = requests.get(api_url, **request_kwargs)
+            else:
+                payload = (
+                    mapping.payload_fn(company)
+                    if mapping.payload_fn is not None
+                    else {}
+                )
+                response = requests.post(
+                    api_url,
+                    json=payload,
+                    **request_kwargs,
+                )
             response.raise_for_status()
-        except requests.exceptions.HTTPError:
+            return response
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+        ) as error:
+            error_response = getattr(error, "response", None)
+            status_code = (
+                error_response.status_code
+                if error_response is not None
+                else None
+            )
+            is_http_error = isinstance(
+                error,
+                requests.exceptions.HTTPError,
+            )
+            is_retryable_error = (
+                not is_http_error
+                or status_code in RETRYABLE_HTTP_STATUS_CODES
+            )
             should_retry = (
-                response.status_code in RETRYABLE_HTTP_STATUS_CODES
-                and attempt == 0
+                is_retryable_error
+                and attempt < MAX_REQUEST_ATTEMPTS - 1
             )
             if not should_retry:
                 raise
-            print(
-                f"Retrying {company_id} once after API status "
-                f"{response.status_code}."
+            delay_seconds = _retry_delay_seconds(error_response)
+            reason = (
+                f"API status {status_code}"
+                if status_code is not None
+                else type(error).__name__
             )
-            time.sleep(RETRY_DELAY_SECONDS)
-            continue
-        return response
+            print(
+                f"Retrying {company_id} once after {reason}."
+            )
+            time.sleep(delay_seconds)
+            attempt += 1
 
-    raise RuntimeError("ATS request retry loop exhausted unexpectedly")
+
+def _retry_delay_seconds(
+    response: requests.Response | None,
+) -> float:
+    """Return a numeric Retry-After delay or the default retry delay."""
+
+    if response is None or not isinstance(response.headers, Mapping):
+        return RETRY_DELAY_SECONDS
+    retry_after = response.headers.get("Retry-After")
+    if retry_after is None:
+        return RETRY_DELAY_SECONDS
+    try:
+        return max(float(str(retry_after).strip()), 0.0)
+    except ValueError:
+        return RETRY_DELAY_SECONDS
 
 
 def fetch_ats_jobs(
