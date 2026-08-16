@@ -57,6 +57,119 @@ class ScraperProducerTests(unittest.TestCase):
         "content": "Build Python services.",
     }
 
+    def test_title_decision_rejects_non_rd_entry_level_roles(self) -> None:
+        """Reject explicit business functions despite internship signals."""
+
+        cases = (
+            "Sales Development Representative (SDR - Internship)",
+            "Marketing Intern",
+            "Human Resources Student",
+            "Business Development Intern",
+        )
+
+        for title in cases:
+            with self.subTest(title=title):
+                decision = scraper.is_relevant_job(title)
+                self.assertFalse(decision.allowed)
+                self.assertEqual(
+                    decision.reason,
+                    "excluded title keyword",
+                )
+                self.assertIsNotNone(decision.matched_keyword)
+
+    def test_title_decision_preserves_strong_high_recall_signal(self) -> None:
+        """Keep hardware student roles under the high-recall policy."""
+
+        decision = scraper.is_relevant_job("Chip Design Student")
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.reason, "strong entry-level signal")
+        self.assertEqual(decision.matched_keyword, "student")
+
+    def test_graduate_software_dev_title_is_relevant(self) -> None:
+        """Accept Amazon's graduate software-development abbreviation."""
+
+        decision = scraper.is_relevant_job(
+            "2026 Graduate Software Dev Engineer"
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(
+            decision.reason,
+            "weak entry-level and target-role signals",
+        )
+        self.assertEqual(decision.matched_keyword, "graduate")
+
+    def test_graduate_keyword_has_negative_controls(self) -> None:
+        """Avoid substring, seniority, and unrelated-program matches."""
+
+        titles = (
+            "Undergraduate Software Engineer",
+            "Graduate Program Manager",
+            "MBA Graduate Finance Program",
+        )
+
+        for title in titles:
+            with self.subTest(title=title):
+                self.assertFalse(scraper.is_relevant_job(title).allowed)
+
+    def test_non_relevant_title_returns_structured_reason(self) -> None:
+        """Explain why an otherwise valid title did not qualify."""
+
+        decision = scraper.is_relevant_job("Office Administrator")
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(
+            decision.reason,
+            "no qualifying entry-level title signal",
+        )
+        self.assertIsNone(decision.matched_keyword)
+
+    def test_title_rejection_is_logged_before_analysis(self) -> None:
+        """Expose deterministic title rejections in the Producer log."""
+
+        sales_job = {
+            **self.JOB,
+            "title": "Sales Development Representative (SDR - Internship)",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=[sales_job],
+                ),
+                patch(
+                    "scrapers.orchestrator.analyze_job"
+                ) as analyze_job,
+                patch("scrapers.orchestrator.logging.info") as info,
+                patch("builtins.print"),
+            ):
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                )
+
+            alerts = queue.load()
+
+        self.assertEqual(alerts, [])
+        analyze_job.assert_not_called()
+        self.assertTrue(
+            any(
+                call_args.args[0].startswith("Rejecting %s: title")
+                for call_args in info.call_args_list
+            )
+        )
+
     def test_new_job_is_analyzed_and_queued(self) -> None:
         """Store all required fields without invoking Telegram."""
 

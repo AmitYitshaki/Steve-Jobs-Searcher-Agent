@@ -431,7 +431,7 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             page.goto.return_value = SimpleNamespace(status=200)
             page.content.return_value = (
                 '<html><body><a href="/jobs/123">'
-                "Junior Software Engineer"
+                "<h2>Junior Software Engineer</h2>"
                 "</a></body></html>"
             )
             context = MagicMock()
@@ -475,12 +475,18 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             first_element = MagicMock()
             first_element.get_attribute.return_value = "/openings/123"
-            first_element.inner_text.return_value = "ML"
+            first_heading = MagicMock()
+            first_heading.count.return_value = 1
+            first_heading.inner_text.return_value = "ML Engineer"
+            first_element.locator.return_value.first = first_heading
             duplicate_element = MagicMock()
             duplicate_element.get_attribute.return_value = (
                 "https://example.test/openings/123"
             )
-            duplicate_element.inner_text.return_value = "Duplicate"
+            duplicate_heading = MagicMock()
+            duplicate_heading.count.return_value = 1
+            duplicate_heading.inner_text.return_value = "Duplicate"
+            duplicate_element.locator.return_value.first = duplicate_heading
             selector_locator = MagicMock()
             stale_element = MagicMock()
             stale_element.get_attribute.side_effect = RuntimeError(
@@ -524,9 +530,14 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             self.stealth.side_effect = lambda target: events.append(
                 "stealth"
             )
-            with patch(
-                "scrapers.browser.playwright_driver.LOGGER.debug"
-            ) as debug:
+            with (
+                patch(
+                    "scrapers.browser.playwright_driver.LOGGER.debug"
+                ) as debug,
+                patch(
+                    "scrapers.browser.playwright_driver.LOGGER.info"
+                ) as info,
+            ):
                 result = scraper.scrape(
                     {
                         "company_id": "example",
@@ -557,10 +568,16 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             page.locator.assert_called_once_with(".custom-opening")
             selector_locator.all.assert_called_once_with()
             self.assertEqual(len(result.jobs), 1)
-            self.assertEqual(result.jobs[0]["title"], "ML")
+            self.assertEqual(result.jobs[0]["title"], "ML Engineer")
             self.assertEqual(
                 result.jobs[0]["url"],
                 "https://example.test/openings/123",
+            )
+            info.assert_called_once_with(
+                "Extracted %s jobs for %s with selector %r",
+                1,
+                "example",
+                ".custom-opening",
             )
             debug.assert_called_once()
 
@@ -592,7 +609,8 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         """Ignore article-like URLs even when they contain job keywords."""
 
         excluded_links = "".join(
-            f'<a href="/{category}/job-guide">Content {category}</a>'
+            f'<a href="/{category}/job-guide">'
+            f"<h2>Content {category}</h2></a>"
             for category in (
                 "blog",
                 "article",
@@ -603,8 +621,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         )
         html = (
             f"<html><body>{excluded_links}"
-            '<a href="/careers/blog-editor-role">Blog Editor Role</a>'
-            '<a href="/jobs/123">Junior Software Engineer</a>'
+            '<a href="/careers/blog-editor-role">'
+            "<h2>Blog Editor Role</h2></a>"
+            '<a href="/jobs/123"><h2>Junior Software Engineer</h2></a>'
             "</body></html>"
         )
         scraper = PlaywrightJobScraper(playwright_factory=MagicMock())
@@ -622,6 +641,45 @@ class PlaywrightJobScraperTests(unittest.TestCase):
                 "https://example.test/jobs/123",
             },
         )
+
+    def test_fallback_heuristic_checks_path_not_hostname(self) -> None:
+        """Do not classify every link on a jobs hostname as a job."""
+
+        html = (
+            '<a href="/about/leadership"><h2>Leadership</h2></a>'
+            '<a href="/jobs/123"><h2>Student Developer</h2></a>'
+        )
+
+        jobs = PlaywrightJobScraper()._extract_jobs(
+            html=html,
+            base_url="https://jobs.example.test/careers",
+            company_id="example",
+        )
+
+        self.assertEqual(
+            [job["url"] for job in jobs],
+            ["https://jobs.example.test/jobs/123"],
+        )
+
+    def test_fallback_title_uses_heading_not_card_text(self) -> None:
+        """Keep card metadata out of the normalized job title."""
+
+        html = (
+            '<a href="/jobs/123">'
+            "<h2>Student Software Engineer</h2>"
+            "<p>From intern to staff engineer. Read More</p>"
+            "</a>"
+            '<a href="/jobs/456">Flat title without heading</a>'
+        )
+
+        jobs = PlaywrightJobScraper()._extract_jobs(
+            html=html,
+            base_url="https://example.test/careers",
+            company_id="example",
+        )
+
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["title"], "Student Software Engineer")
 
     def test_returns_failed_status_and_closes_after_navigation_error(
         self,

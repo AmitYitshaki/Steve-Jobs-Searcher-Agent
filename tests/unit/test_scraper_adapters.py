@@ -16,6 +16,73 @@ from scrapers.browser import custom_adapters  # noqa: E402
 class FetchAtsJobsTests(unittest.TestCase):
     """Verify the mapping-driven JSON ATS interface directly."""
 
+    def test_lever_mapping_normalizes_array_payload(self) -> None:
+        """Normalize Lever's raw posting array without an envelope."""
+
+        response = MagicMock()
+        response.json.return_value = [
+            {
+                "id": "lever-123",
+                "text": "Graduate Software Dev Engineer",
+                "categories": {"location": "Jerusalem, Israel"},
+                "hostedUrl": (
+                    "https://jobs.eu.lever.co/mobileye/lever-123"
+                ),
+                "descriptionPlain": "Build autonomous-driving software.",
+                "additionalPlain": "Work with perception teams.",
+                "lists": [
+                    {
+                        "text": "Requirements",
+                        "content": "B.Sc. in Computer Science.",
+                    }
+                ],
+            }
+        ]
+        company = {
+            "company_id": "mobileye",
+            "company_name": "Mobileye",
+            "ats_type": "lever",
+            "api_url": (
+                "https://api.eu.lever.co/v0/postings/"
+                "mobileye?mode=json"
+            ),
+        }
+
+        with patch(
+            "scrapers.api.client.requests.get",
+            return_value=response,
+        ) as get:
+            jobs = scraper.fetch_ats_jobs(
+                company,
+                scraper.ATS_FIELD_MAP["lever"],
+            )
+
+        self.assertIsNone(scraper.ATS_FIELD_MAP["lever"].envelope_key)
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "mobileye_lever-123",
+                    "title": "Graduate Software Dev Engineer",
+                    "location": "Jerusalem, Israel",
+                    "url": (
+                        "https://jobs.eu.lever.co/mobileye/lever-123"
+                    ),
+                    "content": (
+                        "Build autonomous-driving software.\n"
+                        "Work with perception teams.\n"
+                        "Requirements\n"
+                        "B.Sc. in Computer Science."
+                    ),
+                }
+            ],
+        )
+        get.assert_called_once_with(
+            company["api_url"],
+            headers=api_client.DEFAULT_REQUEST_HEADERS,
+            timeout=15,
+        )
+
     def test_get_mappings_normalize_jobs(self) -> None:
         """Normalize every GET-based ATS through one fetching interface."""
 
@@ -133,6 +200,7 @@ class FetchAtsJobsTests(unittest.TestCase):
                 self.assertEqual(jobs, [expected_job])
                 get.assert_called_once_with(
                     "https://example.test/api",
+                    headers=api_client.DEFAULT_REQUEST_HEADERS,
                     timeout=15,
                 )
                 response.raise_for_status.assert_called_once_with()
@@ -189,9 +257,52 @@ class FetchAtsJobsTests(unittest.TestCase):
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/152.0.0.0 Safari/537.36"
+                ),
             },
             timeout=15,
         )
+
+    def test_retries_cloudflare_status_once(self) -> None:
+        """Retry one time for throttling and Cloudflare edge failures."""
+
+        for status_code in (429, 520, 521, 522, 523, 524):
+            with self.subTest(status_code=status_code):
+                failed_response = MagicMock()
+                failed_response.status_code = status_code
+                failed_response.raise_for_status.side_effect = (
+                    api_client.requests.exceptions.HTTPError(
+                        response=failed_response,
+                    )
+                )
+                successful_response = MagicMock()
+                successful_response.status_code = 200
+                successful_response.json.return_value = {"jobs": []}
+
+                with (
+                    patch(
+                        "scrapers.api.client.requests.get",
+                        side_effect=[
+                            failed_response,
+                            successful_response,
+                        ],
+                    ) as get,
+                    patch("scrapers.api.client.time.sleep") as sleep,
+                    patch("builtins.print"),
+                ):
+                    jobs = scraper.fetch_ats_jobs(
+                        self._company("greenhouse"),
+                        scraper.ATS_FIELD_MAP["greenhouse"],
+                    )
+
+                self.assertEqual(jobs, [])
+                self.assertEqual(get.call_count, 2)
+                sleep.assert_called_once_with(
+                    api_client.RETRY_DELAY_SECONDS
+                )
 
     def test_workday_mapping_handles_configured_http_status(self) -> None:
         """Return no jobs for Workday's configured auth error statuses."""
@@ -321,6 +432,7 @@ class ScraperAdapterTests(unittest.TestCase):
 
         get.assert_called_once_with(
             "https://example.test/api",
+            headers=api_client.DEFAULT_REQUEST_HEADERS,
             timeout=15,
         )
         self.assertEqual(jobs[0]["url"], (

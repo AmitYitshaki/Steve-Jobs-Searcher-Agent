@@ -5,6 +5,7 @@ import os
 import re
 import time
 import unicodedata
+from dataclasses import dataclass
 from typing import Any, Mapping, Protocol
 
 from dotenv import load_dotenv
@@ -47,7 +48,11 @@ class HeartbeatSender(Protocol):
 
 # חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
 EXCLUDE_KEYWORDS = [
-    "senior", "lead", "manager", "director", "principal", "head", "vp", "expert", "architect"
+    "senior", "staff", "lead", "manager", "director", "principal",
+    "head", "vp", "expert", "architect", "sales", "sdr", "marketing",
+    "human resources", "hr", "business development", "recruiter",
+    "recruiting", "talent acquisition", "customer success",
+    "account executive",
 ]
 
 STRONG_ENTRY_LEVEL_KEYWORDS = [
@@ -60,13 +65,14 @@ STRONG_ENTRY_LEVEL_KEYWORDS = [
 WEAK_ENTRY_LEVEL_KEYWORDS = [
     "part time", "part-time", "parttime", "junior", "entry level",
     "entry-level", "new grad", "new graduate", "new college grad",
-    "college graduate", "recent graduate", "graduate position",
+    "college graduate", "recent graduate", "graduate", "graduate position",
     "graduate program", "early career", "early careers",
     "early in profession", "trainee"
 ]
 
 TARGET_ROLE_KEYWORDS = [
     "software engineer", "software developer", "software development",
+    "software dev engineer", "software dev", "dev engineer",
     "backend", "back end", "back-end", "full stack", "full-stack",
     "developer", "development engineer", "r&d engineer",
     "algorithm", "algorithms", "algorithm engineer", "machine learning",
@@ -96,6 +102,16 @@ HEBREW_ROLE_KEYWORDS = [
     "אבטחת מידע", "סייבר", "ניהול מוצר", "מנהל מוצר", "מנהלת מוצר"
 ]
 
+
+@dataclass(frozen=True)
+class TitleDecision:
+    """Describe whether a title passed deterministic relevance rules."""
+
+    allowed: bool
+    reason: str = ""
+    matched_keyword: str | None = None
+
+
 def normalize_text(text: str) -> str:
     if not text:
         return ""
@@ -110,23 +126,64 @@ def contains_phrase(text: str, phrase: str) -> bool:
     pattern = rf"(?<!\w){re.escape(normalized_phrase)}(?!\w)"
     return re.search(pattern, normalized_text) is not None
 
-def is_relevant_job(title):
-    # 1. סינון ראשוני: העפת משרות מהרשימה השחורה
-    if any(contains_phrase(title, kw) for kw in EXCLUDE_KEYWORDS):
-        return False
+def _first_matching_keyword(
+    title: str,
+    keywords: list[str],
+) -> str | None:
+    """Return the first complete keyword phrase found in ``title``."""
 
-    # 2. חיפוש מילות סטודנט חזקות
-    if any(contains_phrase(title, kw) for kw in STRONG_ENTRY_LEVEL_KEYWORDS + HEBREW_ENTRY_LEVEL_KEYWORDS):
-        return True
-        
-    # 3. שילוב של מילת כניסה חלשה + התאמה מקצועית
-    has_weak_entry = any(contains_phrase(title, kw) for kw in WEAK_ENTRY_LEVEL_KEYWORDS)
-    has_target_role = any(contains_phrase(title, kw) for kw in TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS)
-    
-    if has_weak_entry and has_target_role:
-        return True
-        
-    return False
+    return next(
+        (keyword for keyword in keywords if contains_phrase(title, keyword)),
+        None,
+    )
+
+
+def is_relevant_job(title: str) -> TitleDecision:
+    """Evaluate title relevance while preserving strong-signal recall."""
+
+    excluded_keyword = _first_matching_keyword(title, EXCLUDE_KEYWORDS)
+    if excluded_keyword is not None:
+        return TitleDecision(
+            allowed=False,
+            reason="excluded title keyword",
+            matched_keyword=excluded_keyword,
+        )
+
+    strong_keyword = _first_matching_keyword(
+        title,
+        STRONG_ENTRY_LEVEL_KEYWORDS + HEBREW_ENTRY_LEVEL_KEYWORDS,
+    )
+    if strong_keyword is not None:
+        return TitleDecision(
+            allowed=True,
+            reason="strong entry-level signal",
+            matched_keyword=strong_keyword,
+        )
+
+    weak_keyword = _first_matching_keyword(
+        title,
+        WEAK_ENTRY_LEVEL_KEYWORDS,
+    )
+    role_keyword = _first_matching_keyword(
+        title,
+        TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS,
+    )
+    if weak_keyword is not None and role_keyword is not None:
+        return TitleDecision(
+            allowed=True,
+            reason="weak entry-level and target-role signals",
+            matched_keyword=weak_keyword,
+        )
+    if weak_keyword is not None:
+        return TitleDecision(
+            allowed=False,
+            reason="weak entry-level signal without target role",
+            matched_keyword=weak_keyword,
+        )
+    return TitleDecision(
+        allowed=False,
+        reason="no qualifying entry-level title signal",
+    )
 
 def load_json(filepath):
     if not os.path.exists(filepath):
@@ -277,28 +334,41 @@ def run_scraper(
         location_filters = company.get("location_filters", [])
         
         for job in jobs:
-            title_match = is_relevant_job(job["title"])
+            title_decision = is_relevant_job(job["title"])
+            if not title_decision.allowed:
+                match_details = ""
+                if title_decision.matched_keyword is not None:
+                    match_details = (
+                        f" '{title_decision.matched_keyword}'"
+                    )
+                logging.info(
+                    "Rejecting %s: title %s%s.",
+                    job["id"],
+                    title_decision.reason,
+                    match_details,
+                )
+                continue
+
             job_url = (
                 extract_job_url(job)
                 or str(company.get("api_url", ""))
             )
-            if title_match:
-                location_decision = active_location_filter.evaluate(
-                    job_title=job["title"],
-                    job_url=job_url,
-                )
-                if not location_decision.allowed:
-                    match_details = ""
-                    if location_decision.matched_location is not None:
-                        match_details = (
-                            f" '{location_decision.matched_location}'"
-                            f" in {location_decision.source}"
-                        )
-                    print(
-                        f"🚫 Rejecting {job['id']}: "
-                        f"{location_decision.reason}{match_details}."
+            location_decision = active_location_filter.evaluate(
+                job_title=job["title"],
+                job_url=job_url,
+            )
+            if not location_decision.allowed:
+                match_details = ""
+                if location_decision.matched_location is not None:
+                    match_details = (
+                        f" '{location_decision.matched_location}'"
+                        f" in {location_decision.source}"
                     )
-                    continue
+                print(
+                    f"🚫 Rejecting {job['id']}: "
+                    f"{location_decision.reason}{match_details}."
+                )
+                continue
 
             location_match = is_in_location(job["location"], location_filters)
             is_new = (
@@ -307,7 +377,7 @@ def run_scraper(
                 and job["id"] not in queued_job_ids
             )
             
-            if title_match and location_match and is_new:
+            if location_match and is_new:
                 new_jobs_found.append({
                     **job,
                     "company_name": company.get(
