@@ -273,6 +273,7 @@ class FetchAtsJobsTests(unittest.TestCase):
             with self.subTest(status_code=status_code):
                 failed_response = MagicMock()
                 failed_response.status_code = status_code
+                failed_response.headers = {}
                 failed_response.raise_for_status.side_effect = (
                     api_client.requests.exceptions.HTTPError(
                         response=failed_response,
@@ -303,6 +304,68 @@ class FetchAtsJobsTests(unittest.TestCase):
                 sleep.assert_called_once_with(
                     api_client.RETRY_DELAY_SECONDS
                 )
+
+    def test_retries_connection_and_timeout_errors_once(self) -> None:
+        """Retry common transient transport failures one time."""
+
+        errors = (
+            api_client.requests.exceptions.ConnectionError(
+                "connection reset"
+            ),
+            api_client.requests.exceptions.Timeout("request timed out"),
+        )
+        for error in errors:
+            with self.subTest(error_type=type(error).__name__):
+                response = MagicMock()
+                response.json.return_value = {"jobs": []}
+                with (
+                    patch(
+                        "scrapers.api.client.requests.get",
+                        side_effect=[error, response],
+                    ) as get,
+                    patch("scrapers.api.client.time.sleep") as sleep,
+                    patch("builtins.print"),
+                ):
+                    jobs = scraper.fetch_ats_jobs(
+                        self._company("greenhouse"),
+                        scraper.ATS_FIELD_MAP["greenhouse"],
+                    )
+
+                self.assertEqual(jobs, [])
+                self.assertEqual(get.call_count, 2)
+                sleep.assert_called_once_with(
+                    api_client.RETRY_DELAY_SECONDS
+                )
+
+    def test_retry_respects_retry_after_header(self) -> None:
+        """Use the server-provided retry delay when it is numeric."""
+
+        failed_response = MagicMock()
+        failed_response.status_code = 429
+        failed_response.headers = {"Retry-After": "2"}
+        failed_response.raise_for_status.side_effect = (
+            api_client.requests.exceptions.HTTPError(
+                response=failed_response,
+            )
+        )
+        successful_response = MagicMock()
+        successful_response.json.return_value = {"jobs": []}
+
+        with (
+            patch(
+                "scrapers.api.client.requests.get",
+                side_effect=[failed_response, successful_response],
+            ),
+            patch("scrapers.api.client.time.sleep") as sleep,
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_ats_jobs(
+                self._company("greenhouse"),
+                scraper.ATS_FIELD_MAP["greenhouse"],
+            )
+
+        self.assertEqual(jobs, [])
+        sleep.assert_called_once_with(2.0)
 
     def test_workday_mapping_handles_configured_http_status(self) -> None:
         """Return no jobs for Workday's configured auth error statuses."""

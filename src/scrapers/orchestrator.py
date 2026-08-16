@@ -49,7 +49,7 @@ class HeartbeatSender(Protocol):
 # חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
 EXCLUDE_KEYWORDS = [
     "senior", "staff", "lead", "manager", "director", "principal",
-    "head", "vp", "expert", "architect", "sales", "sdr", "marketing",
+    "head", "vp", "expert", "architect", "sales", "marketing",
     "human resources", "hr", "business development", "recruiter",
     "recruiting", "talent acquisition", "customer success",
     "account executive",

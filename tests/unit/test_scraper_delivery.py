@@ -86,6 +86,16 @@ class ScraperProducerTests(unittest.TestCase):
         self.assertEqual(decision.reason, "strong entry-level signal")
         self.assertEqual(decision.matched_keyword, "student")
 
+    def test_sdr_hardware_title_is_not_excluded(self) -> None:
+        """Do not confuse software-defined radio with a sales role."""
+
+        decision = scraper.is_relevant_job(
+            "Software Defined Radio (SDR) Student Engineer"
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.matched_keyword, "student")
+
     def test_graduate_software_dev_title_is_relevant(self) -> None:
         """Accept Amazon's graduate software-development abbreviation."""
 

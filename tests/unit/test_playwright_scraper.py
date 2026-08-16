@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 from urllib.parse import parse_qs, urlsplit
 
 from playwright.sync_api import (
@@ -573,13 +573,53 @@ class PlaywrightJobScraperTests(unittest.TestCase):
                 result.jobs[0]["url"],
                 "https://example.test/openings/123",
             )
-            info.assert_called_once_with(
-                "Extracted %s jobs for %s with selector %r",
-                1,
-                "example",
-                ".custom-opening",
+            info.assert_has_calls(
+                [
+                    call(
+                        "Extracted title for %s using %s path",
+                        "example",
+                        "heading",
+                    ),
+                    call(
+                        "Extracted %s jobs for %s with selector %r",
+                        1,
+                        "example",
+                        ".custom-opening",
+                    ),
+                ]
             )
             debug.assert_called_once()
+
+    def test_selector_title_falls_back_to_first_text_line(self) -> None:
+        """Keep plain-text job anchors and trim their card boilerplate."""
+
+        element = MagicMock()
+        element.get_attribute.return_value = "/jobs/123"
+        element.locator.return_value.first.count.return_value = 0
+        element.inner_text.return_value = (
+            "Software Engineer Intern\nRead More\nTel Aviv"
+        )
+        page = MagicMock()
+        page.locator.return_value.all.return_value = [element]
+        scraper = PlaywrightJobScraper(playwright_factory=MagicMock())
+
+        with patch(
+            "scrapers.browser.playwright_driver.LOGGER.info"
+        ) as info:
+            jobs = scraper._extract_jobs_by_selector(
+                page=page,
+                selector="a.job-link",
+                base_url="https://example.test/careers",
+                company_id="example",
+            )
+
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["title"], "Software Engineer Intern")
+        info.assert_called_once_with(
+            "Extracted title for %s using %s path",
+            "example",
+            "fallback",
+        )
 
     def test_selector_wait_timeout_logs_warning_and_continues(self) -> None:
         """Treat a missing SPA selector as an empty result, not a crash."""
@@ -662,24 +702,40 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         )
 
     def test_fallback_title_uses_heading_not_card_text(self) -> None:
-        """Keep card metadata out of the normalized job title."""
+        """Prefer headings but preserve plain-text job anchors."""
 
         html = (
             '<a href="/jobs/123">'
             "<h2>Student Software Engineer</h2>"
             "<p>From intern to staff engineer. Read More</p>"
             "</a>"
-            '<a href="/jobs/456">Flat title without heading</a>'
+            '<a href="/jobs/456">'
+            "Plain Software Engineer\nRead More</a>"
         )
 
-        jobs = PlaywrightJobScraper()._extract_jobs(
-            html=html,
-            base_url="https://example.test/careers",
-            company_id="example",
-        )
+        with patch(
+            "scrapers.browser.playwright_driver.LOGGER.info"
+        ) as info:
+            jobs = PlaywrightJobScraper()._extract_jobs(
+                html=html,
+                base_url="https://example.test/careers",
+                company_id="example",
+            )
 
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0]["title"], "Student Software Engineer")
+        self.assertEqual(
+            [job["title"] for job in jobs],
+            ["Student Software Engineer", "Plain Software Engineer"],
+        )
+        info.assert_any_call(
+            "Extracted title for %s using %s path",
+            "example",
+            "heading",
+        )
+        info.assert_any_call(
+            "Extracted title for %s using %s path",
+            "example",
+            "fallback",
+        )
 
     def test_returns_failed_status_and_closes_after_navigation_error(
         self,

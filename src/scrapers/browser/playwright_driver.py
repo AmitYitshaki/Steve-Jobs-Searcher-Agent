@@ -691,6 +691,15 @@ class PlaywrightJobScraper:
 
         return tuple(written_paths)
 
+    @staticmethod
+    def _first_text_line(raw_title: str) -> str:
+        """Return the first non-empty line from extracted anchor text."""
+
+        return next(
+            (line.strip() for line in raw_title.splitlines() if line.strip()),
+            "",
+        )
+
     def _extract_jobs_by_selector(
         self,
         page: Page,
@@ -708,9 +717,12 @@ class PlaywrightJobScraper:
             try:
                 href = element.get_attribute("href")
                 heading = element.locator(self.TITLE_HEADING_SELECTOR).first
-                if heading.count() == 0:
-                    continue
-                raw_title = heading.inner_text()
+                if heading.count() > 0:
+                    raw_title = heading.inner_text()
+                    title_source = "heading"
+                else:
+                    raw_title = element.inner_text()
+                    title_source = "fallback"
             except Exception as error:
                 LOGGER.debug(
                     "Skipping failed element for selector %s: %s",
@@ -720,7 +732,11 @@ class PlaywrightJobScraper:
                 continue
             if not isinstance(href, str) or not href.strip():
                 continue
-            title = raw_title.strip() if isinstance(raw_title, str) else ""
+            title = (
+                self._first_text_line(raw_title)
+                if isinstance(raw_title, str)
+                else ""
+            )
             if not title:
                 continue
 
@@ -728,6 +744,11 @@ class PlaywrightJobScraper:
             if full_url in seen_urls:
                 continue
             seen_urls.add(full_url)
+            LOGGER.info(
+                "Extracted title for %s using %s path",
+                company_id,
+                title_source,
+            )
 
             stable_id = hashlib.sha256(
                 full_url.encode("utf-8")
@@ -759,9 +780,13 @@ class PlaywrightJobScraper:
         for anchor in soup.find_all("a", href=True):
             href = str(anchor["href"]).strip()
             heading = anchor.find(self.TITLE_HEADING_NAMES)
-            if heading is None:
-                continue
-            title = heading.get_text(" ", strip=True)
+            if heading is not None:
+                raw_title = heading.get_text(" ", strip=True)
+                title_source = "heading"
+            else:
+                raw_title = anchor.get_text("\n", strip=True)
+                title_source = "fallback"
+            title = self._first_text_line(raw_title)
             full_url = urljoin(base_url, href)
 
             if len(title) <= 5:
@@ -782,6 +807,11 @@ class PlaywrightJobScraper:
             if full_url in seen_urls:
                 continue
             seen_urls.add(full_url)
+            LOGGER.info(
+                "Extracted title for %s using %s path",
+                company_id,
+                title_source,
+            )
 
             stable_id = hashlib.sha256(full_url.encode("utf-8")).hexdigest()[:16]
             jobs.append(
