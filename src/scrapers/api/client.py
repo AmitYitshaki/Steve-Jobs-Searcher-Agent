@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Mapping
 
 import requests
@@ -10,6 +11,17 @@ from bs4 import BeautifulSoup
 from scrapers.api.mappings import AtsMapping
 
 HTTP_TIMEOUT_SECONDS = 15
+RETRY_DELAY_SECONDS = 0.5
+MAX_REQUEST_ATTEMPTS = 2
+RETRYABLE_HTTP_STATUS_CODES = frozenset({429, 520, 521, 522, 523, 524})
+DEFAULT_REQUEST_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/152.0.0.0 Safari/537.36"
+    ),
+}
 
 
 def normalize_job_content(*values: Any) -> str:
@@ -34,23 +46,17 @@ def normalize_job_content(*values: Any) -> str:
     return "\n".join(content_parts)
 
 
-def fetch_ats_jobs(
-    company: dict,
+def _request_jobs_response(
+    api_url: str,
+    company_id: str,
+    company: dict[str, Any],
     mapping: AtsMapping,
-) -> list[dict]:
-    """Fetch and normalize jobs for one mapping-driven JSON ATS."""
+    request_kwargs: dict[str, Any],
+) -> requests.Response:
+    """Send one ATS request and retry one Cloudflare edge failure."""
 
-    api_url = company.get("api_url")
-    company_id = company.get("company_id")
-    ats_type = company.get("ats_type")
-    request_kwargs: dict[str, Any] = {
-        "timeout": HTTP_TIMEOUT_SECONDS,
-    }
-    if mapping.headers is not None:
-        request_kwargs["headers"] = mapping.headers
-
-    try:
-        method = mapping.method.upper()
+    method = mapping.method.upper()
+    for attempt in range(MAX_REQUEST_ATTEMPTS):
         if method == "GET":
             response = requests.get(api_url, **request_kwargs)
         elif method == "POST":
@@ -67,12 +73,58 @@ def fetch_ats_jobs(
         else:
             raise ValueError(f"Unsupported ATS request method: {method}")
 
-        response.raise_for_status()
-        payload = response.json()
-        if not isinstance(payload, Mapping):
-            return []
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            should_retry = (
+                response.status_code in RETRYABLE_HTTP_STATUS_CODES
+                and attempt == 0
+            )
+            if not should_retry:
+                raise
+            print(
+                f"Retrying {company_id} once after API status "
+                f"{response.status_code}."
+            )
+            time.sleep(RETRY_DELAY_SECONDS)
+            continue
+        return response
 
-        items = payload.get(mapping.envelope_key, [])
+    raise RuntimeError("ATS request retry loop exhausted unexpectedly")
+
+
+def fetch_ats_jobs(
+    company: dict[str, Any],
+    mapping: AtsMapping,
+) -> list[dict]:
+    """Fetch and normalize jobs for one mapping-driven JSON ATS."""
+
+    api_url = str(company.get("api_url", ""))
+    company_id = str(company.get("company_id", ""))
+    ats_type = company.get("ats_type")
+    request_headers = dict(DEFAULT_REQUEST_HEADERS)
+    if mapping.headers is not None:
+        request_headers.update(mapping.headers)
+    request_kwargs: dict[str, Any] = {
+        "headers": request_headers,
+        "timeout": HTTP_TIMEOUT_SECONDS,
+    }
+
+    try:
+        response = _request_jobs_response(
+            api_url=api_url,
+            company_id=company_id,
+            company=company,
+            mapping=mapping,
+            request_kwargs=request_kwargs,
+        )
+        payload = response.json()
+        if mapping.envelope_key is None:
+            items = payload
+        elif isinstance(payload, Mapping):
+            items = payload.get(mapping.envelope_key, [])
+        else:
+            return []
         if not isinstance(items, list):
             return []
 

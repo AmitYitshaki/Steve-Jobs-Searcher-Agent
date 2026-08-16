@@ -123,9 +123,8 @@
     "company_name": "Mobileye",
     "tier": "A",
     "is_active": true,
-    "ats_type": "custom",
-    "fetch_strategy": "browser",
-    "api_url": "https://careers.mobileye.com/jobs",
+    "ats_type": "lever",
+    "api_url": "https://api.eu.lever.co/v0/postings/mobileye?mode=json",
     "location_filters": [
       "Israel",
       "Jerusalem",
@@ -135,7 +134,7 @@
       "Petah Tikva"
     ],
     "target_keywords": [],
-    "notes": "Mobileye custom careers site. Crawl the jobs listing and follow job-detail links."
+    "notes": "Mobileye Lever EU JSON API."
   },
   {
     "company_id": "elbit_systems",
@@ -246,7 +245,7 @@
     "is_active": true,
     "ats_type": "custom",
     "fetch_strategy": "browser",
-    "api_url": "https://careers.nice.com/",
+    "api_url": "https://www.nice.com/careers/apply",
     "job_selector": "a.result-item[href*='boards.eu.greenhouse.io/nice/jobs/']:visible",
     "location_filters": [
       "Israel",

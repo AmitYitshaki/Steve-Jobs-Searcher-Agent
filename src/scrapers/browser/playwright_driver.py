@@ -370,6 +370,8 @@ class PlaywrightJobScraper:
     """Scrape job links while exposing WAF and API discovery outcomes."""
 
     JOB_LINK_KEYWORDS = ("job", "career", "req", "position", "role", "detail")
+    TITLE_HEADING_NAMES = ("h1", "h2", "h3", "h4", "h5", "h6")
+    TITLE_HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6"
     EXCLUDED_PATH_SEGMENTS = frozenset({
         "blog",
         "article",
@@ -532,6 +534,12 @@ class PlaywrightJobScraper:
                     selector=job_selector,
                     base_url=url,
                     company_id=company_id,
+                )
+                LOGGER.info(
+                    "Extracted %s jobs for %s with selector %r",
+                    len(jobs),
+                    company_id,
+                    job_selector,
                 )
             else:
                 jobs = self._extract_jobs(html, url, company_id)
@@ -699,7 +707,10 @@ class PlaywrightJobScraper:
         for element in elements:
             try:
                 href = element.get_attribute("href")
-                raw_title = element.inner_text()
+                heading = element.locator(self.TITLE_HEADING_SELECTOR).first
+                if heading.count() == 0:
+                    continue
+                raw_title = heading.inner_text()
             except Exception as error:
                 LOGGER.debug(
                     "Skipping failed element for selector %s: %s",
@@ -747,22 +758,24 @@ class PlaywrightJobScraper:
 
         for anchor in soup.find_all("a", href=True):
             href = str(anchor["href"]).strip()
-            title = anchor.get_text(" ", strip=True)
+            heading = anchor.find(self.TITLE_HEADING_NAMES)
+            if heading is None:
+                continue
+            title = heading.get_text(" ", strip=True)
             full_url = urljoin(base_url, href)
 
             if len(title) <= 5:
                 continue
+            url_path = unquote(urlsplit(full_url).path).casefold()
             path_segments = {
                 segment
-                for segment in unquote(
-                    urlsplit(full_url).path
-                ).casefold().split("/")
+                for segment in url_path.split("/")
                 if segment
             }
             if not self.EXCLUDED_PATH_SEGMENTS.isdisjoint(path_segments):
                 continue
             if not any(
-                keyword in full_url.casefold()
+                keyword in url_path
                 for keyword in self.JOB_LINK_KEYWORDS
             ):
                 continue

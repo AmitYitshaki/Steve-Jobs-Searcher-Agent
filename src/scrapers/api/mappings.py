@@ -10,12 +10,12 @@ from typing import Any, Callable, Mapping
 class AtsMapping:
     """Describe how one JSON ATS is requested and normalized."""
 
-    envelope_key: str
     id_fn: Callable[[Mapping[str, Any]], Any]
     title_fn: Callable[[Mapping[str, Any]], Any]
     location_fn: Callable[[Mapping[str, Any]], Any]
     url_fn: Callable[[Mapping[str, Any], str], Any]
     content_fields_fn: Callable[[Mapping[str, Any]], tuple[Any, ...]]
+    envelope_key: str | None = None
     method: str = "GET"
     headers: dict[str, str] | None = None
     payload_fn: Callable[[dict], dict[str, Any]] | None = None
@@ -77,6 +77,22 @@ ATS_FIELD_MAP: dict[str, AtsMapping] = {
             job.get("descriptionPlain"),
             job.get("descriptionHtml"),
             job.get("description"),
+        ),
+    ),
+    "lever": AtsMapping(
+        envelope_key=None,
+        id_fn=lambda job: job.get("id", ""),
+        title_fn=lambda job: job.get("text", ""),
+        location_fn=lambda job: (
+            (job.get("categories") or {}).get("location", "")
+        ),
+        url_fn=lambda job, _base_url: job.get("hostedUrl", ""),
+        content_fields_fn=lambda job: (
+            job.get("descriptionPlain"),
+            job.get("description"),
+            job.get("additionalPlain"),
+            job.get("additional"),
+            job.get("lists"),
         ),
     ),
     "workday": AtsMapping(
