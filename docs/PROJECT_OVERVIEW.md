@@ -5,6 +5,22 @@ growing set of Israeli tech employers, filters to junior/student
 software-adjacent roles, has each surviving candidate summarized by an LLM, and
 delivers a de-duplicated Telegram alert — running unattended on AWS EC2.
 
+About the Author / User (Amit Yitshaki)
+Identity: Amit Yitshaki is a 26-year-old undergraduate Computer Science student at the Academic College of Tel Aviv-Yaffo (MTA), living in Jaffa and originally from Shoham. He also serves as an officer in the Israel Defense Forces.
+
+Role in Project: Amit acts as the technical lead and hands-on system operator, steering architectural decisions, managing infrastructure deployments, and collaborating closely with AI agents to build, harden, and scale the project.
+
+The Virtual AI Team & Working Methodology
+This project represents a pioneering experiment in human-AI collaboration, utilizing a structured "virtual squad" where roles are explicitly divided to ensure end-to-end engineering rigor:
+
+Gemini (Product Manager / Lead): Responsible for overall project strategy, backlog prioritization, architectural planning, and coordinating the workflow between human intent and technical execution.
+
+Codex (Software Engineer): Responsible for core backend logic, pipeline architecture, robust Python implementation, ATS adapters, and system components.
+
+Claude Code (QA & DevOps Specialist): Responsible for rigorous testing, security hardening, log-rotation/container configuration, and deep-dive troubleshooting (such as identifying encoding anomalies and permission boundaries).
+
+Methodology: An iterative, highly synchronized agile approach. Code changes are verified locally through comprehensive test suites, committed to GitHub via secure workflows, and deployed onto a persistent AWS EC2 environment using Docker Compose.
+
 > This document is the operational and technical overview of the project. It
 > covers architecture, deployment, roadmap, observability, configuration,
 > recovery, testing, security, and known limitations. For the exhaustive code
