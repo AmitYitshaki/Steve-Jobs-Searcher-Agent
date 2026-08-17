@@ -20,7 +20,9 @@ from scrapers.browser.custom_adapters import (
     scrape_successfactors,
     scrape_universal_playwright,
 )
+from scrapers.health import CompanyHealthTracker
 from paths import CONFIG_DIR, DATA_DIR
+from storage.health import ScraperHealthStore
 from storage.history import JobHistoryStore
 from storage.queue import PendingAlert, PendingAlertQueue
 
@@ -34,6 +36,7 @@ load_dotenv()
 
 HISTORY_FILE = DATA_DIR / "jobs_history.json"
 PENDING_ALERTS_FILE = DATA_DIR / "pending_alerts.json"
+HEALTH_FILE = DATA_DIR / "scraper_health.json"
 
 # Operational heartbeat: proves the scheduler is alive when a scan legitimately
 # finds nothing, distinguishing "ran fine, no new jobs" from a silent failure.
@@ -291,6 +294,7 @@ def run_scraper(
     queue: PendingAlertQueue | None = None,
     location_filter: LocationFilter | None = None,
     history_store: JobHistoryStore | None = None,
+    health_store: ScraperHealthStore | None = None,
     heartbeat_notifier: HeartbeatSender | None = None,
 ) -> None:
     """Scan, analyze, and enqueue new jobs without contacting Telegram.
@@ -304,6 +308,7 @@ def run_scraper(
     total_start_time = time.time()  # תחילת המדידה הכוללת
     alert_queue = queue or PendingAlertQueue(PENDING_ALERTS_FILE)
     active_history_store = history_store or JobHistoryStore(HISTORY_FILE)
+    active_health_store = health_store or ScraperHealthStore(HEALTH_FILE)
     active_location_filter = (
         location_filter
         or LocationFilter(strict_mode=False)
@@ -321,6 +326,8 @@ def run_scraper(
         return
 
     history = active_history_store.load()
+    health_state = active_health_store.load()
+    new_health_state = dict(health_state)
     pending_ids = alert_queue.ids()
     new_jobs_found = []
     queued_job_ids = set()
@@ -329,64 +336,107 @@ def run_scraper(
     for company in companies:
         if not company.get("is_active", True):
             continue
-            
-        jobs = fetch_jobs_from_company(company)
-        location_filters = company.get("location_filters", [])
-        
-        for job in jobs:
-            title_decision = is_relevant_job(job["title"])
-            if not title_decision.allowed:
-                match_details = ""
-                if title_decision.matched_keyword is not None:
-                    match_details = (
-                        f" '{title_decision.matched_keyword}'"
-                    )
-                logging.info(
-                    "Rejecting %s: title %s%s.",
-                    job["id"],
-                    title_decision.reason,
-                    match_details,
-                )
-                continue
 
-            job_url = (
-                extract_job_url(job)
-                or str(company.get("api_url", ""))
-            )
-            location_decision = active_location_filter.evaluate(
-                job_title=job["title"],
-                job_url=job_url,
-            )
-            if not location_decision.allowed:
-                match_details = ""
-                if location_decision.matched_location is not None:
-                    match_details = (
-                        f" '{location_decision.matched_location}'"
-                        f" in {location_decision.source}"
-                    )
-                print(
-                    f"🚫 Rejecting {job['id']}: "
-                    f"{location_decision.reason}{match_details}."
-                )
-                continue
+        company_id = str(company.get("company_id", "<missing>"))
+        company_name = str(
+            company.get("company_name", company_id)
+        )
+        previous_company_state = health_state.get(company_id, {})
+        tracker = CompanyHealthTracker(
+            company_id=company_id,
+            company_name=company_name,
+            previous_state=previous_company_state,
+        )
 
-            location_match = is_in_location(job["location"], location_filters)
-            is_new = (
-                job["id"] not in history
-                and job["id"] not in pending_ids
-                and job["id"] not in queued_job_ids
-            )
-            
-            if location_match and is_new:
+        try:
+            jobs = fetch_jobs_from_company(company)
+            tracker.record_fetch(len(jobs))
+            location_filters = company.get("location_filters", [])
+
+            for job in jobs:
+                title_decision = is_relevant_job(job["title"])
+                if not title_decision.allowed:
+                    tracker.record_title_rejection()
+                    match_details = ""
+                    if title_decision.matched_keyword is not None:
+                        match_details = (
+                            f" '{title_decision.matched_keyword}'"
+                        )
+                    logging.debug(
+                        "Rejecting %s: title %s%s.",
+                        job["id"],
+                        title_decision.reason,
+                        match_details,
+                    )
+                    continue
+
+                job_url = (
+                    extract_job_url(job)
+                    or str(company.get("api_url", ""))
+                )
+                location_decision = active_location_filter.evaluate(
+                    job_title=job["title"],
+                    job_url=job_url,
+                )
+                if not location_decision.allowed:
+                    tracker.record_location_rejection()
+                    match_details = ""
+                    if location_decision.matched_location is not None:
+                        match_details = (
+                            f" '{location_decision.matched_location}'"
+                            f" in {location_decision.source}"
+                        )
+                    logging.debug(
+                        "Rejecting %s: location %s%s.",
+                        job["id"],
+                        location_decision.reason,
+                        match_details,
+                    )
+                    continue
+
+                location_match = is_in_location(
+                    job["location"],
+                    location_filters,
+                )
+                if not location_match:
+                    tracker.record_location_rejection()
+                    logging.debug(
+                        "Rejecting %s: adapter location %r does not match "
+                        "configured filters %r.",
+                        job["id"],
+                        job["location"],
+                        location_filters,
+                    )
+                    continue
+
+                tracker.record_relevant()
+                is_new = (
+                    job["id"] not in history
+                    and job["id"] not in pending_ids
+                    and job["id"] not in queued_job_ids
+                )
+                if not is_new:
+                    tracker.record_duplicate()
+                    continue
+
+                tracker.record_new()
                 new_jobs_found.append({
                     **job,
-                    "company_name": company.get(
-                        "company_name",
-                        company.get("company_id", "Unknown"),
-                    ),
+                    "company_name": company_name,
                     "job_url": job_url,
                 })
                 queued_job_ids.add(job["id"])
+        except Exception as error:
+            tracker.record_failure(error)
+            logging.exception(
+                "Company scrape failed for %s.",
+                company_id,
+            )
+        finally:
+            new_health_state[company_id] = tracker.snapshot()
+            print(tracker.summary_line())
+
+    active_health_store.save(new_health_state)
 
     scraping_end_time = time.time()  # סיום שלב הסריקה
 

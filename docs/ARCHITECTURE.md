@@ -32,6 +32,7 @@ code, tests, configuration, runtime state, logs, and documentation.
 |   |-- scrapers/                                  # Job discovery, routing, and extraction.
 |   |   |-- __init__.py                            # Marks scrapers as a Python package.
 |   |   |-- orchestrator.py                        # Producer: routes, filters, analyzes, enqueues.
+|   |   |-- health.py                              # Per-company health metrics and summaries.
 |   |   |-- api/                                   # JSON-based ATS integrations.
 |   |   |   |-- __init__.py                        # Marks scrapers.api as a package.
 |   |   |   |-- client.py                          # Generic ATS HTTP client and normalizer.
@@ -42,11 +43,12 @@ code, tests, configuration, runtime state, logs, and documentation.
 |   |       `-- playwright_driver.py                # Stealth browser, WAF checks, diagnostics.
 |   |-- storage/                                   # Durable local queue and history persistence.
 |   |   |-- __init__.py                            # Marks storage as a Python package.
+|   |   |-- health.py                              # Isolated scraper-health state persistence.
 |   |   |-- history.py                             # Stores IDs of successfully delivered jobs.
 |   |   |-- queue.py                               # Stores alerts waiting for Telegram delivery.
 |   |   `-- drivers/                               # Low-level persistence mechanisms.
 |   |       |-- __init__.py                        # Marks storage.drivers as a package.
-|   |       `-- atomic_json.py                     # Crash-resistant atomic JSON-list writes.
+|   |       `-- atomic_json.py                     # Crash-resistant typed JSON writes.
 |   `-- steve_jobs_searcher_agent.egg-info/        # Generated editable-install metadata; not app code.
 |       |-- dependency_links.txt                   # Generated package dependency-link metadata.
 |       |-- PKG-INFO                               # Generated project name/version metadata.
@@ -62,6 +64,7 @@ code, tests, configuration, runtime state, logs, and documentation.
 |   |   |-- test_playwright_scraper.py             # WAF, discovery, browser, cleanup, diagnostics.
 |   |   |-- test_scraper_adapters.py               # ATS mappings, HTTP client, and adapter routing.
 |   |   |-- test_scraper_delivery.py               # Producer filtering, analysis, and enqueueing.
+|   |   |-- test_scraper_health.py                 # Health storage, metrics, and anomaly states.
 |   |   |-- test_send_alerts.py                    # Consumer delivery and history ordering.
 |   |   `-- test_telegram_notifier.py              # Telegram HTML, retry, rate-limit, fallback logic.
 |   `-- manual/                                    # Explicit checks that use real external services.
@@ -76,7 +79,8 @@ code, tests, configuration, runtime state, logs, and documentation.
 |-- data/                                          # Git-ignored mutable runtime state.
 |   |-- costs_log.json                             # OpenAI token usage and estimated costs.
 |   |-- jobs_history.json                          # IDs already delivered successfully.
-|   `-- pending_alerts.json                        # Durable producer-to-consumer queue.
+|   |-- pending_alerts.json                        # Durable producer-to-consumer queue.
+|   `-- scraper_health.json                        # Isolated per-company scraper health.
 |-- logs/                                          # Git-ignored runtime diagnostics.
 |   `-- artifacts/                                 # Browser HTML/screenshots appear here on failure.
 |       `-- .gitkeep                               # Keeps the otherwise-empty directory in Git.
@@ -470,8 +474,8 @@ completed decisions. This document describes what is implemented now:
   failures or no results with an empty list.
 - Delivered-job history is currently a flat JSON list of IDs. The richer
   timestamped retention model described by ADR-0002 is not implemented yet.
-- ADR-0005 documents scraper-health isolation, but the current tree has no
-  scraper-health store or state file.
+- ADR-0005 scraper-health isolation is implemented with a dedicated store,
+  per-company funnel metrics, unverified status, and terminal summaries.
 - Title-keyword filtering and final alert assembly remain in
   `scrapers.orchestrator`; location rules and AI analysis already live in their
   dedicated modules.

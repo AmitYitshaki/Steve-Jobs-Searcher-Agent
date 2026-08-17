@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
 from scrapers import orchestrator as scraper  # noqa: E402
+from storage.health import ScraperHealthStore  # noqa: E402
 from storage.history import JobHistoryStore  # noqa: E402
 from storage.queue import PendingAlert, PendingAlertQueue  # noqa: E402
 
@@ -135,8 +136,8 @@ class ScraperProducerTests(unittest.TestCase):
         )
         self.assertIsNone(decision.matched_keyword)
 
-    def test_title_rejection_is_logged_before_analysis(self) -> None:
-        """Expose deterministic title rejections in the Producer log."""
+    def test_title_rejection_is_debug_logged_before_analysis(self) -> None:
+        """Keep deterministic title rejection detail out of INFO output."""
 
         sales_job = {
             **self.JOB,
@@ -161,12 +162,15 @@ class ScraperProducerTests(unittest.TestCase):
                 patch(
                     "scrapers.orchestrator.analyze_job"
                 ) as analyze_job,
-                patch("scrapers.orchestrator.logging.info") as info,
+                patch("scrapers.orchestrator.logging.debug") as debug,
                 patch("builtins.print"),
             ):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                 )
 
             alerts = queue.load()
@@ -176,7 +180,7 @@ class ScraperProducerTests(unittest.TestCase):
         self.assertTrue(
             any(
                 call_args.args[0].startswith("Rejecting %s: title")
-                for call_args in info.call_args_list
+                for call_args in debug.call_args_list
             )
         )
 
@@ -208,6 +212,9 @@ class ScraperProducerTests(unittest.TestCase):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                 )
 
             alerts = queue.load()
@@ -259,6 +266,9 @@ class ScraperProducerTests(unittest.TestCase):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                 )
 
             summary = queue.load()[0].llm_summary
@@ -316,6 +326,9 @@ class ScraperProducerTests(unittest.TestCase):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                 )
 
             alerts = queue.load()
@@ -323,6 +336,71 @@ class ScraperProducerTests(unittest.TestCase):
         analyze_job.assert_not_called()
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0].llm_summary, "Already analyzed")
+
+    def test_cycle_saves_company_health_with_duplicate_visibility(self) -> None:
+        """Persist one health snapshot after the complete company cycle."""
+
+        sales_job = {
+            **self.JOB,
+            "id": "example_sales",
+            "title": "Sales Intern",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
+            queue.append(
+                PendingAlert(
+                    job_id=self.JOB["id"],
+                    company_name="Example",
+                    job_url=self.JOB["url"],
+                    llm_summary="Already analyzed",
+                )
+            )
+            health_store = MagicMock()
+            health_store.load.return_value = {}
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=[
+                        self.JOB,
+                        sales_job,
+                        self.FOREIGN_JOB,
+                    ],
+                ),
+                patch(
+                    "scrapers.orchestrator.analyze_job"
+                ) as analyze_job,
+                patch("builtins.print") as print_output,
+            ):
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                    health_store=health_store,
+                )
+
+        analyze_job.assert_not_called()
+        health_store.save.assert_called_once()
+        saved_state = health_store.save.call_args.args[0]["example"]
+        self.assertEqual(saved_state["last_job_count"], 3)
+        self.assertEqual(saved_state["last_relevant_job_count"], 1)
+        self.assertEqual(saved_state["last_duplicate_job_count"], 1)
+        self.assertEqual(saved_state["last_title_rejection_count"], 1)
+        self.assertEqual(saved_state["last_location_rejection_count"], 1)
+        self.assertEqual(saved_state["last_status"], "healthy")
+        self.assertTrue(
+            any(
+                "1 duplicates" in str(call_args)
+                for call_args in print_output.call_args_list
+            )
+        )
 
     def test_foreign_similar_job_is_rejected_before_analysis(self) -> None:
         """Drop a geographic leak even when its adapter says Israel."""
@@ -346,11 +424,15 @@ class ScraperProducerTests(unittest.TestCase):
                 patch(
                     "scrapers.orchestrator.analyze_job"
                 ) as analyze_job,
+                patch("scrapers.orchestrator.logging.debug") as debug,
                 patch("builtins.print") as print_output,
             ):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                 )
 
             alerts = queue.load()
@@ -358,6 +440,12 @@ class ScraperProducerTests(unittest.TestCase):
         analyze_job.assert_not_called()
         self.assertEqual(alerts, [])
         self.assertTrue(
+            any(
+                "Budapest" in str(call_args)
+                for call_args in debug.call_args_list
+            )
+        )
+        self.assertFalse(
             any(
                 "Budapest" in str(call_args)
                 for call_args in print_output.call_args_list
@@ -392,6 +480,9 @@ class ScraperProducerTests(unittest.TestCase):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                 )
 
             alerts = queue.load()
@@ -433,6 +524,9 @@ class ScraperProducerTests(unittest.TestCase):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                     heartbeat_notifier=notifier,
                 )
 
@@ -470,6 +564,9 @@ class ScraperProducerTests(unittest.TestCase):
                 scraper.run_scraper(
                     queue=queue,
                     history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
                     heartbeat_notifier=notifier,
                 )
 

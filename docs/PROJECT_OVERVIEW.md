@@ -271,10 +271,8 @@ production service. The milestones below trace that path.
 - **Broader ATS coverage** — promote `comeet`, `phenom`, `jobvite`,
   `oracle_recruiting_cloud`, and `greenhouse_embedded` companies off the generic
   browser fallback onto reliable JSON-API adapters with full job content.
-- **Scraper-health observability (ADR-0005)** — isolated per-company health
-  tracking with tiered anomaly detection (consecutive failures, or a drop to
-  zero jobs after previously finding some), routed to an admin channel rather
-  than the candidate feed.
+- **Scraper-health admin alerts (ADR-0005)** — route persisted per-company
+  anomalies to a dedicated admin channel rather than the candidate feed.
 - **Bounded history retention (ADR-0002)** — a 90-day `{job_id: first_seen_at}`
   schema so a re-opened role can be re-alerted.
 - **Unified result contract (ADR-0004 completion)** — make API and custom
@@ -438,12 +436,12 @@ signal** from **actionable faults**.
 
 ### 3.6 Current observability boundary
 
-There is no implemented end-of-run ATS health digest and no
-`scraper_health.json` store yet. The final scheduler success line means both
-subprocesses returned zero; it does not mean every company returned valid job
-data. Until ADR-0004 is completed across all adapters and ADR-0005 is
-implemented, the per-company log stream and Playwright artifacts are the
-authoritative diagnostic evidence.
+The Producer now persists `scraper_health.json` and prints a per-company
+health summary, including prominent unverified adapters. The final scheduler
+success line still does not mean every company returned valid job data.
+Until ADR-0004 is completed across all adapters, the health summaries,
+per-company log stream, and Playwright artifacts remain complementary
+diagnostic evidence.
 
 ---
 
@@ -664,9 +662,9 @@ part of an automated test suite.
 3. **Incomplete typed outcomes:** API and custom paths still collapse many
    failures into empty lists, so scheduler success and heartbeat delivery are
    weaker signals than per-company health.
-4. **No implemented scraper-health store:** ADR-0005 defines the target, but
-   consecutive failures and zero-result regressions are not yet persisted or
-   summarized automatically.
+4. **No scraper-health admin delivery yet:** per-company state and terminal
+   summaries are implemented, but anomaly notifications are not yet routed to
+   a dedicated operations channel.
 5. **No 90-day history retention yet:** ADR-0002 describes a timestamped
    retention model; the current history is a flat list and grows without that
    purge policy.
