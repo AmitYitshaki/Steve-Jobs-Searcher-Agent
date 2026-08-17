@@ -10,6 +10,8 @@ from scrapers.browser.playwright_driver import PlaywrightJobScraper
 
 LOGGER = logging.getLogger(__name__)
 HTTP_TIMEOUT_SECONDS = 15
+THALES_PHENOM_PAGE_SIZE = 10
+THALES_PHENOM_MAX_PAGES = 100
 IAI_REQUEST_HEADERS = {
     "Accept": "application/json",
     "User-Agent": (
@@ -17,6 +19,11 @@ IAI_REQUEST_HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/152.0.0.0 Safari/537.36"
     ),
+}
+THALES_REQUEST_HEADERS = {
+    **IAI_REQUEST_HEADERS,
+    "Accept": "application/json",
+    "Content-Type": "application/json",
 }
 
 
@@ -218,6 +225,185 @@ def scrape_iai(
                 "content": str(item.get("dc", "")).strip(),
             }
         )
+
+    return jobs
+
+
+def _thales_phenom_payload(offset: int) -> dict[str, Any]:
+    """Build one Thales Phenom request scoped to the Israel country facet."""
+
+    return {
+        "lang": "en_global",
+        "deviceType": "desktop",
+        "country": "global",
+        "pageName": "search-results",
+        "ddoKey": "refineSearch",
+        "sortBy": "",
+        "subsearch": "",
+        "from": offset,
+        "jobs": True,
+        "counts": True,
+        "all_fields": [
+            "category",
+            "country",
+            "state",
+            "city",
+            "type",
+            "workerSubType",
+            "workLocation",
+        ],
+        "size": THALES_PHENOM_PAGE_SIZE,
+        "clearAll": False,
+        "jdsource": "facets",
+        "isSliderEnable": False,
+        "pageId": "page18",
+        "siteType": "external",
+        "keywords": "",
+        "global": True,
+        "selected_fields": {"country": ["Israel"]},
+        "locationData": {},
+    }
+
+
+def _thales_phenom_page(
+    payload: Any,
+) -> tuple[list[Mapping[str, Any]], int]:
+    """Extract normalized page metadata from a Thales widgets response."""
+
+    if not isinstance(payload, Mapping):
+        return [], 0
+    search_result = payload.get("refineSearch")
+    if not isinstance(search_result, Mapping):
+        return [], 0
+    data = search_result.get("data")
+    if not isinstance(data, Mapping):
+        return [], 0
+    raw_jobs = data.get("jobs")
+    if not isinstance(raw_jobs, list):
+        return [], 0
+
+    jobs = [
+        item
+        for item in raw_jobs
+        if isinstance(item, Mapping)
+    ]
+    raw_total = search_result.get("totalHits", len(jobs))
+    try:
+        total_hits = max(int(raw_total), 0)
+    except (TypeError, ValueError):
+        total_hits = len(jobs)
+    return jobs, total_hits
+
+
+def _join_distinct_text(*values: Any) -> str:
+    """Join non-empty text values once while preserving source order."""
+
+    parts: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = str(value or "").strip()
+        normalized = text.casefold()
+        if not text or normalized in seen:
+            continue
+        seen.add(normalized)
+        parts.append(text)
+    return " | ".join(parts)
+
+
+def scrape_thales_phenom(
+    company: Mapping[str, Any],
+) -> list[dict[str, str]]:
+    """Fetch all Thales jobs selected by the Israel country facet."""
+
+    company_id = (
+        str(company.get("company_id", "imperva_thales")).strip()
+        or "imperva_thales"
+    )
+    api_url = str(company.get("api_url", "")).strip()
+    if not api_url:
+        LOGGER.error("Thales Phenom adapter requires an api_url")
+        return []
+
+    jobs: list[dict[str, str]] = []
+    seen_job_ids: set[str] = set()
+    page_offset = 0
+
+    for _page_number in range(THALES_PHENOM_MAX_PAGES):
+        try:
+            response = requests.post(
+                api_url,
+                json=_thales_phenom_payload(page_offset),
+                headers=THALES_REQUEST_HEADERS,
+                timeout=HTTP_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+            items, total_hits = _thales_phenom_page(response.json())
+        except (
+            requests.RequestException,
+            TypeError,
+            ValueError,
+        ) as error:
+            LOGGER.error(
+                "Thales Phenom API request failed at offset %s: %s",
+                page_offset,
+                error,
+            )
+            break
+
+        if not items:
+            break
+
+        for item in items:
+            country = str(item.get("country", "")).strip()
+            if country.casefold() != "israel":
+                LOGGER.warning(
+                    "Skipping out-of-scope Thales job %r from %r",
+                    item.get("jobId"),
+                    country,
+                )
+                continue
+
+            raw_job_id = item.get("jobId") or item.get("reqId")
+            title = str(item.get("title", "")).strip()
+            if raw_job_id is None or not title:
+                continue
+            job_id = str(raw_job_id).strip()
+            if not job_id or job_id in seen_job_ids:
+                continue
+
+            job_url = str(item.get("applyUrl", "")).strip()
+            if not job_url:
+                job_url = (
+                    "https://careers.thalesgroup.com/global/en/job/"
+                    f"{quote(job_id, safe='')}"
+                )
+
+            seen_job_ids.add(job_id)
+            jobs.append(
+                {
+                    "id": f"{company_id}_{job_id}",
+                    "title": title,
+                    "location": _join_distinct_text(
+                        item.get("cityStateCountry"),
+                        item.get("location"),
+                        item.get("address"),
+                        country,
+                    ),
+                    "url": job_url,
+                    "content": str(
+                        item.get("descriptionTeaser", "")
+                    ).strip(),
+                }
+            )
+
+        next_offset = page_offset + len(items)
+        if next_offset <= page_offset:
+            break
+        if total_hits > 0 and next_offset >= total_hits:
+            break
+        if total_hits == 0 and len(items) < THALES_PHENOM_PAGE_SIZE:
+            break
+        page_offset = next_offset
 
     return jobs
 

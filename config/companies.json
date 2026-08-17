@@ -215,13 +215,15 @@
     "is_active": true,
     "ats_type": "phenom",
     "fetch_strategy": "browser",
-    "api_url": "https://jobs.paloaltonetworks.com/en/search-jobs/Israel/47263/2/294640/31x5/34x75/50/2",
+    "api_url": "https://jobs.paloaltonetworks.com/en/early-in-career",
+    "job_selector": "a[data-job-id][href*='/job/']",
+    "selector_timeout_ms": 25000,
     "location_filters": [
       "Israel",
       "Tel Aviv"
     ],
     "target_keywords": [],
-    "notes": "Official Phenom-powered search page scoped to Israel. Crawl paginated results."
+    "notes": "Official early-in-career portal. Extract only rendered anchors carrying both a job ID and a job-detail href."
   },
   {
     "company_id": "amdocs",
@@ -562,7 +564,9 @@
     "is_active": true,
     "ats_type": "phenom",
     "fetch_strategy": "browser",
-    "api_url": "https://careers.servicenow.com/jobs/",
+    "api_url": "https://careers.servicenow.com/jobs/?search=&jobPostingType=Early+Career&pagesize=20#results",
+    "job_selector": "div.card.card-job:has(h2.card-title > a.stretched-link.js-view-job)",
+    "selector_timeout_ms": 25000,
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -570,7 +574,7 @@
       "Petach Tikva"
     ],
     "target_keywords": [],
-    "notes": "Official ServiceNow jobs search. Use Israel location filtering and crawl paginated Phenom-style results."
+    "notes": "Official early-career jobs query. Extract only real job cards containing the dedicated ServiceNow posting link."
   },
   {
     "company_id": "intuit",
@@ -579,7 +583,9 @@
     "is_active": true,
     "ats_type": "phenom",
     "fetch_strategy": "browser",
-    "api_url": "https://jobs.intuit.com/location/israel-jobs/27595/294640/2/",
+    "api_url": "https://jobs.intuit.com/search-jobs?acm=9205024%2C9205760%2C9205744&alrpm=ALL&ascf=%5B%7B%22key%22%3A%22ALL%22%2C%22value%22%3A%22%22%7D%5D",
+    "job_selector": "a[data-job-id][href*='/job/']",
+    "selector_timeout_ms": 25000,
     "location_filters": [
       "Israel",
       "Petah Tikva",
@@ -587,7 +593,7 @@
       "Tel Aviv"
     ],
     "target_keywords": [],
-    "notes": "Official Intuit Israel location page. Crawl the result pages and follow job-detail links."
+    "notes": "Direct non-redirecting Intuit search filtered to internship and new-college-graduate categories. Extract only anchors carrying job IDs."
   },
   {
     "company_id": "autodesk",
@@ -736,16 +742,16 @@
     "company_name": "Imperva / Thales",
     "tier": "B",
     "is_active": true,
-    "ats_type": "phenom",
-    "fetch_strategy": "browser",
-    "api_url": "https://careers.thalesgroup.com/global/en/search-results?keywords=israel&s=1",
+    "ats_type": "custom",
+    "fetch_strategy": "api",
+    "api_url": "https://careers.thalesgroup.com/widgets",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Rehovot"
     ],
     "target_keywords": [],
-    "notes": "Imperva applications are currently managed through the Thales careers portal. Search both Imperva and relevant Israel roles."
+    "notes": "Custom Thales Phenom widgets adapter. POST the Israel country facet, paginate all hits, and reject any foreign contamination."
   },
   {
     "company_id": "varonis",
