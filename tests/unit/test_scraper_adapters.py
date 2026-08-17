@@ -210,6 +210,7 @@ class FetchAtsJobsTests(unittest.TestCase):
 
         response = MagicMock()
         response.json.return_value = {
+            "total": 1,
             "jobPostings": [
                 {
                     "bulletinId": "WD-105",
@@ -228,10 +229,13 @@ class FetchAtsJobsTests(unittest.TestCase):
             ),
         }
 
-        with patch(
-            "scrapers.api.client.requests.post",
-            return_value=response,
-        ) as post:
+        with (
+            patch(
+                "scrapers.api.client.requests.post",
+                return_value=response,
+            ) as post,
+            patch("builtins.print"),
+        ):
             jobs = scraper.fetch_ats_jobs(
                 company,
                 scraper.ATS_FIELD_MAP["workday"],
@@ -251,20 +255,272 @@ class FetchAtsJobsTests(unittest.TestCase):
                 }
             ],
         )
-        post.assert_called_once_with(
-            "https://example.test/wday/cxs/example/jobs",
-            json={"limit": 20, "offset": 0, "appliedFacets": {}},
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/152.0.0.0 Safari/537.36"
-                ),
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(
+            post.call_args_list[0].kwargs["json"],
+            {
+                "limit": 1,
+                "offset": 0,
+                "appliedFacets": {},
+                "searchText": "",
             },
-            timeout=15,
         )
+        actual_call = post.call_args_list[1]
+        self.assertEqual(
+            actual_call.args,
+            ("https://example.test/wday/cxs/example/jobs",),
+        )
+        self.assertEqual(
+            actual_call.kwargs,
+            {
+                "json": {
+                    "limit": 20,
+                    "offset": 0,
+                    "appliedFacets": {},
+                    "searchText": "Israel",
+                },
+                "headers": {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/152.0.0.0 Safari/537.36"
+                    ),
+                },
+                "timeout": 15,
+            },
+        )
+
+    def test_workday_mapping_fetches_every_israel_page(self) -> None:
+        """Request successive Workday offsets until all matches are read."""
+
+        first_page_jobs = [
+            {
+                "bulletinId": f"WD-{index}",
+                "title": f"Israel Software Role {index}",
+                "locationsText": "Israel",
+                "externalPath": f"/job/WD-{index}",
+            }
+            for index in range(20)
+        ]
+        last_job = {
+            "bulletinId": "WD-20",
+            "title": "Israel Software Role 20",
+            "locationsText": "Israel",
+            "externalPath": "/job/WD-20",
+        }
+        first_response = MagicMock()
+        first_response.json.return_value = {
+            "total": 21,
+            "jobPostings": first_page_jobs,
+        }
+        second_response = MagicMock()
+        second_response.json.return_value = {
+            "total": 21,
+            "jobPostings": [last_job],
+        }
+        discovery_response = MagicMock()
+        discovery_response.json.return_value = {
+            "total": 2000,
+            "jobPostings": [],
+            "facets": [],
+        }
+        company = {
+            **self._company("workday"),
+            "api_url": "https://example.test/wday/cxs/example/jobs",
+        }
+
+        with (
+            patch(
+                "scrapers.api.client.requests.post",
+                side_effect=[
+                    discovery_response,
+                    first_response,
+                    second_response,
+                ],
+            ) as post,
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_ats_jobs(
+                company,
+                scraper.ATS_FIELD_MAP["workday"],
+            )
+
+        self.assertEqual(len(jobs), 21)
+        self.assertEqual(jobs[-1]["id"], "example_WD-20")
+        self.assertEqual(post.call_count, 3)
+        self.assertEqual(
+            post.call_args_list[0].kwargs["json"]["searchText"],
+            "",
+        )
+        self.assertEqual(
+            [
+                call.kwargs["json"]["offset"]
+                for call in post.call_args_list[1:]
+            ],
+            [0, 20],
+        )
+        self.assertTrue(
+            all(
+                call.kwargs["json"]["searchText"] == "Israel"
+                for call in post.call_args_list[1:]
+            )
+        )
+
+    def test_workday_discovers_and_applies_israel_location_facet(self) -> None:
+        """Prefer a real Workday location facet over full-text matching."""
+
+        discovery_response = MagicMock()
+        discovery_response.json.return_value = {
+            "total": 2000,
+            "jobPostings": [
+                {
+                    "bulletinId": "GLOBAL-1",
+                    "title": "Global Role",
+                    "locationsText": "Bangalore, India",
+                    "externalPath": "/job/GLOBAL-1",
+                }
+            ],
+            "facets": [
+                {
+                    "facetParameter": "locationMainGroup",
+                    "values": [
+                        {
+                            "facetParameter": "locationHierarchy1",
+                            "descriptor": "Locations",
+                            "values": [
+                                {
+                                    "descriptor": "Israel",
+                                    "id": "israel-facet-id",
+                                    "count": 21,
+                                },
+                                {
+                                    "descriptor": "India",
+                                    "id": "india-facet-id",
+                                    "count": 500,
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+        scoped_response = MagicMock()
+        scoped_response.json.return_value = {
+            "total": 1,
+            "jobPostings": [
+                {
+                    "bulletinId": "IL-1",
+                    "title": "Student Software Engineer",
+                    "locationsText": "2 Locations",
+                    "externalPath": "/job/IL-1",
+                }
+            ],
+        }
+        company = {
+            **self._company("workday"),
+            "api_url": "https://example.test/wday/cxs/example/jobs",
+        }
+
+        with patch(
+            "scrapers.api.client.requests.post",
+            side_effect=[discovery_response, scoped_response],
+        ) as post:
+            jobs = scraper.fetch_ats_jobs(
+                company,
+                scraper.ATS_FIELD_MAP["workday"],
+            )
+
+        self.assertEqual([job["id"] for job in jobs], ["example_IL-1"])
+        self.assertEqual(jobs[0]["location"], "Israel\n2 Locations")
+        self.assertEqual(post.call_count, 2)
+        discovery_payload = post.call_args_list[0].kwargs["json"]
+        self.assertEqual(discovery_payload["searchText"], "")
+        self.assertEqual(discovery_payload["limit"], 1)
+        scoped_payload = post.call_args_list[1].kwargs["json"]
+        self.assertEqual(scoped_payload["searchText"], "")
+        self.assertEqual(
+            scoped_payload["appliedFacets"],
+            {"locationHierarchy1": ["israel-facet-id"]},
+        )
+
+    def test_workday_scope_supports_country_and_city_facet_names(self) -> None:
+        """Handle Workday tenant-specific location parameter conventions."""
+
+        scope_fn = scraper.ATS_FIELD_MAP["workday"].scope_payload_fn
+        self.assertIsNotNone(scope_fn)
+        cases = [
+            (
+                {
+                    "facets": [
+                        {
+                            "facetParameter": "Country",
+                            "values": [
+                                {
+                                    "descriptor": "Israel",
+                                    "id": "country-israel-id",
+                                }
+                            ],
+                        }
+                    ]
+                },
+                ["Israel", "Migdal HaEmek"],
+                {"Country": ["country-israel-id"]},
+            ),
+            (
+                {
+                    "facets": [
+                        {
+                            "facetParameter": "locations",
+                            "values": [
+                                {
+                                    "descriptor": "Rehovot,ISR",
+                                    "id": "rehovot-id",
+                                },
+                                {
+                                    "descriptor": "Bangalore,IND",
+                                    "id": "bangalore-id",
+                                },
+                            ],
+                        }
+                    ]
+                },
+                ["Israel", "Rehovot"],
+                {"locations": ["rehovot-id"]},
+            ),
+            (
+                {
+                    "facets": [
+                        {
+                            "facetParameter": "Location",
+                            "values": [
+                                {
+                                    "descriptor": "Yokneam",
+                                    "id": "yokneam-id",
+                                },
+                                {
+                                    "descriptor": "IL - Petah Tikva",
+                                    "id": "petah-tikva-id",
+                                },
+                            ],
+                        }
+                    ]
+                },
+                ["Israel", "Petah Tikva", "Yokneam"],
+                {"Location": ["yokneam-id", "petah-tikva-id"]},
+            ),
+        ]
+
+        for payload, location_filters, expected_facets in cases:
+            with self.subTest(expected_facets=expected_facets):
+                scope = scope_fn(
+                    payload,
+                    {"location_filters": location_filters},
+                )
+                self.assertIsNotNone(scope)
+                self.assertEqual(scope["appliedFacets"], expected_facets)
+                self.assertEqual(scope["searchText"], "")
 
     def test_retries_cloudflare_status_once(self) -> None:
         """Retry one time for throttling and Cloudflare edge failures."""
