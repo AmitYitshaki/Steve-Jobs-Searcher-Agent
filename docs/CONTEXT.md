@@ -21,6 +21,7 @@ An autonomous job-discovery agent. It runs unattended (~3×/day, scheduled), sca
 - **Job history** — the set of delivered job IDs (`jobs_history.json` behind `JobHistoryStore`) used for dedup. Subject to a retention window (ADR-0002).
 - **Retention window** — the age past which a delivered job ID is purged from history so a reopened role can be re-alerted. See ADR-0002.
 - **Scrape-health anomaly** — a per-company signal that scraping itself is degrading (consecutive hard failures, or a drop to zero jobs after previously finding some). Tracked in isolated health state, alerted to an admin surface. See ADR-0005.
+- **Unverified scraper** — a company adapter that has never surfaced a job passing relevance and location checks. It remains a manual-inspection priority even when repeated runs complete without explicit errors.
 
 ## Decisions (see `docs/adr/`)
 

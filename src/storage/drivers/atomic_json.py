@@ -1,4 +1,4 @@
-"""Atomic JSON-list persistence with bounded Windows lock retries."""
+"""Atomic JSON persistence with bounded Windows lock retries."""
 
 from __future__ import annotations
 
@@ -6,14 +6,15 @@ import json
 import os
 import tempfile
 import time
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Callable
 
 SleepFunction = Callable[[float], None]
 
 
-class AtomicJsonListStore:
-    """Read and atomically replace a JSON file containing a list."""
+class _AtomicJsonStore:
+    """Share atomic file replacement across typed JSON containers."""
 
     def __init__(
         self,
@@ -41,19 +42,16 @@ class AtomicJsonListStore:
         self.max_retry_delay_seconds = max_retry_delay_seconds
         self.sleep_function = sleep_function
 
-    def read(self) -> list[Any]:
-        """Return the stored list, or an empty list when no file exists."""
+    def _read_json(self, missing_value: Any) -> Any:
+        """Decode the JSON file or return the supplied missing-file value."""
 
         if not self.path.exists():
-            return []
+            return missing_value
 
         with open(self.path, "r", encoding="utf-8") as handle:
-            value = json.load(handle)
-        if not isinstance(value, list):
-            raise ValueError(f"{self.path} must contain a JSON list")
-        return value
+            return json.load(handle)
 
-    def write(self, value: list[Any]) -> None:
+    def _write_json(self, value: Any) -> None:
         """Write a closed temporary file, then atomically replace the target."""
 
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -108,3 +106,41 @@ class AtomicJsonListStore:
                     self.max_retry_delay_seconds,
                 )
                 self.sleep_function(delay)
+
+
+class AtomicJsonListStore(_AtomicJsonStore):
+    """Read and atomically replace a JSON file containing a list."""
+
+    def read(self) -> list[Any]:
+        """Return the stored list, or an empty list when no file exists."""
+
+        value = self._read_json([])
+        if not isinstance(value, list):
+            raise ValueError(f"{self.path} must contain a JSON list")
+        return value
+
+    def write(self, value: list[Any]) -> None:
+        """Validate and atomically persist one JSON list."""
+
+        if not isinstance(value, list):
+            raise ValueError("AtomicJsonListStore requires a list")
+        self._write_json(value)
+
+
+class AtomicJsonDictStore(_AtomicJsonStore):
+    """Read and atomically replace a JSON file containing an object."""
+
+    def read(self) -> dict[str, Any]:
+        """Return the stored mapping, or an empty dict when none exists."""
+
+        value = self._read_json({})
+        if not isinstance(value, Mapping):
+            raise ValueError(f"{self.path} must contain a JSON object")
+        return dict(value)
+
+    def write(self, value: Mapping[str, Any]) -> None:
+        """Validate and atomically persist one JSON mapping."""
+
+        if not isinstance(value, Mapping):
+            raise ValueError("AtomicJsonDictStore requires a mapping")
+        self._write_json(dict(value))
