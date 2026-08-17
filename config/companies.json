@@ -141,8 +141,10 @@
     "company_name": "Elbit Systems",
     "tier": "A",
     "is_active": true,
-    "ats_type": "successfactors",
-    "api_url": "https://elbitsystemscareer.com/",
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://elbitsystemscareer.com/Recruitment-Page/",
+    "job_selector": "a[href*='/job']",
     "location_filters": [
       "Israel",
       "Haifa",
@@ -153,7 +155,7 @@
       "Yokneam"
     ],
     "target_keywords": [],
-    "notes": "Official Elbit careers portal. No stable public API confirmed; crawl search results."
+    "notes": "Official JS-rendered Elbit recruitment page. Extract rendered job links with Playwright."
   },
   {
     "company_id": "iai",
@@ -161,8 +163,8 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
-    "fetch_strategy": "browser",
-    "api_url": "https://jobs.iai.co.il/",
+    "fetch_strategy": "api",
+    "api_url": "https://jobs.iai.co.il/wp-content/themes/tyco-wp/assets/json/jobs.json",
     "location_filters": [
       "Israel",
       "Lod",
@@ -170,7 +172,7 @@
       "Beer Yaakov"
     ],
     "target_keywords": [],
-    "notes": "Official IAI careers site. Use the site's search interface and extract job-detail URLs."
+    "notes": "Official IAI first-party JSON job feed."
   },
   {
     "company_id": "rafael",
@@ -226,8 +228,10 @@
     "company_name": "Amdocs",
     "tier": "A",
     "is_active": true,
-    "ats_type": "successfactors",
-    "api_url": "https://jobs.amdocs.com/careers",
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://jobs.amdocs.com/careers/%2A/israel?domain=amdocs.com",
+    "job_selector": "a[href*='/job/']",
     "location_filters": [
       "Israel",
       "Raanana",
@@ -236,7 +240,7 @@
       "Nazareth"
     ],
     "target_keywords": [],
-    "notes": "Official Amdocs career portal. Search and filter by Israel; API is not documented as public."
+    "notes": "Official JS-rendered Amdocs Israel search page. Extract rendered job links with Playwright."
   },
   {
     "company_id": "nice",
@@ -356,7 +360,7 @@
     "ats_type": "custom",
     "fetch_strategy": "browser",
     "api_url": "https://careers.synopsys.com/location/israel-jobs/44408/294640/2",
-    "job_selector": "#search-results-list a.sr-job-link[data-job-id]",
+    "job_selector": "#search-results-list a[data-job-id]",
     "location_filters": [
       "Israel",
       "Herzliya",

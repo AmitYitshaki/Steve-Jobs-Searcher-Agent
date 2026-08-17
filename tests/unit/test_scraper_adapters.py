@@ -468,6 +468,12 @@ class CompanyRoutingValidationTests(unittest.TestCase):
                 "fetch_strategy": "browser",
                 "is_active": True,
             },
+            {
+                "company_id": "iai",
+                "ats_type": "custom",
+                "fetch_strategy": "api",
+                "is_active": True,
+            },
         ]
 
         self.assertEqual(scraper.validate_company_routing(companies), [])
@@ -486,6 +492,71 @@ class CompanyRoutingValidationTests(unittest.TestCase):
         self.assertEqual(
             scraper.validate_company_routing(companies),
             ["unroutable-company"],
+        )
+
+
+class CompanyConfigurationTests(unittest.TestCase):
+    """Pin the production routes for previously silent zero-job sources."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Load production company configuration once for contract checks."""
+
+        companies = scraper.load_json(
+            scraper.CONFIG_DIR / "companies.json"
+        )
+        cls.companies = {
+            company["company_id"]: company for company in companies
+        }
+
+    def test_iai_uses_hidden_json_api(self) -> None:
+        """Route IAI through its current first-party JSON feed."""
+
+        company = self.companies["iai"]
+        self.assertEqual(company["ats_type"], "custom")
+        self.assertEqual(company["fetch_strategy"], "api")
+        self.assertEqual(
+            company["api_url"],
+            (
+                "https://jobs.iai.co.il/wp-content/themes/tyco-wp/"
+                "assets/json/jobs.json"
+            ),
+        )
+
+    def test_amdocs_uses_browser_search_page(self) -> None:
+        """Keep Amdocs on its JS-rendered Israel career search."""
+
+        company = self.companies["amdocs"]
+        self.assertEqual(company["ats_type"], "custom")
+        self.assertEqual(company["fetch_strategy"], "browser")
+        self.assertEqual(
+            company["api_url"],
+            (
+                "https://jobs.amdocs.com/careers/%2A/israel"
+                "?domain=amdocs.com"
+            ),
+        )
+        self.assertEqual(company["job_selector"], "a[href*='/job/']")
+
+    def test_elbit_uses_browser_recruitment_page(self) -> None:
+        """Keep Elbit on its JS-rendered recruitment search page."""
+
+        company = self.companies["elbit_systems"]
+        self.assertEqual(company["ats_type"], "custom")
+        self.assertEqual(company["fetch_strategy"], "browser")
+        self.assertEqual(
+            company["api_url"],
+            "https://elbitsystemscareer.com/Recruitment-Page/",
+        )
+        self.assertEqual(company["job_selector"], "a[href*='/job']")
+
+    def test_synopsys_uses_async_result_anchor(self) -> None:
+        """Wait for actual job anchors without relying on a stale class."""
+
+        company = self.companies["synopsys"]
+        self.assertEqual(
+            company["job_selector"],
+            "#search-results-list a[data-job-id]",
         )
 
 
@@ -582,6 +653,79 @@ class ScraperAdapterTests(unittest.TestCase):
             )
 
         self.assertEqual(get.call_args.kwargs["timeout"], 15)
+
+    def test_iai_normalizes_hidden_json_feed(self) -> None:
+        """Extract IAI's compact array fields into the shared job schema."""
+
+        response = MagicMock()
+        response.json.return_value = [
+            {
+                "id": 76049533,
+                "tl": "Student Software Engineer",
+                "ct": "Beer Yaakov",
+                "dc": "Develop real-time C++ systems.",
+            },
+            "ignore non-object entries",
+            {"id": 123, "ct": "Lod"},
+        ]
+        company = {
+            "company_id": "iai",
+            "company_name": "Israel Aerospace Industries (IAI)",
+            "ats_type": "custom",
+            "fetch_strategy": "api",
+            "api_url": (
+                "https://jobs.iai.co.il/wp-content/themes/tyco-wp/"
+                "assets/json/jobs.json"
+            ),
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=response,
+        ) as get:
+            jobs = custom_adapters.scrape_iai(company)
+
+        response.raise_for_status.assert_called_once_with()
+        self.assertEqual(get.call_args.args[0], company["api_url"])
+        self.assertEqual(get.call_args.kwargs["timeout"], 15)
+        self.assertIn("User-Agent", get.call_args.kwargs["headers"])
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "iai_76049533",
+                    "title": "Student Software Engineer",
+                    "location": "Beer Yaakov",
+                    "url": "https://jobs.iai.co.il/job/76049533/",
+                    "content": "Develop real-time C++ systems.",
+                }
+            ],
+        )
+
+    def test_iai_custom_api_routes_to_registered_adapter(self) -> None:
+        """Dispatch IAI's custom API instead of silently returning no jobs."""
+
+        company = {
+            "company_id": "iai",
+            "company_name": "Israel Aerospace Industries (IAI)",
+            "ats_type": "custom",
+            "fetch_strategy": "api",
+            "api_url": "https://jobs.iai.co.il/jobs.json",
+        }
+        expected_jobs = [{"id": "iai_76049533"}]
+        adapter = MagicMock(return_value=expected_jobs)
+
+        with (
+            patch.dict(
+                scraper.CUSTOM_API_ADAPTERS,
+                {"iai": adapter},
+            ),
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        adapter.assert_called_once_with(company)
 
     def test_successfactors_missing_location_stays_unknown(self) -> None:
         """Do not fabricate Israel when a SuccessFactors row has no location."""
