@@ -367,6 +367,36 @@ class FetchAtsJobsTests(unittest.TestCase):
         self.assertEqual(jobs, [])
         sleep.assert_called_once_with(2.0)
 
+    def test_retry_after_header_is_capped(self) -> None:
+        """Prevent excessive server retry delays from blocking the producer."""
+
+        failed_response = MagicMock()
+        failed_response.status_code = 429
+        failed_response.headers = {"Retry-After": "3600"}
+        failed_response.raise_for_status.side_effect = (
+            api_client.requests.exceptions.HTTPError(
+                response=failed_response,
+            )
+        )
+        successful_response = MagicMock()
+        successful_response.json.return_value = {"jobs": []}
+
+        with (
+            patch(
+                "scrapers.api.client.requests.get",
+                side_effect=[failed_response, successful_response],
+            ),
+            patch("scrapers.api.client.time.sleep") as sleep,
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_ats_jobs(
+                self._company("greenhouse"),
+                scraper.ATS_FIELD_MAP["greenhouse"],
+            )
+
+        self.assertEqual(jobs, [])
+        sleep.assert_called_once_with(5.0)
+
     def test_workday_mapping_handles_configured_http_status(self) -> None:
         """Return no jobs for Workday's configured auth error statuses."""
 

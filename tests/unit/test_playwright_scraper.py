@@ -573,22 +573,18 @@ class PlaywrightJobScraperTests(unittest.TestCase):
                 result.jobs[0]["url"],
                 "https://example.test/openings/123",
             )
-            info.assert_has_calls(
-                [
-                    call(
-                        "Extracted title for %s using %s path",
-                        "example",
-                        "heading",
-                    ),
-                    call(
-                        "Extracted %s jobs for %s with selector %r",
-                        1,
-                        "example",
-                        ".custom-opening",
-                    ),
-                ]
+            info.assert_called_once_with(
+                "Extracted %s jobs for %s with selector %r",
+                1,
+                "example",
+                ".custom-opening",
             )
-            debug.assert_called_once()
+            debug.assert_any_call(
+                "Extracted title for %s using %s path",
+                "example",
+                "heading",
+            )
+            self.assertEqual(debug.call_count, 2)
 
     def test_selector_title_falls_back_to_first_text_line(self) -> None:
         """Keep plain-text job anchors and trim their card boilerplate."""
@@ -604,8 +600,8 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         scraper = PlaywrightJobScraper(playwright_factory=MagicMock())
 
         with patch(
-            "scrapers.browser.playwright_driver.LOGGER.info"
-        ) as info:
+            "scrapers.browser.playwright_driver.LOGGER.debug"
+        ) as debug:
             jobs = scraper._extract_jobs_by_selector(
                 page=page,
                 selector="a.job-link",
@@ -615,7 +611,7 @@ class PlaywrightJobScraperTests(unittest.TestCase):
 
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0]["title"], "Software Engineer Intern")
-        info.assert_called_once_with(
+        debug.assert_called_once_with(
             "Extracted title for %s using %s path",
             "example",
             "fallback",
@@ -714,8 +710,8 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         )
 
         with patch(
-            "scrapers.browser.playwright_driver.LOGGER.info"
-        ) as info:
+            "scrapers.browser.playwright_driver.LOGGER.debug"
+        ) as debug:
             jobs = PlaywrightJobScraper()._extract_jobs(
                 html=html,
                 base_url="https://example.test/careers",
@@ -726,12 +722,12 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             [job["title"] for job in jobs],
             ["Student Software Engineer", "Plain Software Engineer"],
         )
-        info.assert_any_call(
+        debug.assert_any_call(
             "Extracted title for %s using %s path",
             "example",
             "heading",
         )
-        info.assert_any_call(
+        debug.assert_any_call(
             "Extracted title for %s using %s path",
             "example",
             "fallback",

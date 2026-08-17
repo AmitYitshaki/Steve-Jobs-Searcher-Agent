@@ -12,6 +12,7 @@ from scrapers.api.mappings import AtsMapping
 
 HTTP_TIMEOUT_SECONDS = 15
 RETRY_DELAY_SECONDS = 0.5
+MAX_RETRY_DELAY_SECONDS = 5.0
 MAX_REQUEST_ATTEMPTS = 2
 RETRYABLE_HTTP_STATUS_CODES = frozenset({429, 520, 521, 522, 523, 524})
 DEFAULT_REQUEST_HEADERS = {
@@ -118,7 +119,7 @@ def _request_jobs_response(
 def _retry_delay_seconds(
     response: requests.Response | None,
 ) -> float:
-    """Return a numeric Retry-After delay or the default retry delay."""
+    """Return a bounded numeric Retry-After or the default retry delay."""
 
     if response is None or not isinstance(response.headers, Mapping):
         return RETRY_DELAY_SECONDS
@@ -126,7 +127,8 @@ def _retry_delay_seconds(
     if retry_after is None:
         return RETRY_DELAY_SECONDS
     try:
-        return max(float(str(retry_after).strip()), 0.0)
+        delay_seconds = max(float(str(retry_after).strip()), 0.0)
+        return min(delay_seconds, MAX_RETRY_DELAY_SECONDS)
     except ValueError:
         return RETRY_DELAY_SECONDS
 
