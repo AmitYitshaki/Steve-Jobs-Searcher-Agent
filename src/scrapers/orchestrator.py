@@ -6,7 +6,7 @@ import re
 import time
 import unicodedata
 from dataclasses import dataclass
-from typing import Any, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol
 
 from dotenv import load_dotenv
 
@@ -17,6 +17,7 @@ from scrapers.api.client import fetch_ats_jobs
 from scrapers.api.mappings import ATS_FIELD_MAP
 from scrapers.browser.custom_adapters import (
     scrape_eightfold,
+    scrape_iai,
     scrape_successfactors,
     scrape_universal_playwright,
 )
@@ -41,6 +42,14 @@ HEALTH_FILE = DATA_DIR / "scraper_health.json"
 # Operational heartbeat: proves the scheduler is alive when a scan legitimately
 # finds nothing, distinguishing "ran fine, no new jobs" from a silent failure.
 HEARTBEAT_MESSAGE = "Scraping cycle completed. 0 new jobs found."
+
+CustomApiAdapter = Callable[
+    [Mapping[str, Any]],
+    list[dict[str, str]],
+]
+CUSTOM_API_ADAPTERS: dict[str, CustomApiAdapter] = {
+    "iai": scrape_iai,
+}
 
 
 class HeartbeatSender(Protocol):
@@ -214,15 +223,20 @@ def validate_company_routing(companies: list[dict]) -> list[str]:
             continue
 
         ats_type = company.get("ats_type")
+        company_id = str(company.get("company_id", "<missing>"))
+        has_custom_api_route = (
+            ats_type == "custom"
+            and company.get("fetch_strategy") == "api"
+            and company_id in CUSTOM_API_ADAPTERS
+        )
         has_route = (
             ats_type in ATS_FIELD_MAP
             or ats_type in directly_routed_ats_types
             or company.get("fetch_strategy") == "browser"
+            or has_custom_api_route
         )
         if not has_route:
-            unroutable_company_ids.append(
-                str(company.get("company_id", "<missing>"))
-            )
+            unroutable_company_ids.append(company_id)
 
     return unroutable_company_ids
 
@@ -233,6 +247,14 @@ def fetch_jobs_from_company(company):
     company_id = company.get("company_id")
 
     print(f"🔍 Scanning {company.get('company_name')} (ATS: {ats_type})...")
+
+    custom_api_adapter = CUSTOM_API_ADAPTERS.get(str(company_id))
+    if (
+        ats_type == "custom"
+        and company.get("fetch_strategy") == "api"
+        and custom_api_adapter is not None
+    ):
+        return custom_api_adapter(company)
 
     if ats_type in ATS_FIELD_MAP:
         return fetch_ats_jobs(company, ATS_FIELD_MAP[ats_type])

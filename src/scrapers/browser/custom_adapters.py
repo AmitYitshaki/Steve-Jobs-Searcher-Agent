@@ -2,7 +2,7 @@ import hashlib
 import logging
 import requests
 from typing import Any, Mapping
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from models.results import ScrapeStatus
@@ -10,6 +10,14 @@ from scrapers.browser.playwright_driver import PlaywrightJobScraper
 
 LOGGER = logging.getLogger(__name__)
 HTTP_TIMEOUT_SECONDS = 15
+IAI_REQUEST_HEADERS = {
+    "Accept": "application/json",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/152.0.0.0 Safari/537.36"
+    ),
+}
 
 
 def _eightfold_api_url(url: str) -> str:
@@ -151,6 +159,67 @@ def scrape_eightfold(
         )
 
     return scrape_universal_playwright(fallback_company)
+
+
+def scrape_iai(
+    company: Mapping[str, Any],
+) -> list[dict[str, str]]:
+    """Normalize IAI's first-party JSON feed into shared job records."""
+
+    company_id = str(company.get("company_id", "iai")).strip() or "iai"
+    api_url = str(company.get("api_url", "")).strip()
+    if not api_url:
+        LOGGER.error("IAI adapter requires an api_url")
+        return []
+
+    try:
+        response = requests.get(
+            api_url,
+            headers=IAI_REQUEST_HEADERS,
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError, TypeError) as error:
+        LOGGER.error("IAI jobs API request failed: %s", error)
+        return []
+
+    if not isinstance(payload, list):
+        LOGGER.error(
+            "IAI jobs API returned %s instead of a list",
+            type(payload).__name__,
+        )
+        return []
+
+    parsed_api_url = urlsplit(api_url)
+    origin = urlunsplit(
+        (parsed_api_url.scheme, parsed_api_url.netloc, "/", "", "")
+    )
+    jobs: list[dict[str, str]] = []
+    for item in payload:
+        if not isinstance(item, Mapping):
+            continue
+
+        raw_job_id = item.get("id")
+        title = str(item.get("tl", "")).strip()
+        if raw_job_id is None or not title:
+            continue
+        job_id = str(raw_job_id).strip()
+        if not job_id:
+            continue
+
+        encoded_job_id = quote(job_id, safe="")
+        jobs.append(
+            {
+                "id": f"{company_id}_{job_id}",
+                "title": title,
+                "location": str(item.get("ct", "")).strip(),
+                "url": urljoin(origin, f"job/{encoded_job_id}/"),
+                "content": str(item.get("dc", "")).strip(),
+            }
+        )
+
+    return jobs
 
 
 def scrape_successfactors(company):
