@@ -658,7 +658,7 @@
     "is_active": true,
     "ats_type": "greenhouse",
     "fetch_strategy": "api",
-    "api_url": "https://boards-api.greenhouse.io/v1/boards/catonetworks/jobs",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/catonetworks/jobs?content=true",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -706,7 +706,7 @@
     "is_active": true,
     "ats_type": "greenhouse",
     "fetch_strategy": "api",
-    "api_url": "https://boards-api.greenhouse.io/v1/boards/orcasecurity/jobs",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/orcasecurity/jobs?content=true",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -786,7 +786,7 @@
     "is_active": true,
     "ats_type": "greenhouse",
     "fetch_strategy": "api",
-    "api_url": "https://boards-api.greenhouse.io/v1/boards/wizinc/jobs",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/wizinc/jobs?content=true",
     "location_filters": [
       "Israel",
       "Tel Aviv",

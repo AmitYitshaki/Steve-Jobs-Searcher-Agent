@@ -832,7 +832,7 @@ class CompanyConfigurationTests(unittest.TestCase):
                     company["api_url"],
                     (
                         "https://boards-api.greenhouse.io/v1/boards/"
-                        f"{board_token}/jobs"
+                        f"{board_token}/jobs?content=true"
                     ),
                 )
 
