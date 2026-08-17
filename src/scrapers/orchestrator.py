@@ -19,6 +19,7 @@ from scrapers.browser.custom_adapters import (
     scrape_eightfold,
     scrape_iai,
     scrape_successfactors,
+    scrape_thales_phenom,
     scrape_universal_playwright,
 )
 from scrapers.health import CompanyHealthTracker
@@ -49,6 +50,7 @@ CustomApiAdapter = Callable[
 ]
 CUSTOM_API_ADAPTERS: dict[str, CustomApiAdapter] = {
     "iai": scrape_iai,
+    "imperva_thales": scrape_thales_phenom,
 }
 
 

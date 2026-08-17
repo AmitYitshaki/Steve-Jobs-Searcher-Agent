@@ -848,6 +848,62 @@ class CompanyConfigurationTests(unittest.TestCase):
             ),
         )
 
+    def test_phenom_companies_use_strict_job_listing_selectors(self) -> None:
+        """Route browser Phenom sites to real job cards only."""
+
+        expected_configs = {
+            "palo_alto_networks": {
+                "api_url": (
+                    "https://jobs.paloaltonetworks.com/en/early-in-career"
+                ),
+                "job_selector": "a[data-job-id][href*='/job/']",
+            },
+            "servicenow": {
+                "api_url": (
+                    "https://careers.servicenow.com/jobs/"
+                    "?search=&jobPostingType=Early+Career"
+                    "&pagesize=20#results"
+                ),
+                "job_selector": (
+                    "div.card.card-job:has("
+                    "h2.card-title > a.stretched-link.js-view-job)"
+                ),
+            },
+            "intuit": {
+                "api_url": (
+                    "https://jobs.intuit.com/search-jobs"
+                    "?acm=9205024%2C9205760%2C9205744"
+                    "&alrpm=ALL"
+                    "&ascf=%5B%7B%22key%22%3A%22ALL%22%2C"
+                    "%22value%22%3A%22%22%7D%5D"
+                ),
+                "job_selector": "a[data-job-id][href*='/job/']",
+            },
+        }
+        for company_id, expected in expected_configs.items():
+            with self.subTest(company_id=company_id):
+                company = self.companies[company_id]
+                self.assertEqual(company["ats_type"], "phenom")
+                self.assertEqual(company["fetch_strategy"], "browser")
+                self.assertEqual(company["api_url"], expected["api_url"])
+                self.assertEqual(
+                    company["job_selector"],
+                    expected["job_selector"],
+                )
+                self.assertEqual(company["selector_timeout_ms"], 25_000)
+
+    def test_imperva_uses_scoped_thales_widgets_api(self) -> None:
+        """Route Imperva through the backend that honors country facets."""
+
+        company = self.companies["imperva_thales"]
+        self.assertEqual(company["ats_type"], "custom")
+        self.assertEqual(company["fetch_strategy"], "api")
+        self.assertEqual(
+            company["api_url"],
+            "https://careers.thalesgroup.com/widgets",
+        )
+        self.assertNotIn("job_selector", company)
+
 
 class ScraperAdapterTests(unittest.TestCase):
     """Verify adapter transport bounds and factual content extraction."""
@@ -1015,6 +1071,114 @@ class ScraperAdapterTests(unittest.TestCase):
 
         self.assertEqual(jobs, expected_jobs)
         adapter.assert_called_once_with(company)
+
+    def test_thales_adapter_scopes_israel_and_paginates(self) -> None:
+        """Normalize every Israel page and reject foreign contamination."""
+
+        first_response = MagicMock()
+        first_response.json.return_value = {
+            "refineSearch": {
+                "totalHits": 3,
+                "data": {
+                    "jobs": [
+                        {
+                            "jobId": "R100",
+                            "title": "Student C++ Engineer",
+                            "country": "Israel",
+                            "cityStateCountry": "Rehovot, Israel",
+                            "location": "Rehovot, 7670212",
+                            "address": (
+                                "Perkeris Street 2, Rehovot, Israel"
+                            ),
+                            "applyUrl": (
+                                "https://thales.example/jobs/R100/apply"
+                            ),
+                            "descriptionTeaser": (
+                                "Develop networking software."
+                            ),
+                        },
+                        {
+                            "jobId": "R200",
+                            "title": "Graduate Engineer",
+                            "country": "France",
+                            "cityStateCountry": "Paris, France",
+                            "applyUrl": (
+                                "https://thales.example/jobs/R200/apply"
+                            ),
+                        },
+                    ]
+                },
+            }
+        }
+        second_response = MagicMock()
+        second_response.json.return_value = {
+            "refineSearch": {
+                "totalHits": 3,
+                "data": {
+                    "jobs": [
+                        {
+                            "jobId": "R300",
+                            "title": "Junior Software Engineer",
+                            "country": "Israel",
+                            "cityStateCountry": "Tel Aviv, Israel",
+                            "location": "Tel Aviv, 67010",
+                            "applyUrl": (
+                                "https://thales.example/jobs/R300/apply"
+                            ),
+                            "descriptionTeaser": (
+                                "Build application-security systems."
+                            ),
+                        }
+                    ]
+                },
+            }
+        }
+        company = {
+            "company_id": "imperva_thales",
+            "ats_type": "custom",
+            "fetch_strategy": "api",
+            "api_url": "https://careers.thalesgroup.com/widgets",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.post",
+            side_effect=[first_response, second_response],
+        ) as post:
+            jobs = custom_adapters.scrape_thales_phenom(company)
+
+        self.assertEqual(
+            [job["id"] for job in jobs],
+            ["imperva_thales_R100", "imperva_thales_R300"],
+        )
+        self.assertEqual(jobs[0]["title"], "Student C++ Engineer")
+        self.assertIn("Rehovot, Israel", jobs[0]["location"])
+        self.assertEqual(
+            jobs[0]["url"],
+            "https://thales.example/jobs/R100/apply",
+        )
+        self.assertEqual(
+            jobs[0]["content"],
+            "Develop networking software.",
+        )
+        self.assertEqual(post.call_count, 2)
+        first_payload = post.call_args_list[0].kwargs["json"]
+        second_payload = post.call_args_list[1].kwargs["json"]
+        self.assertEqual(
+            first_payload["selected_fields"],
+            {"country": ["Israel"]},
+        )
+        self.assertEqual(first_payload["from"], 0)
+        self.assertEqual(second_payload["from"], 2)
+        self.assertEqual(post.call_args.kwargs["timeout"], 15)
+        self.assertIn("User-Agent", post.call_args.kwargs["headers"])
+
+    def test_imperva_custom_api_routes_to_registered_adapter(self) -> None:
+        """Dispatch Imperva through the scoped Thales API adapter."""
+
+        self.assertIs(
+            scraper.CUSTOM_API_ADAPTERS["imperva_thales"],
+            custom_adapters.scrape_thales_phenom,
+        )
 
     def test_successfactors_missing_location_stays_unknown(self) -> None:
         """Do not fabricate Israel when a SuccessFactors row has no location."""
