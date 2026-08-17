@@ -628,6 +628,56 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             "fallback",
         )
 
+    def test_selector_card_uses_title_field_and_descendant_link(self) -> None:
+        """Extract Cyera-style cards whose title and anchor are siblings."""
+
+        title_element = MagicMock()
+        title_element.count.return_value = 1
+        title_element.inner_text.return_value = "Senior Data Engineer"
+        title_locator = MagicMock()
+        title_locator.first = title_element
+
+        link_element = MagicMock()
+        link_element.count.return_value = 1
+        link_element.get_attribute.return_value = (
+            "https://www.comeet.com/jobs/cyera/17.008/careers/40.767"
+        )
+        link_locator = MagicMock()
+        link_locator.first = link_element
+
+        card = MagicMock()
+        card.get_attribute.return_value = None
+        card.inner_text.return_value = (
+            "Senior Data Engineer\nR&D\nFull-time\nTel Aviv\nView position"
+        )
+        card.locator.side_effect = lambda selector: (
+            title_locator
+            if selector == PlaywrightJobScraper.TITLE_HEADING_SELECTOR
+            else link_locator
+        )
+        page = MagicMock()
+        page.locator.return_value.all.return_value = [card]
+        scraper = PlaywrightJobScraper(playwright_factory=MagicMock())
+
+        jobs = scraper._extract_jobs_by_selector(
+            page=page,
+            selector="div.positions_item",
+            base_url="https://www.cyera.com/careers-il",
+            company_id="cyera",
+        )
+
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["title"], "Senior Data Engineer")
+        self.assertEqual(
+            jobs[0]["url"],
+            "https://www.comeet.com/jobs/cyera/17.008/careers/40.767",
+        )
+        self.assertEqual(
+            jobs[0]["location"],
+            "Senior Data Engineer\nR&D\nFull-time\nTel Aviv\nView position",
+        )
+        card.locator.assert_any_call("a[href]")
+
     def test_selector_wait_timeout_logs_warning_and_continues(self) -> None:
         """Treat a missing SPA selector as an empty result, not a crash."""
 

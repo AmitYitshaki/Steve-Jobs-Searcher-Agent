@@ -815,6 +815,39 @@ class CompanyConfigurationTests(unittest.TestCase):
             "#search-results-list a[data-job-id]",
         )
 
+    def test_embedded_greenhouse_companies_use_public_api(self) -> None:
+        """Bypass marketing-page iframes through official board APIs."""
+
+        board_tokens = {
+            "cato_networks": "catonetworks",
+            "orca_security": "orcasecurity",
+            "wiz": "wizinc",
+        }
+        for company_id, board_token in board_tokens.items():
+            with self.subTest(company_id=company_id):
+                company = self.companies[company_id]
+                self.assertEqual(company["ats_type"], "greenhouse")
+                self.assertEqual(company["fetch_strategy"], "api")
+                self.assertEqual(
+                    company["api_url"],
+                    (
+                        "https://boards-api.greenhouse.io/v1/boards/"
+                        f"{board_token}/jobs"
+                    ),
+                )
+
+    def test_cyera_uses_title_bearing_job_cards(self) -> None:
+        """Select Cyera cards containing both the title field and job link."""
+
+        company = self.companies["cyera"]
+        self.assertEqual(
+            company["job_selector"],
+            (
+                "div.positions_item:has([fs-list-field='itemTitle'])"
+                ":has(a[href*='comeet.com/jobs/cyera/'])"
+            ),
+        )
+
 
 class ScraperAdapterTests(unittest.TestCase):
     """Verify adapter transport bounds and factual content extraction."""

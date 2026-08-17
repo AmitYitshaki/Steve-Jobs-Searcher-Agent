@@ -656,16 +656,16 @@
     "company_name": "Cato Networks",
     "tier": "B",
     "is_active": true,
-    "ats_type": "greenhouse_embedded",
-    "fetch_strategy": "browser",
-    "api_url": "https://www.catonetworks.com/careers/",
+    "ats_type": "greenhouse",
+    "fetch_strategy": "api",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/catonetworks/jobs",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Tel Aviv District"
     ],
     "target_keywords": [],
-    "notes": "Official Cato Networks careers page with embedded job listings. Crawl listing and job-detail pages; public board slug is not exposed reliably."
+    "notes": "Official Greenhouse public API using the catonetworks board identifier."
   },
   {
     "company_id": "armis",
@@ -690,30 +690,30 @@
     "ats_type": "custom",
     "fetch_strategy": "browser",
     "api_url": "https://www.cyera.com/careers-il#open-positions",
-    "job_selector": "a[href*='/careers/']",
+    "job_selector": "div.positions_item:has([fs-list-field='itemTitle']):has(a[href*='comeet.com/jobs/cyera/'])",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Official Israel careers page. Use the configured selector to extract rendered job links."
+    "notes": "Official Israel careers page. Select each rendered job card so the title field and its sibling Comeet link are extracted together."
   },
   {
     "company_id": "orca_security",
     "company_name": "Orca Security",
     "tier": "B",
     "is_active": true,
-    "ats_type": "greenhouse_embedded",
-    "fetch_strategy": "browser",
-    "api_url": "https://orca.security/about/careers/",
+    "ats_type": "greenhouse",
+    "fetch_strategy": "api",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/orcasecurity/jobs",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Ramat Gan"
     ],
     "target_keywords": [],
-    "notes": "Official Orca Security careers page exposes Greenhouse job IDs. Use an embedded Greenhouse adapter because the public board slug is not reliably exposed."
+    "notes": "Official Greenhouse public API using the orcasecurity board identifier."
   },
   {
     "company_id": "silverfort",
@@ -784,16 +784,16 @@
     "company_name": "Wiz",
     "tier": "B",
     "is_active": true,
-    "ats_type": "greenhouse_embedded",
-    "fetch_strategy": "browser",
-    "api_url": "https://www.wiz.io/careers",
+    "ats_type": "greenhouse",
+    "fetch_strategy": "api",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/wizinc/jobs",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Official Wiz careers page with Greenhouse-style job identifiers. Use an embedded Greenhouse adapter and keep the official page as fallback."
+    "notes": "Official Greenhouse public API using the active wizinc board identifier."
   },
   {
     "company_id": "forter",

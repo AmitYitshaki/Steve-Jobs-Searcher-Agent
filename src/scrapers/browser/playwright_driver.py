@@ -371,7 +371,9 @@ class PlaywrightJobScraper:
 
     JOB_LINK_KEYWORDS = ("job", "career", "req", "position", "role", "detail")
     TITLE_HEADING_NAMES = ("h1", "h2", "h3", "h4", "h5", "h6")
-    TITLE_HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6"
+    TITLE_HEADING_SELECTOR = (
+        "h1, h2, h3, h4, h5, h6, [fs-list-field='itemTitle']"
+    )
     EXCLUDED_PATH_SEGMENTS = frozenset({
         "blog",
         "article",
@@ -700,6 +702,22 @@ class PlaywrightJobScraper:
             "",
         )
 
+    @staticmethod
+    def _element_href(element: Any) -> str:
+        """Return an element's href or the first descendant anchor href."""
+
+        href = element.get_attribute("href")
+        if isinstance(href, str) and href.strip():
+            return href.strip()
+
+        descendant_anchor = element.locator("a[href]").first
+        if descendant_anchor.count() == 0:
+            return ""
+        descendant_href = descendant_anchor.get_attribute("href")
+        if not isinstance(descendant_href, str):
+            return ""
+        return descendant_href.strip()
+
     def _extract_jobs_by_selector(
         self,
         page: Page,
@@ -715,7 +733,7 @@ class PlaywrightJobScraper:
 
         for element in elements:
             try:
-                href = element.get_attribute("href")
+                href = self._element_href(element)
                 raw_card_text = element.inner_text()
                 heading = element.locator(self.TITLE_HEADING_SELECTOR).first
                 if heading.count() > 0:
@@ -731,7 +749,7 @@ class PlaywrightJobScraper:
                     error,
                 )
                 continue
-            if not isinstance(href, str) or not href.strip():
+            if not href:
                 continue
             title = (
                 self._first_text_line(raw_title)
@@ -741,7 +759,7 @@ class PlaywrightJobScraper:
             if not title:
                 continue
 
-            full_url = urljoin(base_url, href.strip())
+            full_url = urljoin(base_url, href)
             if full_url in seen_urls:
                 continue
             seen_urls.add(full_url)
