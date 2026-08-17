@@ -716,12 +716,13 @@ class PlaywrightJobScraper:
         for element in elements:
             try:
                 href = element.get_attribute("href")
+                raw_card_text = element.inner_text()
                 heading = element.locator(self.TITLE_HEADING_SELECTOR).first
                 if heading.count() > 0:
                     raw_title = heading.inner_text()
                     title_source = "heading"
                 else:
-                    raw_title = element.inner_text()
+                    raw_title = raw_card_text
                     title_source = "fallback"
             except Exception as error:
                 LOGGER.debug(
@@ -757,7 +758,11 @@ class PlaywrightJobScraper:
                 {
                     "id": f"{company_id}_{stable_id}",
                     "title": title,
-                    "location": "Israel",
+                    "location": (
+                        raw_card_text.strip()
+                        if isinstance(raw_card_text, str)
+                        else ""
+                    ),
                     "url": full_url,
                     "content": "",
                 }
@@ -779,6 +784,7 @@ class PlaywrightJobScraper:
 
         for anchor in soup.find_all("a", href=True):
             href = str(anchor["href"]).strip()
+            raw_card_text = anchor.get_text(" ", strip=True)
             heading = anchor.find(self.TITLE_HEADING_NAMES)
             if heading is not None:
                 raw_title = heading.get_text(" ", strip=True)
@@ -818,7 +824,7 @@ class PlaywrightJobScraper:
                 {
                     "id": f"{company_id}_{stable_id}",
                     "title": title,
-                    "location": "Israel",
+                    "location": raw_card_text,
                     "url": full_url,
                     "content": "",
                 }
