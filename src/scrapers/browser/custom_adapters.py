@@ -192,7 +192,7 @@ def scrape_successfactors(company):
                 
             # מציאת המיקום
             location_tag = row.find('span', class_='jobLocation')
-            location = location_tag.text.strip() if location_tag else "Israel"
+            location = location_tag.text.strip() if location_tag else ""
 
             description_tag = row.select_one(
                 ".jobDescription, .job-description, .description"

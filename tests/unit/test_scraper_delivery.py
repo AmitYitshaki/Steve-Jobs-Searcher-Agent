@@ -136,6 +136,18 @@ class ScraperProducerTests(unittest.TestCase):
         )
         self.assertIsNone(decision.matched_keyword)
 
+    def test_configured_location_filter_fails_closed_on_empty_location(
+        self,
+    ) -> None:
+        """Reject unknown adapter locations when a company requires Israel."""
+
+        self.assertFalse(scraper.is_in_location("", ["Israel"]))
+        self.assertFalse(scraper.is_in_location(None, ["Israel"]))
+        self.assertTrue(scraper.is_in_location("", []))
+        self.assertTrue(
+            scraper.is_in_location("Tel Aviv, Israel", ["Israel"])
+        )
+
     def test_title_rejection_is_debug_logged_before_analysis(self) -> None:
         """Keep deterministic title rejection detail out of INFO output."""
 

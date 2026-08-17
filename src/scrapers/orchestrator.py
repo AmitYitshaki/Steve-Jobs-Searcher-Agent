@@ -195,8 +195,10 @@ def load_json(filepath):
         return json.load(f)
 
 def is_in_location(job_location, location_filters):
-    if not location_filters or not job_location:
+    if not location_filters:
         return True
+    if not job_location:
+        return False
     job_loc_lower = job_location.lower()
     return any(loc.lower() in job_loc_lower for loc in location_filters)
 

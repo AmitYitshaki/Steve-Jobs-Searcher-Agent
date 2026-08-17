@@ -479,6 +479,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             first_heading.count.return_value = 1
             first_heading.inner_text.return_value = "ML Engineer"
             first_element.locator.return_value.first = first_heading
+            first_element.inner_text.return_value = (
+                "ML Engineer\nSingapore - Singapore"
+            )
             duplicate_element = MagicMock()
             duplicate_element.get_attribute.return_value = (
                 "https://example.test/openings/123"
@@ -573,6 +576,10 @@ class PlaywrightJobScraperTests(unittest.TestCase):
                 result.jobs[0]["url"],
                 "https://example.test/openings/123",
             )
+            self.assertEqual(
+                result.jobs[0]["location"],
+                "ML Engineer\nSingapore - Singapore",
+            )
             info.assert_called_once_with(
                 "Extracted %s jobs for %s with selector %r",
                 1,
@@ -611,6 +618,10 @@ class PlaywrightJobScraperTests(unittest.TestCase):
 
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0]["title"], "Software Engineer Intern")
+        self.assertEqual(
+            jobs[0]["location"],
+            "Software Engineer Intern\nRead More\nTel Aviv",
+        )
         debug.assert_called_once_with(
             "Extracted title for %s using %s path",
             "example",
@@ -721,6 +732,16 @@ class PlaywrightJobScraperTests(unittest.TestCase):
         self.assertEqual(
             [job["title"] for job in jobs],
             ["Student Software Engineer", "Plain Software Engineer"],
+        )
+        self.assertEqual(
+            [job["location"] for job in jobs],
+            [
+                (
+                    "Student Software Engineer "
+                    "From intern to staff engineer. Read More"
+                ),
+                "Plain Software Engineer\nRead More",
+            ],
         )
         debug.assert_any_call(
             "Extracted title for %s using %s path",

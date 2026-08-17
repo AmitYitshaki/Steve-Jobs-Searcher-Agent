@@ -583,6 +583,27 @@ class ScraperAdapterTests(unittest.TestCase):
 
         self.assertEqual(get.call_args.kwargs["timeout"], 15)
 
+    def test_successfactors_missing_location_stays_unknown(self) -> None:
+        """Do not fabricate Israel when a SuccessFactors row has no location."""
+
+        response = MagicMock()
+        response.text = (
+            '<table><tr class="data-row">'
+            '<span class="jobTitle">'
+            '<a href="/jobs/123/">Student Engineer</a>'
+            "</span></tr></table>"
+        )
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=response,
+        ):
+            jobs = custom_adapters.scrape_successfactors(
+                self._company("successfactors")
+            )
+
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["location"], "")
+
     def test_eightfold_extracts_native_jobs_with_timeout(self) -> None:
         """Normalize a native Eightfold response without using Playwright."""
 
