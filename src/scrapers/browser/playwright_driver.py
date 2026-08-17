@@ -744,7 +744,7 @@ class PlaywrightJobScraper:
             if full_url in seen_urls:
                 continue
             seen_urls.add(full_url)
-            LOGGER.info(
+            LOGGER.debug(
                 "Extracted title for %s using %s path",
                 company_id,
                 title_source,
@@ -807,7 +807,7 @@ class PlaywrightJobScraper:
             if full_url in seen_urls:
                 continue
             seen_urls.add(full_url)
-            LOGGER.info(
+            LOGGER.debug(
                 "Extracted title for %s using %s path",
                 company_id,
                 title_source,
