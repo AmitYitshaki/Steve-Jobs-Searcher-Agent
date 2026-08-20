@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
+from models.results import ScrapeResult, ScrapeStatus  # noqa: E402
 from scrapers import orchestrator as scraper  # noqa: E402
 from scrapers.api import client as api_client  # noqa: E402
 from scrapers.browser import custom_adapters  # noqa: E402
@@ -904,9 +905,134 @@ class CompanyConfigurationTests(unittest.TestCase):
         )
         self.assertNotIn("job_selector", company)
 
+    def test_meta_uses_network_interception_search_page(self) -> None:
+        """Keep Meta on the page that emits its private GraphQL search."""
+
+        company = self.companies["meta"]
+        self.assertEqual(company["ats_type"], "meta_custom")
+        self.assertEqual(company["fetch_strategy"], "browser")
+        self.assertEqual(
+            company["api_url"],
+            "https://www.metacareers.com/jobs?q=Israel",
+        )
+
 
 class ScraperAdapterTests(unittest.TestCase):
     """Verify adapter transport bounds and factual content extraction."""
+
+    def test_meta_parser_normalizes_graphql_jobs(self) -> None:
+        """Normalize Meta's nested GraphQL result into shared job records."""
+
+        payload = {
+            "data": {
+                "job_search_with_featured_jobs_v2": {
+                    "all_jobs": [
+                        {
+                            "id": "123456789",
+                            "title": "Software Engineer, University Grad",
+                            "locations": ["Tel Aviv, Israel"],
+                            "teams": ["Infrastructure", "AI Research"],
+                        }
+                    ]
+                }
+            }
+        }
+
+        jobs = custom_adapters._meta_job_search_parser(payload)
+
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "meta_123456789",
+                    "title": "Software Engineer, University Grad",
+                    "location": "Tel Aviv, Israel",
+                    "url": (
+                        "https://www.metacareers.com/jobs/123456789"
+                    ),
+                    "content": "Infrastructure, AI Research",
+                }
+            ],
+        )
+
+    def test_meta_parser_ignores_malformed_jobs(self) -> None:
+        """Return only complete Meta records from a partially bad payload."""
+
+        payload = {
+            "data": {
+                "job_search_with_featured_jobs_v2": {
+                    "all_jobs": [
+                        {"id": "missing-title", "locations": []},
+                        "not-an-object",
+                    ]
+                }
+            }
+        }
+
+        self.assertEqual(
+            custom_adapters._meta_job_search_parser(payload),
+            [],
+        )
+        self.assertEqual(
+            custom_adapters._meta_job_search_parser({"data": {}}),
+            [],
+        )
+
+    def test_meta_adapter_uses_passive_graphql_interception(self) -> None:
+        """Load Meta's search page and parse observed POST responses."""
+
+        company = {
+            "company_id": "meta",
+            "company_name": "Meta Israel",
+            "ats_type": "meta_custom",
+            "fetch_strategy": "browser",
+            "api_url": "https://www.metacareers.com/jobs?q=Israel",
+        }
+        expected_jobs = [{
+            "id": "meta_123",
+            "title": "University Grad Engineer",
+            "location": "Tel Aviv, Israel",
+            "url": "https://www.metacareers.com/jobs/123",
+            "content": "Infrastructure",
+        }]
+        with patch(
+            "scrapers.browser.custom_adapters.NetworkInterceptScraper"
+        ) as scraper_class:
+            scraper_class.return_value.scrape.return_value = ScrapeResult(
+                status=ScrapeStatus.SUCCESS,
+                jobs=expected_jobs,
+            )
+
+            jobs = custom_adapters.scrape_meta(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        scraper_class.return_value.scrape.assert_called_once_with(
+            company=company,
+            target_url_pattern="/graphql",
+            response_parser_fn=custom_adapters._meta_job_search_parser,
+            request_method="POST",
+        )
+
+    def test_meta_custom_routes_to_registered_adapter(self) -> None:
+        """Dispatch Meta through interception instead of DOM heuristics."""
+
+        company = {
+            **self._company("meta_custom"),
+            "fetch_strategy": "browser",
+        }
+        expected_jobs = [{"id": "meta_123"}]
+        adapter = MagicMock(return_value=expected_jobs)
+        with (
+            patch.dict(
+                scraper.CUSTOM_BROWSER_ADAPTERS,
+                {"meta_custom": adapter},
+            ),
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        adapter.assert_called_once_with(company)
 
     def test_greenhouse_extracts_actual_content_with_timeout(self) -> None:
         """Read Greenhouse content instead of synthesizing a description."""

@@ -18,6 +18,7 @@ from scrapers.api.mappings import ATS_FIELD_MAP
 from scrapers.browser.custom_adapters import (
     scrape_eightfold,
     scrape_iai,
+    scrape_meta,
     scrape_successfactors,
     scrape_thales_phenom,
     scrape_universal_playwright,
@@ -51,6 +52,9 @@ CustomApiAdapter = Callable[
 CUSTOM_API_ADAPTERS: dict[str, CustomApiAdapter] = {
     "iai": scrape_iai,
     "imperva_thales": scrape_thales_phenom,
+}
+CUSTOM_BROWSER_ADAPTERS: dict[str, CustomApiAdapter] = {
+    "meta_custom": scrape_meta,
 }
 
 
@@ -257,6 +261,13 @@ def fetch_jobs_from_company(company):
         and custom_api_adapter is not None
     ):
         return custom_api_adapter(company)
+
+    custom_browser_adapter = CUSTOM_BROWSER_ADAPTERS.get(str(ats_type))
+    if (
+        company.get("fetch_strategy") == "browser"
+        and custom_browser_adapter is not None
+    ):
+        return custom_browser_adapter(company)
 
     if ats_type in ATS_FIELD_MAP:
         return fetch_ats_jobs(company, ATS_FIELD_MAP[ats_type])
