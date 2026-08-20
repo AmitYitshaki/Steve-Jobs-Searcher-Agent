@@ -955,6 +955,37 @@ class ScraperAdapterTests(unittest.TestCase):
             ],
         )
 
+    def test_meta_parser_joins_locations_for_downstream_filter(self) -> None:
+        """Keep secondary Meta locations visible to location filtering."""
+
+        payload = {
+            "data": {
+                "job_search_with_featured_jobs_v2": {
+                    "all_jobs": [
+                        {
+                            "id": "multi-location",
+                            "title": "Software Engineer, University Grad",
+                            "locations": [
+                                "London, UK",
+                                "Tel Aviv, Israel",
+                            ],
+                            "teams": [],
+                        }
+                    ]
+                }
+            }
+        }
+
+        jobs = custom_adapters._meta_job_search_parser(payload)
+
+        self.assertEqual(
+            jobs[0]["location"],
+            "London, UK, Tel Aviv, Israel",
+        )
+        self.assertTrue(
+            scraper.is_in_location(jobs[0]["location"], ["Israel"])
+        )
+
     def test_meta_parser_ignores_malformed_jobs(self) -> None:
         """Return only complete Meta records from a partially bad payload."""
 
