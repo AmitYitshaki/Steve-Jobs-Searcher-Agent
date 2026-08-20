@@ -21,6 +21,7 @@ from models.results import ScrapeResult, ScrapeStatus
 from scrapers.browser.custom_adapters import scrape_universal_playwright
 from scrapers.browser.playwright_driver import (
     ApiDiscoveryRecord,
+    NetworkInterceptScraper,
     NetworkResponseCollector,
     PlaywrightJobScraper,
     REALISTIC_USER_AGENT,
@@ -884,6 +885,176 @@ class PlaywrightJobScraperTests(unittest.TestCase):
                 ).exists()
             )
             warning.assert_called_once()
+
+
+class NetworkInterceptScraperTests(unittest.TestCase):
+    """Verify passive response interception through the shared browser seam."""
+
+    def setUp(self) -> None:
+        """Mock stealth application so browser tests stay deterministic."""
+
+        stealth_patcher = patch(
+            "scrapers.browser.playwright_driver.stealth_sync"
+        )
+        self.stealth = stealth_patcher.start()
+        self.addCleanup(stealth_patcher.stop)
+
+    @staticmethod
+    def _browser_manager(
+        page: MagicMock,
+    ) -> tuple[MagicMock, MagicMock, MagicMock]:
+        """Build a mocked Playwright manager, context, and browser."""
+
+        context = MagicMock()
+        context.new_page.return_value = page
+        browser = MagicMock()
+        browser.new_context.return_value = context
+        playwright = MagicMock()
+        playwright.chromium.launch.return_value = browser
+        manager = MagicMock()
+        manager.__enter__.return_value = playwright
+        return manager, context, browser
+
+    def test_returns_parsed_jobs_from_matching_response(self) -> None:
+        """Parse a matching response without replaying its private request."""
+
+        payload = {"data": {"jobs": [{"id": "123"}]}}
+        expected_jobs = [{
+            "id": "example_123",
+            "title": "Student Software Engineer",
+            "location": "Tel Aviv, Israel",
+            "url": "https://example.test/jobs/123",
+            "content": "Infrastructure",
+        }]
+        response = SimpleNamespace(
+            url="https://example.test/api/graphql?doc_id=1",
+            request=SimpleNamespace(method="POST"),
+            json=MagicMock(return_value=payload),
+        )
+        page = MagicMock()
+
+        def navigate(*args: object, **kwargs: object) -> SimpleNamespace:
+            response_handler = page.on.call_args_list[-1].args[1]
+            response_handler(response)
+            return SimpleNamespace(status=200)
+
+        page.goto.side_effect = navigate
+        page.content.return_value = (
+            "<html><body>Meta careers loaded successfully.</body></html>"
+        )
+        manager, context, browser = self._browser_manager(page)
+        parser = MagicMock(return_value=expected_jobs)
+
+        result = NetworkInterceptScraper(
+            playwright_factory=MagicMock(return_value=manager),
+            settle_time_ms=0,
+        ).scrape(
+            company={
+                "company_id": "example",
+                "api_url": "https://example.test/jobs?q=Israel",
+            },
+            target_url_pattern="/graphql",
+            response_parser_fn=parser,
+            request_method="POST",
+        )
+
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
+        parser.assert_called_once_with(payload)
+        response.json.assert_called_once_with()
+        self.stealth.assert_called_once_with(page)
+        page.screenshot.assert_not_called()
+        context.close.assert_called_once_with()
+        browser.close.assert_called_once_with()
+
+    def test_ignores_non_matching_request_method(self) -> None:
+        """Return NO_JOBS when only the wrong request method is observed."""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            response = SimpleNamespace(
+                url="https://example.test/api/graphql",
+                request=SimpleNamespace(method="GET"),
+                json=MagicMock(),
+            )
+            page = MagicMock()
+
+            def navigate(*args: object, **kwargs: object) -> SimpleNamespace:
+                response_handler = page.on.call_args_list[-1].args[1]
+                response_handler(response)
+                return SimpleNamespace(status=200)
+
+            page.goto.side_effect = navigate
+            page.content.return_value = (
+                "<html><body>Careers loaded without matching data.</body></html>"
+            )
+            manager, context, browser = self._browser_manager(page)
+            parser = MagicMock()
+
+            result = NetworkInterceptScraper(
+                debug_dir=temporary_directory,
+                playwright_factory=MagicMock(return_value=manager),
+                settle_time_ms=0,
+            ).scrape(
+                company={
+                    "company_id": "example",
+                    "api_url": "https://example.test/jobs?q=Israel",
+                },
+                target_url_pattern="/graphql",
+                response_parser_fn=parser,
+                request_method="POST",
+            )
+
+            self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+            self.assertIn("No matching", result.message)
+            parser.assert_not_called()
+            self.assertTrue(
+                (Path(temporary_directory) / "example.html").exists()
+            )
+            context.close.assert_called_once_with()
+            browser.close.assert_called_once_with()
+
+    def test_parser_failure_returns_failed_and_closes_resources(self) -> None:
+        """Surface malformed matching responses without leaking resources."""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            response = SimpleNamespace(
+                url="https://example.test/api/graphql",
+                request=SimpleNamespace(method="POST"),
+                json=MagicMock(return_value={"unexpected": True}),
+            )
+            page = MagicMock()
+
+            def navigate(*args: object, **kwargs: object) -> SimpleNamespace:
+                response_handler = page.on.call_args_list[-1].args[1]
+                response_handler(response)
+                return SimpleNamespace(status=200)
+
+            page.goto.side_effect = navigate
+            page.content.return_value = (
+                "<html><body>Careers loaded with malformed data.</body></html>"
+            )
+            manager, context, browser = self._browser_manager(page)
+
+            result = NetworkInterceptScraper(
+                debug_dir=temporary_directory,
+                playwright_factory=MagicMock(return_value=manager),
+                settle_time_ms=0,
+            ).scrape(
+                company={
+                    "company_id": "example",
+                    "api_url": "https://example.test/jobs?q=Israel",
+                },
+                target_url_pattern="/graphql",
+                response_parser_fn=MagicMock(
+                    side_effect=ValueError("unexpected payload")
+                ),
+                request_method="POST",
+            )
+
+            self.assertEqual(result.status, ScrapeStatus.FAILED)
+            self.assertIn("ValueError", result.message)
+            context.close.assert_called_once_with()
+            browser.close.assert_called_once_with()
 
 
 class UniversalWrapperTests(unittest.TestCase):

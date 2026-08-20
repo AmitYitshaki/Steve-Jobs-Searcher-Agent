@@ -6,12 +6,17 @@ from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from models.results import ScrapeStatus
-from scrapers.browser.playwright_driver import PlaywrightJobScraper
+from scrapers.browser.playwright_driver import (
+    CompanyConfig,
+    NetworkInterceptScraper,
+    PlaywrightJobScraper,
+)
 
 LOGGER = logging.getLogger(__name__)
 HTTP_TIMEOUT_SECONDS = 15
 THALES_PHENOM_PAGE_SIZE = 10
 THALES_PHENOM_MAX_PAGES = 100
+META_JOBS_URL = "https://www.metacareers.com/jobs?q=Israel"
 IAI_REQUEST_HEADERS = {
     "Accept": "application/json",
     "User-Agent": (
@@ -25,6 +30,101 @@ THALES_REQUEST_HEADERS = {
     "Accept": "application/json",
     "Content-Type": "application/json",
 }
+
+
+def _meta_text(value: Any) -> str:
+    """Normalize one textual value from Meta's nested GraphQL objects."""
+
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, Mapping):
+        for key in ("name", "label", "text", "title"):
+            text = value.get(key)
+            if isinstance(text, str) and text.strip():
+                return text.strip()
+    return ""
+
+
+def _meta_job_search_parser(payload: Any) -> list[dict[str, str]]:
+    """Normalize Meta's job-search GraphQL payload into shared records."""
+
+    if not isinstance(payload, Mapping):
+        return []
+    data = payload.get("data")
+    if not isinstance(data, Mapping):
+        return []
+    search_result = data.get("job_search_with_featured_jobs_v2")
+    if not isinstance(search_result, Mapping):
+        return []
+    all_jobs = search_result.get("all_jobs")
+    if not isinstance(all_jobs, list):
+        return []
+
+    jobs: list[dict[str, str]] = []
+    for item in all_jobs:
+        if not isinstance(item, Mapping):
+            continue
+        raw_job_id = item.get("id")
+        title = _meta_text(item.get("title"))
+        if raw_job_id is None or not title:
+            continue
+        job_id = str(raw_job_id).strip()
+        if not job_id:
+            continue
+
+        raw_locations = item.get("locations")
+        location = (
+            _meta_text(raw_locations[0])
+            if isinstance(raw_locations, list) and raw_locations
+            else ""
+        )
+        raw_teams = item.get("teams")
+        if isinstance(raw_teams, list):
+            teams = [_meta_text(team) for team in raw_teams]
+        else:
+            teams = [_meta_text(raw_teams)]
+        content = ", ".join(team for team in teams if team)
+        jobs.append(
+            {
+                "id": f"meta_{job_id}",
+                "title": title,
+                "location": location,
+                "url": f"https://www.metacareers.com/jobs/{job_id}",
+                "content": content,
+            }
+        )
+    return jobs
+
+
+def scrape_meta(company: CompanyConfig) -> list[dict[str, str]]:
+    """Capture Meta's session-bound GraphQL job search passively."""
+
+    target_company = dict(company)
+    target_company["api_url"] = str(
+        company.get("api_url") or META_JOBS_URL
+    )
+    result = NetworkInterceptScraper().scrape(
+        company=target_company,
+        target_url_pattern="/graphql",
+        response_parser_fn=_meta_job_search_parser,
+        request_method="POST",
+    )
+    company_id = str(company.get("company_id", "meta"))
+    if result.status is ScrapeStatus.WAF_BLOCKED:
+        LOGGER.warning("Meta interception was WAF-blocked for %s", company_id)
+    elif result.status is ScrapeStatus.NO_JOBS:
+        LOGGER.warning(
+            "Meta interception returned no jobs for %s: %s",
+            company_id,
+            result.message,
+        )
+    elif result.status is ScrapeStatus.FAILED:
+        LOGGER.error(
+            "Meta interception failed for %s: %s",
+            company_id,
+            result.message,
+        )
+    return result.jobs
 
 
 def _eightfold_api_url(url: str) -> str:

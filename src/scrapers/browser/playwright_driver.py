@@ -10,7 +10,7 @@ import re
 import threading
 import time
 from contextlib import AbstractContextManager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
@@ -58,6 +58,12 @@ def stealth_sync(page: Page) -> None:
 
 CompanyConfig = Mapping[str, Any]
 PlaywrightFactory = Callable[[], AbstractContextManager[Playwright]]
+ResponseParser = Callable[[Any], list[JobRecord]]
+ResponseHandler = Callable[[Response], None]
+BrowserResultBuilder = Callable[
+    [Page, str],
+    tuple[ScrapeResult, str],
+]
 
 
 @dataclass(frozen=True)
@@ -366,8 +372,8 @@ class NetworkResponseCollector:
         )
 
 
-class PlaywrightJobScraper:
-    """Scrape job links while exposing WAF and API discovery outcomes."""
+class _BrowserSessionScraper:
+    """Own the shared stealth browser lifecycle for scraper adapters."""
 
     JOB_LINK_KEYWORDS = ("job", "career", "req", "position", "role", "detail")
     TITLE_HEADING_NAMES = ("h1", "h2", "h3", "h4", "h5", "h6")
@@ -468,8 +474,10 @@ class PlaywrightJobScraper:
         url: str,
         job_selector: str = "",
         selector_timeout_ms: int = SELECTOR_TIMEOUT_MS,
+        response_handler: ResponseHandler | None = None,
+        result_builder: BrowserResultBuilder | None = None,
     ) -> ScrapeResult:
-        """Run one browser session and close all resources before returning."""
+        """Run one shared browser session and close every owned resource."""
 
         browser: Any = None
         context: Any = None
@@ -494,6 +502,8 @@ class PlaywrightJobScraper:
                 log_path=LOGS_DIR / "api_discovery_log.json",
             )
             collector.attach(page)
+            if response_handler is not None:
+                page.on("response", response_handler)
 
             navigation_response = page.goto(
                 url,
@@ -524,28 +534,21 @@ class PlaywrightJobScraper:
                     diagnostic_paths=diagnostic_paths,
                 )
 
-            if job_selector:
-                self._wait_for_job_selector(
-                    page,
-                    job_selector,
-                    selector_timeout_ms,
-                )
-                html = page.content()
-                jobs = self._extract_jobs_by_selector(
-                    page=page,
-                    selector=job_selector,
-                    base_url=url,
+            active_result_builder = result_builder or (
+                lambda active_page, active_html: self._build_dom_result(
+                    page=active_page,
+                    html=active_html,
+                    url=url,
                     company_id=company_id,
+                    job_selector=job_selector,
+                    selector_timeout_ms=selector_timeout_ms,
                 )
-                LOGGER.info(
-                    "Extracted %s jobs for %s with selector %r",
-                    len(jobs),
-                    company_id,
-                    job_selector,
-                )
-            else:
-                jobs = self._extract_jobs(html, url, company_id)
-            if not jobs:
+            )
+            result, html = active_result_builder(page, html)
+            if (
+                result.status is not ScrapeStatus.SUCCESS
+                and not result.diagnostic_paths
+            ):
                 diagnostic_paths = self._write_diagnostics(
                     page=page,
                     company_id=company_id,
@@ -553,23 +556,11 @@ class PlaywrightJobScraper:
                     status_code=status_code,
                     waf_reason=None,
                 )
-                extraction_method = (
-                    f"configured selector {job_selector!r}"
-                    if job_selector
-                    else "universal rules"
-                )
-                return ScrapeResult(
-                    status=ScrapeStatus.NO_JOBS,
-                    jobs=[],
-                    message=f"No job links matched {extraction_method}",
+                result = replace(
+                    result,
                     diagnostic_paths=diagnostic_paths,
                 )
-
-            return ScrapeResult(
-                status=ScrapeStatus.SUCCESS,
-                jobs=jobs,
-                diagnostic_paths=diagnostic_paths,
-            )
+            return result
         except Exception as error:
             if page is not None:
                 try:
@@ -605,6 +596,62 @@ class PlaywrightJobScraper:
                     browser.close()
                 except Exception:
                     LOGGER.exception("Could not close browser")
+
+    def _build_dom_result(
+        self,
+        page: Page,
+        html: str,
+        url: str,
+        company_id: str,
+        job_selector: str,
+        selector_timeout_ms: int,
+    ) -> tuple[ScrapeResult, str]:
+        """Extract DOM jobs after the shared session passes WAF checks."""
+
+        if job_selector:
+            self._wait_for_job_selector(
+                page,
+                job_selector,
+                selector_timeout_ms,
+            )
+            html = page.content()
+            jobs = self._extract_jobs_by_selector(
+                page=page,
+                selector=job_selector,
+                base_url=url,
+                company_id=company_id,
+            )
+            LOGGER.info(
+                "Extracted %s jobs for %s with selector %r",
+                len(jobs),
+                company_id,
+                job_selector,
+            )
+        else:
+            jobs = self._extract_jobs(html, url, company_id)
+
+        if jobs:
+            return (
+                ScrapeResult(
+                    status=ScrapeStatus.SUCCESS,
+                    jobs=jobs,
+                ),
+                html,
+            )
+
+        extraction_method = (
+            f"configured selector {job_selector!r}"
+            if job_selector
+            else "universal rules"
+        )
+        return (
+            ScrapeResult(
+                status=ScrapeStatus.NO_JOBS,
+                jobs=[],
+                message=f"No job links matched {extraction_method}",
+            ),
+            html,
+        )
 
     def _wait_for_meaningful_content(self, page: Page) -> None:
         """Wait for text or links, then briefly observe late API responses."""
@@ -849,3 +896,163 @@ class PlaywrightJobScraper:
             )
 
         return jobs
+
+
+class PlaywrightJobScraper(_BrowserSessionScraper):
+    """Extract rendered DOM job links through the shared browser session."""
+
+
+class NetworkInterceptScraper(_BrowserSessionScraper):
+    """Passively parse matching responses emitted by a rendered job page."""
+
+    REQUIRED_JOB_FIELDS = ("id", "title", "location", "url", "content")
+
+    def scrape(
+        self,
+        company: CompanyConfig,
+        target_url_pattern: str,
+        response_parser_fn: ResponseParser,
+        request_method: str | None = None,
+    ) -> ScrapeResult:
+        """Capture matching responses without replaying session-bound calls."""
+
+        company_id = str(company.get("company_id", "")).strip()
+        url = str(company.get("api_url", "")).strip()
+        clean_pattern = target_url_pattern.strip()
+        clean_method = (
+            request_method.strip().upper()
+            if isinstance(request_method, str) and request_method.strip()
+            else None
+        )
+        if not company_id or not url:
+            return ScrapeResult(
+                status=ScrapeStatus.FAILED,
+                jobs=[],
+                message="company_id and api_url are required",
+            )
+        if not clean_pattern:
+            return ScrapeResult(
+                status=ScrapeStatus.FAILED,
+                jobs=[],
+                message="target_url_pattern is required",
+            )
+
+        jobs_by_id: dict[str, JobRecord] = {}
+        parser_errors: list[str] = []
+        matched_response_count = 0
+
+        def handle_response(response: Response) -> None:
+            """Parse one matching browser response and retain unique jobs."""
+
+            nonlocal matched_response_count
+            try:
+                response_url = str(response.url)
+                response_method = str(response.request.method).upper()
+                if clean_pattern not in response_url:
+                    return
+                if clean_method is not None and response_method != clean_method:
+                    return
+
+                matched_response_count += 1
+                parsed_jobs = response_parser_fn(response.json())
+                for job in self._validated_job_records(parsed_jobs):
+                    jobs_by_id.setdefault(job["id"], job)
+            except Exception as error:
+                parser_errors.append(f"{type(error).__name__}: {error}")
+                LOGGER.warning(
+                    "Could not parse an intercepted response for %s: %s",
+                    company_id,
+                    error,
+                )
+
+        def build_result(
+            _page: Page,
+            html: str,
+        ) -> tuple[ScrapeResult, str]:
+            """Convert captured response state into one typed scrape result."""
+
+            if jobs_by_id:
+                return (
+                    ScrapeResult(
+                        status=ScrapeStatus.SUCCESS,
+                        jobs=list(jobs_by_id.values()),
+                    ),
+                    html,
+                )
+            if parser_errors:
+                return (
+                    ScrapeResult(
+                        status=ScrapeStatus.FAILED,
+                        jobs=[],
+                        message=parser_errors[0],
+                    ),
+                    html,
+                )
+
+            message = (
+                "Matching network responses contained no valid jobs"
+                if matched_response_count
+                else (
+                    "No matching network responses captured for pattern "
+                    f"{clean_pattern!r}"
+                )
+            )
+            return (
+                ScrapeResult(
+                    status=ScrapeStatus.NO_JOBS,
+                    jobs=[],
+                    message=message,
+                ),
+                html,
+            )
+
+        try:
+            self.debug_dir.mkdir(parents=True, exist_ok=True)
+            with self.playwright_factory() as playwright:
+                return self._scrape_with_browser(
+                    playwright=playwright,
+                    company_id=company_id,
+                    url=url,
+                    response_handler=handle_response,
+                    result_builder=build_result,
+                )
+        except Exception as error:
+            return ScrapeResult(
+                status=ScrapeStatus.FAILED,
+                jobs=[],
+                message=f"{type(error).__name__}: {error}",
+            )
+
+    @classmethod
+    def _validated_job_records(
+        cls,
+        jobs: object,
+    ) -> list[JobRecord]:
+        """Validate the runtime shape returned by a response parser."""
+
+        if not isinstance(jobs, list):
+            raise TypeError("response_parser_fn must return a list")
+
+        validated: list[JobRecord] = []
+        for job in jobs:
+            if not isinstance(job, Mapping):
+                raise ValueError("Every parsed job must be a mapping")
+            for field_name in cls.REQUIRED_JOB_FIELDS:
+                if not isinstance(job.get(field_name), str):
+                    raise ValueError(
+                        f"Parsed job field {field_name!r} must be a string"
+                    )
+            if not str(job["id"]).strip() or not str(job["title"]).strip():
+                raise ValueError(
+                    "Parsed job id and title must be non-empty strings"
+                )
+            validated.append(
+                {
+                    "id": str(job["id"]),
+                    "title": str(job["title"]),
+                    "location": str(job["location"]),
+                    "url": str(job["url"]),
+                    "content": str(job["content"]),
+                }
+            )
+        return validated

@@ -529,14 +529,14 @@
     "is_active": true,
     "ats_type": "meta_custom",
     "fetch_strategy": "browser",
-    "api_url": "https://www.metacareers.com/jobsearch",
+    "api_url": "https://www.metacareers.com/jobs?q=Israel",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Tel Aviv-Yafo"
     ],
     "target_keywords": [],
-    "notes": "Official Meta Careers search. Filter Israel after retrieval and support client-side rendered results."
+    "notes": "Official Meta Careers search. Passively intercept the session-bound GraphQL POST responses emitted by the rendered page."
   },
   {
     "company_id": "oracle",
