@@ -73,11 +73,11 @@ def _meta_job_search_parser(payload: Any) -> list[dict[str, str]]:
             continue
 
         raw_locations = item.get("locations")
-        location = (
-            _meta_text(raw_locations[0])
-            if isinstance(raw_locations, list) and raw_locations
-            else ""
-        )
+        if isinstance(raw_locations, list):
+            locations = [_meta_text(value) for value in raw_locations]
+        else:
+            locations = [_meta_text(raw_locations)]
+        location = ", ".join(value for value in locations if value)
         raw_teams = item.get("teams")
         if isinstance(raw_teams, list):
             teams = [_meta_text(team) for team in raw_teams]
