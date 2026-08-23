@@ -64,6 +64,50 @@ BrowserResultBuilder = Callable[
     [Page, str],
     tuple[ScrapeResult, str],
 ]
+REQUIRED_JOB_FIELDS = ("id", "title", "location", "url", "content")
+EMBEDDED_JSON_EXTRACTION_SCRIPT = """() => {
+const results = [];
+const capture = (obj) => { if (obj && obj.key === 'ds:1') results.push(obj); };
+const scripts = [...document.querySelectorAll('script')]
+.map(s => s.textContent)
+.filter(t => t.includes('AF_initDataCallback('));
+for (const src of scripts) {
+try { new Function('AF_initDataCallback', src)(capture); }
+catch (e) { /* isolate failures per tag */ }
+}
+return results.length > 0 ? results[0].data : null;
+}"""
+
+
+def validate_and_normalize_jobs(jobs: object) -> list[JobRecord]:
+    """Validate a parser result and retain the canonical job fields."""
+
+    if not isinstance(jobs, list):
+        raise TypeError("Job parser must return a list")
+
+    validated: list[JobRecord] = []
+    for job in jobs:
+        if not isinstance(job, Mapping):
+            raise ValueError("Every parsed job must be a mapping")
+        for field_name in REQUIRED_JOB_FIELDS:
+            if not isinstance(job.get(field_name), str):
+                raise ValueError(
+                    f"Parsed job field {field_name!r} must be a string"
+                )
+        if not str(job["id"]).strip() or not str(job["title"]).strip():
+            raise ValueError(
+                "Parsed job id and title must be non-empty strings"
+            )
+        validated.append(
+            {
+                "id": str(job["id"]),
+                "title": str(job["title"]),
+                "location": str(job["location"]),
+                "url": str(job["url"]),
+                "content": str(job["content"]),
+            }
+        )
+    return validated
 
 
 @dataclass(frozen=True)
@@ -902,10 +946,99 @@ class PlaywrightJobScraper(_BrowserSessionScraper):
     """Extract rendered DOM job links through the shared browser session."""
 
 
+class EmbeddedJsonScraper(_BrowserSessionScraper):
+    """Extract embedded callback data through sandboxed V8 re-execution."""
+
+    def scrape(
+        self,
+        company: CompanyConfig,
+        data_parser_fn: ResponseParser,
+    ) -> ScrapeResult:
+        """Evaluate embedded scripts and normalize parser-produced jobs."""
+
+        company_id = str(company.get("company_id", "")).strip()
+        url = str(company.get("api_url", "")).strip()
+        if not company_id or not url:
+            return ScrapeResult(
+                status=ScrapeStatus.FAILED,
+                jobs=[],
+                message="company_id and api_url are required",
+            )
+
+        def build_result(
+            page: Page,
+            html: str,
+        ) -> tuple[ScrapeResult, str]:
+            """Re-execute callback scripts and build one typed result."""
+
+            try:
+                raw_data = page.evaluate(EMBEDDED_JSON_EXTRACTION_SCRIPT)
+                if raw_data is None:
+                    return (
+                        ScrapeResult(
+                            status=ScrapeStatus.NO_JOBS,
+                            jobs=[],
+                            message="No ds:1 embedded job data was found",
+                        ),
+                        html,
+                    )
+
+                jobs = validate_and_normalize_jobs(
+                    data_parser_fn(raw_data)
+                )
+                if jobs:
+                    return (
+                        ScrapeResult(
+                            status=ScrapeStatus.SUCCESS,
+                            jobs=jobs,
+                        ),
+                        html,
+                    )
+                return (
+                    ScrapeResult(
+                        status=ScrapeStatus.NO_JOBS,
+                        jobs=[],
+                        message="Embedded ds:1 data contained no valid jobs",
+                    ),
+                    html,
+                )
+            except Exception as error:
+                LOGGER.exception(
+                    "Could not extract embedded job data for %s",
+                    company_id,
+                )
+                return (
+                    ScrapeResult(
+                        status=ScrapeStatus.FAILED,
+                        jobs=[],
+                        message=f"{type(error).__name__}: {error}",
+                    ),
+                    html,
+                )
+
+        try:
+            self.debug_dir.mkdir(parents=True, exist_ok=True)
+            with self.playwright_factory() as playwright:
+                return self._scrape_with_browser(
+                    playwright=playwright,
+                    company_id=company_id,
+                    url=url,
+                    result_builder=build_result,
+                )
+        except Exception as error:
+            LOGGER.exception(
+                "Embedded browser session failed for %s",
+                company_id,
+            )
+            return ScrapeResult(
+                status=ScrapeStatus.FAILED,
+                jobs=[],
+                message=f"{type(error).__name__}: {error}",
+            )
+
+
 class NetworkInterceptScraper(_BrowserSessionScraper):
     """Passively parse matching responses emitted by a rendered job page."""
-
-    REQUIRED_JOB_FIELDS = ("id", "title", "location", "url", "content")
 
     def scrape(
         self,
@@ -955,7 +1088,7 @@ class NetworkInterceptScraper(_BrowserSessionScraper):
 
                 matched_response_count += 1
                 parsed_jobs = response_parser_fn(response.json())
-                for job in self._validated_job_records(parsed_jobs):
+                for job in validate_and_normalize_jobs(parsed_jobs):
                     jobs_by_id.setdefault(job["id"], job)
             except Exception as error:
                 parser_errors.append(f"{type(error).__name__}: {error}")
@@ -1022,37 +1155,3 @@ class NetworkInterceptScraper(_BrowserSessionScraper):
                 jobs=[],
                 message=f"{type(error).__name__}: {error}",
             )
-
-    @classmethod
-    def _validated_job_records(
-        cls,
-        jobs: object,
-    ) -> list[JobRecord]:
-        """Validate the runtime shape returned by a response parser."""
-
-        if not isinstance(jobs, list):
-            raise TypeError("response_parser_fn must return a list")
-
-        validated: list[JobRecord] = []
-        for job in jobs:
-            if not isinstance(job, Mapping):
-                raise ValueError("Every parsed job must be a mapping")
-            for field_name in cls.REQUIRED_JOB_FIELDS:
-                if not isinstance(job.get(field_name), str):
-                    raise ValueError(
-                        f"Parsed job field {field_name!r} must be a string"
-                    )
-            if not str(job["id"]).strip() or not str(job["title"]).strip():
-                raise ValueError(
-                    "Parsed job id and title must be non-empty strings"
-                )
-            validated.append(
-                {
-                    "id": str(job["id"]),
-                    "title": str(job["title"]),
-                    "location": str(job["location"]),
-                    "url": str(job["url"]),
-                    "content": str(job["content"]),
-                }
-            )
-        return validated

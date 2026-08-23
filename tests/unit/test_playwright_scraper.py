@@ -21,12 +21,15 @@ from models.results import ScrapeResult, ScrapeStatus
 from scrapers.browser.custom_adapters import scrape_universal_playwright
 from scrapers.browser.playwright_driver import (
     ApiDiscoveryRecord,
+    EMBEDDED_JSON_EXTRACTION_SCRIPT,
+    EmbeddedJsonScraper,
     NetworkInterceptScraper,
     NetworkResponseCollector,
     PlaywrightJobScraper,
     REALISTIC_USER_AGENT,
     REALISTIC_VIEWPORT,
     WafChallengeDetector,
+    validate_and_normalize_jobs,
 )
 
 
@@ -1055,6 +1058,183 @@ class NetworkInterceptScraperTests(unittest.TestCase):
             self.assertIn("ValueError", result.message)
             context.close.assert_called_once_with()
             browser.close.assert_called_once_with()
+
+
+class SharedJobValidationTests(unittest.TestCase):
+    """Verify all browser extraction adapters share one record contract."""
+
+    def test_normalizes_valid_records_and_discards_extra_fields(self) -> None:
+        """Return only the canonical string fields from valid mappings."""
+
+        jobs = validate_and_normalize_jobs(
+            [{
+                "id": "google_123",
+                "title": "Software Engineering Intern",
+                "location": "Tel Aviv, Israel",
+                "url": "https://example.test/jobs/123",
+                "content": "Build reliable systems.",
+                "unexpected": "discard me",
+            }]
+        )
+
+        self.assertEqual(
+            jobs,
+            [{
+                "id": "google_123",
+                "title": "Software Engineering Intern",
+                "location": "Tel Aviv, Israel",
+                "url": "https://example.test/jobs/123",
+                "content": "Build reliable systems.",
+            }],
+        )
+
+    def test_rejects_non_string_fields(self) -> None:
+        """Reject runtime records that violate the shared string contract."""
+
+        with self.assertRaisesRegex(ValueError, "'location'"):
+            validate_and_normalize_jobs(
+                [{
+                    "id": "google_123",
+                    "title": "Software Engineering Intern",
+                    "location": ["Tel Aviv"],
+                    "url": "https://example.test/jobs/123",
+                    "content": "",
+                }]
+            )
+
+
+class EmbeddedJsonScraperTests(unittest.TestCase):
+    """Verify post-hoc script execution through the shared browser seam."""
+
+    def setUp(self) -> None:
+        """Mock stealth application so browser tests stay deterministic."""
+
+        stealth_patcher = patch(
+            "scrapers.browser.playwright_driver.stealth_sync"
+        )
+        self.stealth = stealth_patcher.start()
+        self.addCleanup(stealth_patcher.stop)
+
+    @staticmethod
+    def _browser_manager(
+        page: MagicMock,
+    ) -> tuple[MagicMock, MagicMock, MagicMock]:
+        """Build a mocked Playwright manager, context, and browser."""
+
+        context = MagicMock()
+        context.new_page.return_value = page
+        browser = MagicMock()
+        browser.new_context.return_value = context
+        playwright = MagicMock()
+        playwright.chromium.launch.return_value = browser
+        manager = MagicMock()
+        manager.__enter__.return_value = playwright
+        return manager, context, browser
+
+    def test_extracts_and_validates_embedded_jobs(self) -> None:
+        """Evaluate the sandbox and normalize its parser output."""
+
+        raw_data = [["raw Google job"]]
+        expected_jobs = [{
+            "id": "google_123",
+            "title": "Software Engineering Intern",
+            "location": "Tel Aviv, Israel",
+            "url": "https://example.test/jobs/123",
+            "content": "Build reliable systems.",
+        }]
+        page = MagicMock()
+        page.goto.return_value = SimpleNamespace(status=200)
+        page.content.return_value = (
+            "<html><body>Google careers loaded successfully.</body></html>"
+        )
+        page.evaluate.return_value = raw_data
+        manager, context, browser = self._browser_manager(page)
+        parser = MagicMock(return_value=expected_jobs)
+
+        result = EmbeddedJsonScraper(
+            playwright_factory=MagicMock(return_value=manager),
+            settle_time_ms=0,
+        ).scrape(
+            company={
+                "company_id": "google",
+                "api_url": "https://example.test/jobs?page=1",
+            },
+            data_parser_fn=parser,
+        )
+
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
+        page.evaluate.assert_called_once_with(
+            EMBEDDED_JSON_EXTRACTION_SCRIPT
+        )
+        parser.assert_called_once_with(raw_data)
+        self.stealth.assert_called_once_with(page)
+        context.close.assert_called_once_with()
+        browser.close.assert_called_once_with()
+
+    def test_returns_no_jobs_when_ds1_data_is_absent(self) -> None:
+        """Treat a page without captured ds:1 data as a bounded empty page."""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            page = MagicMock()
+            page.goto.return_value = SimpleNamespace(status=200)
+            page.content.return_value = (
+                "<html><body>Google careers loaded without ds:1.</body></html>"
+            )
+            page.evaluate.return_value = None
+            manager, context, browser = self._browser_manager(page)
+            parser = MagicMock()
+
+            result = EmbeddedJsonScraper(
+                debug_dir=temporary_directory,
+                playwright_factory=MagicMock(return_value=manager),
+                settle_time_ms=0,
+            ).scrape(
+                company={
+                    "company_id": "google",
+                    "api_url": "https://example.test/jobs?page=2",
+                },
+                data_parser_fn=parser,
+            )
+
+        self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+        self.assertEqual(result.jobs, [])
+        parser.assert_not_called()
+        context.close.assert_called_once_with()
+        browser.close.assert_called_once_with()
+
+    def test_extraction_exception_returns_failed_and_logs_error(self) -> None:
+        """Isolate Python-side evaluation failures and close resources."""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            page = MagicMock()
+            page.goto.return_value = SimpleNamespace(status=200)
+            page.content.return_value = (
+                "<html><body>Google careers extraction failed.</body></html>"
+            )
+            page.evaluate.side_effect = RuntimeError("V8 extraction failed")
+            manager, context, browser = self._browser_manager(page)
+
+            with patch(
+                "scrapers.browser.playwright_driver.LOGGER.exception"
+            ) as log_exception:
+                result = EmbeddedJsonScraper(
+                    debug_dir=temporary_directory,
+                    playwright_factory=MagicMock(return_value=manager),
+                    settle_time_ms=0,
+                ).scrape(
+                    company={
+                        "company_id": "google",
+                        "api_url": "https://example.test/jobs?page=1",
+                    },
+                    data_parser_fn=MagicMock(),
+                )
+
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertIn("RuntimeError: V8 extraction failed", result.message)
+        log_exception.assert_called_once()
+        context.close.assert_called_once_with()
+        browser.close.assert_called_once_with()
 
 
 class UniversalWrapperTests(unittest.TestCase):

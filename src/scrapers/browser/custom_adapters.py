@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from models.results import ScrapeStatus
 from scrapers.browser.playwright_driver import (
     CompanyConfig,
+    EmbeddedJsonScraper,
     NetworkInterceptScraper,
     PlaywrightJobScraper,
 )
@@ -17,6 +18,14 @@ HTTP_TIMEOUT_SECONDS = 15
 THALES_PHENOM_PAGE_SIZE = 10
 THALES_PHENOM_MAX_PAGES = 100
 META_JOBS_URL = "https://www.metacareers.com/jobs?q=Israel"
+GOOGLE_JOBS_BASE_URL = (
+    "https://www.google.com/about/careers/applications/jobs/results"
+)
+GOOGLE_QUERY_VARIANTS = (
+    "location=Israel&target_level=EARLY",
+    "location=Israel&employment_type=INTERN",
+)
+GOOGLE_MAX_PAGES_PER_VARIANT = 10
 IAI_REQUEST_HEADERS = {
     "Accept": "application/json",
     "User-Agent": (
@@ -125,6 +134,141 @@ def scrape_meta(company: CompanyConfig) -> list[dict[str, str]]:
             result.message,
         )
     return result.jobs
+
+
+def _google_text(field: Any) -> str:
+    """Extract HTML text from Google's positional two-item field."""
+
+    if (
+        isinstance(field, list)
+        and len(field) > 1
+        and isinstance(field[1], str)
+    ):
+        return field[1]
+    return ""
+
+
+def _google_job_parser(raw_data: Any) -> list[dict[str, str]]:
+    """Normalize Google's ds:1 positional job arrays into shared records."""
+
+    if (
+        not isinstance(raw_data, list)
+        or not raw_data
+        or not isinstance(raw_data[0], list)
+    ):
+        return []
+
+    jobs: list[dict[str, str]] = []
+    for index, job in enumerate(raw_data[0]):
+        try:
+            if not isinstance(job, list):
+                raise TypeError("Google job record must be a list")
+            raw_locations = job[9]
+            locations: list[str] = []
+            if isinstance(raw_locations, list):
+                for raw_location in raw_locations:
+                    if (
+                        isinstance(raw_location, (list, tuple))
+                        and raw_location
+                        and isinstance(raw_location[0], str)
+                    ):
+                        locations.append(raw_location[0])
+
+            content = "\n\n".join(
+                text
+                for text in (
+                    _google_text(job[3]),
+                    _google_text(job[4]),
+                    _google_text(job[10]),
+                )
+                if text
+            )
+            jobs.append(
+                {
+                    "id": f"google_{str(job[0])}",
+                    "title": str(job[1]),
+                    "location": ", ".join(locations),
+                    "url": str(job[2]),
+                    "content": content,
+                }
+            )
+        except Exception as error:
+            LOGGER.warning(
+                "Skipping malformed Google job at index %s: %s",
+                index,
+                error,
+            )
+    return jobs
+
+
+def scrape_google(company: CompanyConfig) -> list[dict[str, str]]:
+    """Fetch bounded early-career and intern Google result pages."""
+
+    configured_url = str(
+        company.get("api_url") or GOOGLE_JOBS_BASE_URL
+    ).strip()
+    parsed_url = urlsplit(configured_url)
+    base_url = urlunsplit(
+        (
+            parsed_url.scheme,
+            parsed_url.netloc,
+            parsed_url.path.rstrip("/"),
+            "",
+            "",
+        )
+    )
+    embedded_scraper = EmbeddedJsonScraper()
+    accumulated_jobs: list[dict[str, str]] = []
+    company_id = str(company.get("company_id", "google"))
+
+    for variant in GOOGLE_QUERY_VARIANTS:
+        page_number = 1
+        while page_number <= GOOGLE_MAX_PAGES_PER_VARIANT:
+            page_company = dict(company)
+            page_company["api_url"] = (
+                f"{base_url}?{variant}&page={page_number}"
+            )
+            result = embedded_scraper.scrape(
+                company=page_company,
+                data_parser_fn=_google_job_parser,
+            )
+
+            if result.status is ScrapeStatus.FAILED:
+                LOGGER.error(
+                    "Google embedded extraction failed for %s: %s",
+                    company_id,
+                    result.message,
+                )
+                break
+            if result.status is ScrapeStatus.WAF_BLOCKED:
+                LOGGER.warning(
+                    "Google embedded extraction was WAF-blocked for %s",
+                    company_id,
+                )
+                break
+            if result.status is ScrapeStatus.NO_JOBS or not result.jobs:
+                break
+            if result.status is not ScrapeStatus.SUCCESS:
+                LOGGER.warning(
+                    "Google extraction returned unexpected status %s for %s",
+                    result.status,
+                    company_id,
+                )
+                break
+
+            accumulated_jobs.extend(result.jobs)
+            page_number += 1
+        else:
+            LOGGER.warning(
+                "Google pagination reached the %s-page safety limit for %s",
+                GOOGLE_MAX_PAGES_PER_VARIANT,
+                company_id,
+            )
+
+    jobs_by_id: dict[str, dict[str, str]] = {}
+    for job in accumulated_jobs:
+        jobs_by_id.setdefault(job["id"], job)
+    return list(jobs_by_id.values())
 
 
 def _eightfold_api_url(url: str) -> str:

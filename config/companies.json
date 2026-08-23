@@ -93,14 +93,14 @@
     "is_active": true,
     "ats_type": "google_custom",
     "fetch_strategy": "browser",
-    "api_url": "https://www.google.com/about/careers/applications/jobs/results/?location=Israel",
+    "api_url": "https://www.google.com/about/careers/applications/jobs/results",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Haifa"
     ],
     "target_keywords": [],
-    "notes": "Official Google Careers search URL. Crawl rendered results or use the site's internal adapter."
+    "notes": "Official Google Careers base URL. Re-execute embedded ds:1 callback data for bounded early-career and intern pagination."
   },
   {
     "company_id": "sap",
