@@ -17,6 +17,7 @@ from scrapers.api.client import fetch_ats_jobs
 from scrapers.api.mappings import ATS_FIELD_MAP
 from scrapers.browser.custom_adapters import (
     scrape_eightfold,
+    scrape_google,
     scrape_iai,
     scrape_meta,
     scrape_successfactors,
@@ -54,6 +55,7 @@ CUSTOM_API_ADAPTERS: dict[str, CustomApiAdapter] = {
     "imperva_thales": scrape_thales_phenom,
 }
 CUSTOM_BROWSER_ADAPTERS: dict[str, CustomApiAdapter] = {
+    "google_custom": scrape_google,
     "meta_custom": scrape_meta,
 }
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
@@ -916,6 +916,20 @@ class CompanyConfigurationTests(unittest.TestCase):
             "https://www.metacareers.com/jobs?q=Israel",
         )
 
+    def test_google_uses_embedded_data_base_url(self) -> None:
+        """Keep pagination queries out of Google's configured base URL."""
+
+        company = self.companies["google"]
+        self.assertEqual(company["ats_type"], "google_custom")
+        self.assertEqual(company["fetch_strategy"], "browser")
+        self.assertEqual(
+            company["api_url"],
+            (
+                "https://www.google.com/about/careers/"
+                "applications/jobs/results"
+            ),
+        )
+
 
 class ScraperAdapterTests(unittest.TestCase):
     """Verify adapter transport bounds and factual content extraction."""
@@ -1057,6 +1071,255 @@ class ScraperAdapterTests(unittest.TestCase):
             patch.dict(
                 scraper.CUSTOM_BROWSER_ADAPTERS,
                 {"meta_custom": adapter},
+            ),
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        adapter.assert_called_once_with(company)
+
+    def test_google_text_reads_second_list_item_only(self) -> None:
+        """Read Google's HTML-bearing pair without guessing other shapes."""
+
+        self.assertEqual(
+            custom_adapters._google_text([None, "<p>Job details</p>"]),
+            "<p>Job details</p>",
+        )
+        self.assertEqual(custom_adapters._google_text(["only-one"]), "")
+        self.assertEqual(custom_adapters._google_text("plain text"), "")
+
+    def test_google_parser_maps_fields_and_skips_malformed_jobs(self) -> None:
+        """Normalize positional Google data while isolating bad records."""
+
+        valid_job: list[object] = [None] * 20
+        valid_job[0] = 12345
+        valid_job[1] = "Software Engineering Intern"
+        valid_job[2] = "https://www.google.com/about/careers/jobs/12345"
+        valid_job[3] = [None, "<p>Job description</p>"]
+        valid_job[4] = [None, "<p>Minimum qualifications</p>"]
+        valid_job[9] = [
+            ["Tel Aviv, Israel", "IL"],
+            ["Haifa, Israel", "IL"],
+        ]
+        valid_job[10] = [None, "<p>Responsibilities</p>"]
+        valid_job[19] = [None, "must not be included"]
+
+        with patch(
+            "scrapers.browser.custom_adapters.LOGGER.warning"
+        ) as warning:
+            jobs = custom_adapters._google_job_parser(
+                [["malformed", valid_job]]
+            )
+
+        self.assertEqual(
+            jobs,
+            [{
+                "id": "google_12345",
+                "title": "Software Engineering Intern",
+                "location": "Tel Aviv, Israel, Haifa, Israel",
+                "url": (
+                    "https://www.google.com/about/careers/jobs/12345"
+                ),
+                "content": (
+                    "<p>Job description</p>\n\n"
+                    "<p>Minimum qualifications</p>\n\n"
+                    "<p>Responsibilities</p>"
+                ),
+            }],
+        )
+        self.assertNotIn("must not be included", jobs[0]["content"])
+        warning.assert_called_once()
+
+    def test_google_parser_handles_missing_location_list(self) -> None:
+        """Use an empty location when Google's positional field is absent."""
+
+        job: list[object] = [None] * 11
+        job[0] = "no-location"
+        job[1] = "Early Career Software Engineer"
+        job[2] = "https://example.test/jobs/no-location"
+        job[3] = [None, "Description"]
+        job[4] = [None, "Qualifications"]
+        job[9] = None
+        job[10] = [None, "Responsibilities"]
+
+        jobs = custom_adapters._google_job_parser([[job]])
+
+        self.assertEqual(jobs[0]["location"], "")
+
+    def test_google_adapter_paginates_variants_and_deduplicates(self) -> None:
+        """Fetch both Google variants until empty and preserve first IDs."""
+
+        company = {
+            "company_id": "google",
+            "company_name": "Google Israel",
+            "ats_type": "google_custom",
+            "fetch_strategy": "browser",
+            "api_url": (
+                "https://www.google.com/about/careers/"
+                "applications/jobs/results"
+            ),
+        }
+        early_job = {
+            "id": "google_early",
+            "title": "Early Career Engineer",
+            "location": "Israel",
+            "url": "https://example.test/jobs/early",
+            "content": "Early career",
+        }
+        shared_early_job = {
+            "id": "google_shared",
+            "title": "Shared Role - Early Variant",
+            "location": "Israel",
+            "url": "https://example.test/jobs/shared",
+            "content": "First occurrence",
+        }
+        shared_intern_job = {
+            **shared_early_job,
+            "title": "Shared Role - Intern Variant",
+            "content": "Duplicate occurrence",
+        }
+        intern_job = {
+            "id": "google_intern",
+            "title": "Software Engineering Intern",
+            "location": "Tel Aviv, Israel",
+            "url": "https://example.test/jobs/intern",
+            "content": "Internship",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.EmbeddedJsonScraper"
+        ) as scraper_class:
+            scraper_class.return_value.scrape.side_effect = [
+                ScrapeResult(
+                    status=ScrapeStatus.SUCCESS,
+                    jobs=[early_job, shared_early_job],
+                ),
+                ScrapeResult(status=ScrapeStatus.NO_JOBS, jobs=[]),
+                ScrapeResult(
+                    status=ScrapeStatus.SUCCESS,
+                    jobs=[shared_intern_job, intern_job],
+                ),
+                ScrapeResult(status=ScrapeStatus.SUCCESS, jobs=[]),
+            ]
+
+            jobs = custom_adapters.scrape_google(company)
+
+        self.assertEqual(
+            jobs,
+            [early_job, shared_early_job, intern_job],
+        )
+        scraper_class.assert_called_once_with()
+        base_url = company["api_url"]
+        self.assertEqual(
+            scraper_class.return_value.scrape.call_args_list,
+            [
+                call(
+                    company={
+                        **company,
+                        "api_url": (
+                            f"{base_url}?location=Israel"
+                            "&target_level=EARLY&page=1"
+                        ),
+                    },
+                    data_parser_fn=custom_adapters._google_job_parser,
+                ),
+                call(
+                    company={
+                        **company,
+                        "api_url": (
+                            f"{base_url}?location=Israel"
+                            "&target_level=EARLY&page=2"
+                        ),
+                    },
+                    data_parser_fn=custom_adapters._google_job_parser,
+                ),
+                call(
+                    company={
+                        **company,
+                        "api_url": (
+                            f"{base_url}?location=Israel"
+                            "&employment_type=INTERN&page=1"
+                        ),
+                    },
+                    data_parser_fn=custom_adapters._google_job_parser,
+                ),
+                call(
+                    company={
+                        **company,
+                        "api_url": (
+                            f"{base_url}?location=Israel"
+                            "&employment_type=INTERN&page=2"
+                        ),
+                    },
+                    data_parser_fn=custom_adapters._google_job_parser,
+                ),
+            ],
+        )
+
+    def test_google_adapter_caps_each_query_variant(self) -> None:
+        """Stop each Google query independently at the safety limit."""
+
+        company = {
+            "company_id": "google",
+            "api_url": (
+                "https://www.google.com/about/careers/"
+                "applications/jobs/results"
+            ),
+        }
+        repeated_job = {
+            "id": "google_repeated",
+            "title": "Early Career Engineer",
+            "location": "Israel",
+            "url": "https://example.test/jobs/repeated",
+            "content": "Repeated across pages",
+        }
+
+        with (
+            patch(
+                "scrapers.browser.custom_adapters.EmbeddedJsonScraper"
+            ) as scraper_class,
+            patch.object(
+                custom_adapters,
+                "GOOGLE_MAX_PAGES_PER_VARIANT",
+                2,
+            ),
+            patch(
+                "scrapers.browser.custom_adapters.LOGGER.warning"
+            ) as warning,
+        ):
+            scraper_class.return_value.scrape.return_value = ScrapeResult(
+                status=ScrapeStatus.SUCCESS,
+                jobs=[repeated_job],
+            )
+
+            jobs = custom_adapters.scrape_google(company)
+
+        self.assertEqual(jobs, [repeated_job])
+        self.assertEqual(
+            scraper_class.return_value.scrape.call_count,
+            4,
+        )
+        self.assertEqual(warning.call_count, 2)
+        called_urls = [
+            item.kwargs["company"]["api_url"]
+            for item in scraper_class.return_value.scrape.call_args_list
+        ]
+        self.assertFalse(any("page=3" in url for url in called_urls))
+
+    def test_google_custom_routes_to_registered_adapter(self) -> None:
+        """Dispatch Google through embedded extraction instead of DOM rules."""
+
+        company = {
+            **self._company("google_custom"),
+            "fetch_strategy": "browser",
+        }
+        expected_jobs = [{"id": "google_123"}]
+        adapter = MagicMock(return_value=expected_jobs)
+        with (
+            patch.dict(
+                scraper.CUSTOM_BROWSER_ADAPTERS,
+                {"google_custom": adapter},
             ),
             patch("builtins.print"),
         ):
