@@ -22,3 +22,7 @@ env/
 
 # Private keys and certificates
 *.pem
+
+# Debug and Logs
+artifacts/debug_logs/
+logs/
