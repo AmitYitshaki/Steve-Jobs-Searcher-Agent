@@ -230,9 +230,8 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
-    "fetch_strategy": "browser",
-    "api_url": "https://jobs.amdocs.com/careers/%2A/israel?domain=amdocs.com",
-    "job_selector": "a[href*='/job/']",
+    "fetch_strategy": "api",
+    "api_url": "https://jobs.amdocs.com/api/pcsx/search",
     "location_filters": [
       "Israel",
       "Raanana",
@@ -241,7 +240,7 @@
       "Nazareth"
     ],
     "target_keywords": [],
-    "notes": "Official JS-rendered Amdocs Israel search page. Extract rendered job links with Playwright."
+    "notes": "The frontend's own location=israel filter returns zero results even from a real authenticated browser session; fetch the domain unconditionally and let location_filters scope it. NOTE: current total pool is only 10 positions worldwide with zero anywhere near Israel (Miami/Limassol/Mexico City/etc.) -- static assets reference an 'eightfolddemo-pcsx-demo' path, suggesting this may be a limited/demo tenant rather than Amdocs' real production job board. Worth confirming the canonical URL."
   },
   {
     "company_id": "nice",
@@ -543,8 +542,10 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "oracle_recruiting_cloud",
-    "fetch_strategy": "browser",
-    "api_url": "https://careers.oracle.com/jobs/",
+    "fetch_strategy": "api",
+    "api_url": "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions",
+    "oracle_site_number": "CX_45001",
+    "oracle_careers_url": "https://careers.oracle.com/en/sites/jobsearch/job/",
     "location_filters": [
       "Israel",
       "Petah Tikva",
@@ -554,7 +555,7 @@
       "Jerusalem"
     ],
     "target_keywords": [],
-    "notes": "Oracle Recruiting Cloud career portal. Use the official search interface or an Oracle Candidate Experience adapter."
+    "notes": "Fetches Oracle's public Candidate Experience REST API (recruitingCEJobRequisitions) directly, scoped server-side with a keyword=Israel finder param to avoid paginating the full ~2,100-role global pool. The generic scrape_oracle_rc adapter drives any Oracle Recruiting Cloud tenant this way, including Akamai."
   },
   {
     "company_id": "servicenow",
@@ -615,15 +616,17 @@
     "tier": "B",
     "is_active": true,
     "ats_type": "oracle_recruiting_cloud",
-    "fetch_strategy": "browser",
-    "api_url": "https://jobs.akamai.com/en/sites/CX_1/jobs?location=Israel&locationId=300000000469279&locationLevel=country&mode=location",
+    "fetch_strategy": "api",
+    "api_url": "https://fa-extu-saasfaprod1.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions",
+    "oracle_site_number": "CX_1",
+    "oracle_careers_url": "https://jobs.akamai.com/en/sites/CX_1/job/",
     "location_filters": [
       "Israel",
       "Tel Aviv",
       "Remote"
     ],
     "target_keywords": [],
-    "notes": "Official Akamai Oracle Candidate Experience search prefiltered to Israel."
+    "notes": "jobs.akamai.com's own edge WAF returns a hard 403 (confirmed live), but Akamai's Oracle Recruiting Cloud backend on oraclecloud.com is a completely different host and answers unauthenticated requests with a plain 200 -- fetched directly via the generic scrape_oracle_rc adapter, bypassing the WAF entirely."
   },
   {
     "company_id": "rubrik",

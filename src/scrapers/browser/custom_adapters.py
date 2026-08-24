@@ -654,6 +654,299 @@ def scrape_elbit(
     return jobs
 
 
+AMDOCS_PAGE_SIZE = 10
+AMDOCS_MAX_PAGES = 50
+
+
+def scrape_amdocs(
+    company: Mapping[str, Any],
+) -> list[dict[str, str]]:
+    """Paginate Amdocs' pcsx search API and let downstream filters scope it.
+
+    The frontend's own ``location=israel`` query param returns zero results
+    even from a real authenticated browser session (confirmed live) --
+    verified this is not a CSRF/auth gap, the backend genuinely has nothing
+    tagged for that filter today. So this fetches the domain unconditionally,
+    same as ``scrape_iai``, and relies on the orchestrator's existing
+    ``location_filters``/``is_in_location`` to scope results to Israel.
+    """
+
+    company_id = (
+        str(company.get("company_id", "amdocs")).strip() or "amdocs"
+    )
+    api_url = str(company.get("api_url", "")).strip()
+    if not api_url:
+        LOGGER.error("Amdocs adapter requires an api_url")
+        return []
+
+    parsed_api_url = urlsplit(api_url)
+    origin = urlunsplit(
+        (parsed_api_url.scheme, parsed_api_url.netloc, "/", "", "")
+    )
+
+    jobs: list[dict[str, str]] = []
+    seen_ids: set[str] = set()
+    first_page_response_text: str | None = None
+    fetch_error = ""
+    start = 0
+
+    for _page_number in range(AMDOCS_MAX_PAGES):
+        try:
+            response = requests.get(
+                api_url,
+                params={"domain": "amdocs.com", "start": start},
+                headers=IAI_REQUEST_HEADERS,
+                timeout=HTTP_TIMEOUT_SECONDS,
+            )
+            if first_page_response_text is None:
+                first_page_response_text = response.text
+            response.raise_for_status()
+            payload = response.json()
+        except (requests.RequestException, ValueError, TypeError) as error:
+            LOGGER.error(
+                "Amdocs search request failed at start=%s: %s",
+                start,
+                error,
+            )
+            fetch_error = f"{type(error).__name__}: {error}"
+            break
+
+        data = payload.get("data") if isinstance(payload, Mapping) else None
+        positions = (
+            data.get("positions") if isinstance(data, Mapping) else None
+        )
+        if not isinstance(positions, list) or not positions:
+            break
+
+        for item in positions:
+            if not isinstance(item, Mapping):
+                continue
+            raw_job_id = item.get("id")
+            title = str(item.get("name", "")).strip()
+            if raw_job_id is None or not title:
+                continue
+            job_id = str(raw_job_id).strip()
+            if not job_id or job_id in seen_ids:
+                continue
+            seen_ids.add(job_id)
+
+            raw_locations = item.get("standardizedLocations")
+            if not isinstance(raw_locations, list) or not raw_locations:
+                raw_locations = item.get("locations")
+            locations = (
+                [str(value).strip() for value in raw_locations if value]
+                if isinstance(raw_locations, list)
+                else []
+            )
+
+            position_url = str(item.get("positionUrl", "")).strip()
+            jobs.append(
+                {
+                    "id": f"{company_id}_{job_id}",
+                    "title": title,
+                    "location": ", ".join(locations),
+                    "url": (
+                        urljoin(origin, position_url)
+                        if position_url
+                        else origin
+                    ),
+                    "content": "",
+                }
+            )
+
+        if len(positions) < AMDOCS_PAGE_SIZE:
+            break
+        start += len(positions)
+
+    write_company_artifacts(
+        company_id,
+        source="api",
+        primary_content=first_page_response_text,
+        primary_extension="json",
+        screenshot_bytes=None,
+        notes={
+            "status": "failed" if fetch_error else (
+                "success" if jobs else "no_jobs"
+            ),
+            "message": fetch_error,
+            "job_count": len(jobs),
+            "sample_titles": extract_sample_titles(jobs),
+        },
+    )
+    return jobs
+
+
+ORC_PAGE_SIZE = 25
+ORC_MAX_PAGES = 40
+
+
+def _orc_location(item: Mapping[str, Any]) -> str:
+    """Join a requisition's primary and secondary locations defensively."""
+
+    locations: list[str] = []
+    primary = str(item.get("PrimaryLocation") or "").strip()
+    if primary:
+        locations.append(primary)
+
+    raw_secondary = item.get("secondaryLocations")
+    if isinstance(raw_secondary, list):
+        for entry in raw_secondary:
+            if not isinstance(entry, Mapping):
+                continue
+            name = str(entry.get("Name") or "").strip()
+            if name and name not in locations:
+                locations.append(name)
+
+    return ", ".join(locations)
+
+
+def scrape_oracle_rc(
+    company: CompanyConfig,
+) -> list[dict[str, str]]:
+    """Fetch Oracle Recruiting Cloud requisitions via its public REST API.
+
+    Generic across any ORC tenant (Oracle itself, Akamai, and any future
+    company on the same platform): the REST backend lives on
+    ``*.oraclecloud.com``, a completely different host than each tenant's
+    own WAF-protected careers frontend. Confirmed live: Akamai's own edge
+    blocks ``jobs.akamai.com`` outright, but its Oracle Cloud backend on
+    ``fa-extu-saasfaprod1.fa.ocs.oraclecloud.com`` answers unauthenticated
+    requests with a plain 200. ``api_url`` and ``oracle_site_number`` are
+    tenant-specific and come from company config, matching every other
+    custom adapter in this module; the fetch/pagination logic here is
+    fully generic.
+
+    Scopes the search server-side with a ``keyword`` finder param (the
+    company's first configured ``location_filters`` entry, "Israel" for
+    every company we care about) to avoid paginating a tenant's entire
+    global requisition pool -- Oracle's own site currently has over 2,000
+    open roles worldwide, only a handful in Israel. The keyword match can
+    still produce false positives (confirmed live: an Akamai US-based role
+    matched on an incidental "Israel" mention), so the orchestrator's
+    existing ``location_filters``/``is_in_location`` check downstream is
+    still required and remains the authoritative filter.
+    """
+
+    company_id = str(company.get("company_id", "")).strip()
+    api_url = str(company.get("api_url", "")).strip()
+    site_number = str(company.get("oracle_site_number", "")).strip()
+    if not company_id or not api_url or not site_number:
+        LOGGER.error(
+            "Oracle Recruiting Cloud adapter requires api_url and "
+            "oracle_site_number"
+        )
+        return []
+
+    careers_url = str(company.get("oracle_careers_url", "")).strip()
+    configured_filters = company.get("location_filters")
+    keyword = (
+        str(configured_filters[0])
+        if isinstance(configured_filters, list) and configured_filters
+        else "Israel"
+    )
+
+    jobs: list[dict[str, str]] = []
+    seen_ids: set[str] = set()
+    first_page_response_text: str | None = None
+    fetch_error = ""
+    offset = 0
+
+    for _page_number in range(ORC_MAX_PAGES):
+        finder = (
+            f"findReqs;siteNumber={site_number},keyword={keyword},"
+            f"limit={ORC_PAGE_SIZE},offset={offset}"
+        )
+        try:
+            response = requests.get(
+                api_url,
+                params={
+                    "onlyData": "true",
+                    "expand": (
+                        "requisitionList.secondaryLocations,"
+                        "requisitionList.workLocation"
+                    ),
+                    "finder": finder,
+                },
+                headers=IAI_REQUEST_HEADERS,
+                timeout=HTTP_TIMEOUT_SECONDS,
+            )
+            if first_page_response_text is None:
+                first_page_response_text = response.text
+            response.raise_for_status()
+            payload = response.json()
+        except (requests.RequestException, ValueError, TypeError) as error:
+            LOGGER.error(
+                "Oracle Recruiting Cloud request failed for %s at "
+                "offset=%s: %s",
+                company_id,
+                offset,
+                error,
+            )
+            fetch_error = f"{type(error).__name__}: {error}"
+            break
+
+        items = payload.get("items") if isinstance(payload, Mapping) else None
+        result = (
+            items[0]
+            if isinstance(items, list) and items and isinstance(items[0], Mapping)
+            else None
+        )
+        requisitions = (
+            result.get("requisitionList") if result is not None else None
+        )
+        if not isinstance(requisitions, list) or not requisitions:
+            break
+
+        total_jobs = result.get("TotalJobsCount") if result else None
+        for item in requisitions:
+            if not isinstance(item, Mapping):
+                continue
+            raw_job_id = item.get("Id")
+            title = str(item.get("Title", "")).strip()
+            if raw_job_id is None or not title:
+                continue
+            job_id = str(raw_job_id).strip()
+            if not job_id or job_id in seen_ids:
+                continue
+            seen_ids.add(job_id)
+
+            jobs.append(
+                {
+                    "id": f"{company_id}_{job_id}",
+                    "title": title,
+                    "location": _orc_location(item),
+                    "url": (
+                        f"{careers_url}{job_id}" if careers_url else ""
+                    ),
+                    "content": str(item.get("ShortDescriptionStr") or ""),
+                }
+            )
+
+        next_offset = offset + len(requisitions)
+        if len(requisitions) < ORC_PAGE_SIZE or (
+            isinstance(total_jobs, int) and next_offset >= total_jobs
+        ):
+            break
+        offset = next_offset
+
+    write_company_artifacts(
+        company_id,
+        source="api",
+        primary_content=first_page_response_text,
+        primary_extension="json",
+        screenshot_bytes=None,
+        notes={
+            "status": "failed" if fetch_error else (
+                "success" if jobs else "no_jobs"
+            ),
+            "message": fetch_error,
+            "job_count": len(jobs),
+            "sample_titles": extract_sample_titles(jobs),
+        },
+    )
+    return jobs
+
+
 def _thales_phenom_payload(offset: int) -> dict[str, Any]:
     """Build one Thales Phenom request scoped to the Israel country facet."""
 

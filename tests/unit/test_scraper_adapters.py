@@ -780,20 +780,46 @@ class CompanyConfigurationTests(unittest.TestCase):
             ),
         )
 
-    def test_amdocs_uses_browser_search_page(self) -> None:
-        """Keep Amdocs on its JS-rendered Israel career search."""
+    def test_amdocs_uses_pcsx_search_api(self) -> None:
+        """Route Amdocs through its custom API adapter, not DOM scraping.
+
+        The careers page is another Eightfold-family SPA whose job list
+        never reaches the DOM (confirmed live), so this is fetched
+        directly instead.
+        """
 
         company = self.companies["amdocs"]
         self.assertEqual(company["ats_type"], "custom")
-        self.assertEqual(company["fetch_strategy"], "browser")
+        self.assertEqual(company["fetch_strategy"], "api")
         self.assertEqual(
             company["api_url"],
-            (
-                "https://jobs.amdocs.com/careers/%2A/israel"
-                "?domain=amdocs.com"
-            ),
+            "https://jobs.amdocs.com/api/pcsx/search",
         )
-        self.assertEqual(company["job_selector"], "a[href*='/job/']")
+        self.assertNotIn("job_selector", company)
+
+    def test_oracle_and_akamai_use_oracle_rc_api(self) -> None:
+        """Route both ORC tenants through the shared generic REST adapter.
+
+        Akamai's own careers frontend is WAF-blocked (confirmed live,
+        hard 403), but its Oracle Recruiting Cloud backend lives on a
+        completely different oraclecloud.com host and is unaffected.
+        """
+
+        for company_id, site_number in (
+            ("oracle", "CX_45001"),
+            ("akamai", "CX_1"),
+        ):
+            with self.subTest(company_id=company_id):
+                company = self.companies[company_id]
+                self.assertEqual(
+                    company["ats_type"], "oracle_recruiting_cloud"
+                )
+                self.assertEqual(company["fetch_strategy"], "api")
+                self.assertIn("oraclecloud.com", company["api_url"])
+                self.assertEqual(
+                    company["oracle_site_number"], site_number
+                )
+                self.assertTrue(company["oracle_careers_url"])
 
     def test_elbit_uses_first_party_json_feed(self) -> None:
         """Route Elbit through its custom API adapter, not DOM scraping.
@@ -1609,6 +1635,267 @@ class ScraperAdapterTests(unittest.TestCase):
             patch.dict(
                 scraper.CUSTOM_API_ADAPTERS,
                 {"elbit_systems": adapter},
+            ),
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        adapter.assert_called_once_with(company)
+
+    def test_amdocs_paginates_via_start_offset_and_builds_urls(self) -> None:
+        """Page through pcsx/search unconditionally, no location filter.
+
+        The frontend's own location=israel param returns zero results even
+        from a real authenticated browser session (verified live), so this
+        fetches the domain unconditionally and relies on the orchestrator's
+        location_filters to scope results downstream.
+        """
+
+        first_response = MagicMock()
+        first_response.json.return_value = {
+            "data": {
+                "positions": [
+                    {
+                        "id": 563431014700743,
+                        "name": "Category Manager, Strategic Sourcing",
+                        "standardizedLocations": ["Miami, FL, US"],
+                        "positionUrl": "/careers/job/563431014700743",
+                    },
+                    {
+                        "id": 563431014721199,
+                        "name": "Student Developer",
+                        "standardizedLocations": ["Ra'anana, Israel"],
+                        "positionUrl": "/careers/job/563431014721199",
+                    },
+                ]
+                * 5  # 10 positions: a full first page
+            }
+        }
+        second_response = MagicMock()
+        second_response.json.return_value = {"data": {"positions": []}}
+        company = {
+            "company_id": "amdocs",
+            "ats_type": "custom",
+            "fetch_strategy": "api",
+            "api_url": "https://jobs.amdocs.com/api/pcsx/search",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[first_response, second_response],
+        ) as get:
+            jobs = custom_adapters.scrape_amdocs(company)
+
+        self.assertEqual(get.call_count, 2)
+        self.assertEqual(get.call_args_list[0].kwargs["params"]["start"], 0)
+        self.assertEqual(get.call_args_list[1].kwargs["params"]["start"], 10)
+        self.assertEqual(len(jobs), 2)  # deduped by id, 5x repeats collapse
+        self.assertEqual(
+            jobs[0],
+            {
+                "id": "amdocs_563431014700743",
+                "title": "Category Manager, Strategic Sourcing",
+                "location": "Miami, FL, US",
+                "url": "https://jobs.amdocs.com/careers/job/563431014700743",
+                "content": "",
+            },
+        )
+        self.assertEqual(jobs[1]["location"], "Ra'anana, Israel")
+
+    def test_amdocs_requires_api_url(self) -> None:
+        """Fail closed instead of guessing an endpoint."""
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+        ) as get:
+            jobs = custom_adapters.scrape_amdocs({"company_id": "amdocs"})
+
+        get.assert_not_called()
+        self.assertEqual(jobs, [])
+
+    def test_amdocs_custom_api_routes_to_registered_adapter(self) -> None:
+        """Dispatch Amdocs' custom API instead of the browser fallback."""
+
+        company = {
+            "company_id": "amdocs",
+            "ats_type": "custom",
+            "fetch_strategy": "api",
+            "api_url": "https://jobs.amdocs.com/api/pcsx/search",
+        }
+        expected_jobs = [{"id": "amdocs_1"}]
+        adapter = MagicMock(return_value=expected_jobs)
+
+        with (
+            patch.dict(
+                scraper.CUSTOM_API_ADAPTERS,
+                {"amdocs": adapter},
+            ),
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        adapter.assert_called_once_with(company)
+
+    def test_oracle_rc_paginates_by_offset_and_joins_locations(self) -> None:
+        """Page a generic ORC tenant via offset and stop at TotalJobsCount.
+
+        A full first page (matching ORC_PAGE_SIZE exactly) must trigger a
+        second request; the mock data reflects that instead of an
+        unrealistically short first page.
+        """
+
+        first_page_requisitions = [
+            {
+                "Id": f"{300000 + index}",
+                "Title": f"Engineer {index}",
+                "PrimaryLocation": "PETACH TIKVA, Israel",
+                "secondaryLocations": [],
+                "ShortDescriptionStr": "",
+            }
+            for index in range(custom_adapters.ORC_PAGE_SIZE)
+        ]
+        first_page_requisitions[0] = {
+            "Id": "342302",
+            "Title": "Program Management VP",
+            "PrimaryLocation": "PETACH TIKVA, Israel",
+            "secondaryLocations": [
+                {"Name": "Tel Aviv, Israel"},
+                {"Name": "PETACH TIKVA, Israel"},
+            ],
+            "ShortDescriptionStr": "Lead cloud operations.",
+        }
+        total_jobs = custom_adapters.ORC_PAGE_SIZE + 1
+
+        first_response = MagicMock()
+        first_response.json.return_value = {
+            "items": [{
+                "TotalJobsCount": total_jobs,
+                "requisitionList": first_page_requisitions,
+            }]
+        }
+        second_response = MagicMock()
+        second_response.json.return_value = {
+            "items": [{
+                "TotalJobsCount": total_jobs,
+                "requisitionList": [
+                    {
+                        "Id": "340882",
+                        "Title": "Senior Site Reliability Engineer",
+                        "PrimaryLocation": "PETACH TIKVA, Israel",
+                    },
+                ],
+            }]
+        }
+        company = {
+            "company_id": "oracle",
+            "ats_type": "oracle_recruiting_cloud",
+            "fetch_strategy": "api",
+            "api_url": (
+                "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/"
+                "resources/latest/recruitingCEJobRequisitions"
+            ),
+            "oracle_site_number": "CX_45001",
+            "oracle_careers_url": (
+                "https://careers.oracle.com/en/sites/jobsearch/job/"
+            ),
+            "location_filters": ["Israel", "Petah Tikva"],
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[first_response, second_response],
+        ) as get:
+            jobs = custom_adapters.scrape_oracle_rc(company)
+
+        self.assertEqual(get.call_count, 2)
+        self.assertIn(
+            "keyword=Israel",
+            get.call_args_list[0].kwargs["params"]["finder"],
+        )
+        self.assertIn(
+            "siteNumber=CX_45001",
+            get.call_args_list[0].kwargs["params"]["finder"],
+        )
+        self.assertIn(
+            f"offset={custom_adapters.ORC_PAGE_SIZE}",
+            get.call_args_list[1].kwargs["params"]["finder"],
+        )
+        self.assertEqual(
+            len(jobs),
+            custom_adapters.ORC_PAGE_SIZE + 1,
+        )
+        self.assertEqual(jobs[-1]["id"], "oracle_340882")
+        self.assertEqual(
+            jobs[0]["location"],
+            "PETACH TIKVA, Israel, Tel Aviv, Israel",
+        )
+        self.assertEqual(
+            jobs[0]["url"],
+            "https://careers.oracle.com/en/sites/jobsearch/job/342302",
+        )
+        self.assertEqual(jobs[0]["content"], "Lead cloud operations.")
+        self.assertEqual(jobs[1]["content"], "")
+
+    def test_oracle_rc_requires_site_number(self) -> None:
+        """Fail closed without a tenant site number to scope the finder."""
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+        ) as get:
+            jobs = custom_adapters.scrape_oracle_rc({
+                "company_id": "akamai",
+                "api_url": "https://fa-extu-saasfaprod1.fa.ocs.oraclecloud.com/x",
+            })
+
+        get.assert_not_called()
+        self.assertEqual(jobs, [])
+
+    def test_oracle_rc_defaults_keyword_to_israel_without_location_filters(
+        self,
+    ) -> None:
+        """Default the finder keyword when a company has no filters set."""
+
+        response = MagicMock()
+        response.json.return_value = {"items": [{"requisitionList": []}]}
+        company = {
+            "company_id": "akamai",
+            "api_url": "https://fa-extu-saasfaprod1.fa.ocs.oraclecloud.com/x",
+            "oracle_site_number": "CX_1",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=response,
+        ) as get:
+            custom_adapters.scrape_oracle_rc(company)
+
+        self.assertIn(
+            "keyword=Israel",
+            get.call_args.kwargs["params"]["finder"],
+        )
+
+    def test_oracle_recruiting_cloud_routes_to_registered_adapter(
+        self,
+    ) -> None:
+        """Dispatch any ORC tenant through the shared generic adapter."""
+
+        company = {
+            "company_id": "akamai",
+            "company_name": "Akamai Israel",
+            "ats_type": "oracle_recruiting_cloud",
+            "fetch_strategy": "api",
+            "api_url": "https://fa-extu-saasfaprod1.fa.ocs.oraclecloud.com/x",
+            "oracle_site_number": "CX_1",
+        }
+        expected_jobs = [{"id": "akamai_1"}]
+        adapter = MagicMock(return_value=expected_jobs)
+
+        with (
+            patch.dict(
+                scraper.CUSTOM_API_ADAPTERS_BY_ATS_TYPE,
+                {"oracle_recruiting_cloud": adapter},
             ),
             patch("builtins.print"),
         ):

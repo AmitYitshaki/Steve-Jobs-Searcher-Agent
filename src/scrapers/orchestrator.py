@@ -16,11 +16,13 @@ from notifications.telegram.bot import TelegramNotifier
 from scrapers.api.client import fetch_ats_jobs
 from scrapers.api.mappings import ATS_FIELD_MAP
 from scrapers.browser.custom_adapters import (
+    scrape_amdocs,
     scrape_eightfold,
     scrape_elbit,
     scrape_google,
     scrape_iai,
     scrape_meta,
+    scrape_oracle_rc,
     scrape_successfactors,
     scrape_thales_phenom,
     scrape_universal_playwright,
@@ -53,6 +55,7 @@ CustomApiAdapter = Callable[
     list[dict[str, str]],
 ]
 CUSTOM_API_ADAPTERS: dict[str, CustomApiAdapter] = {
+    "amdocs": scrape_amdocs,
     "elbit_systems": scrape_elbit,
     "iai": scrape_iai,
     "imperva_thales": scrape_thales_phenom,
@@ -60,6 +63,12 @@ CUSTOM_API_ADAPTERS: dict[str, CustomApiAdapter] = {
 CUSTOM_BROWSER_ADAPTERS: dict[str, CustomApiAdapter] = {
     "google_custom": scrape_google,
     "meta_custom": scrape_meta,
+}
+# Keyed by ats_type (not company_id) like CUSTOM_BROWSER_ADAPTERS, since a
+# single adapter here is meant to serve every company sharing that ATS
+# platform rather than one company_id at a time.
+CUSTOM_API_ADAPTERS_BY_ATS_TYPE: dict[str, CustomApiAdapter] = {
+    "oracle_recruiting_cloud": scrape_oracle_rc,
 }
 
 
@@ -268,6 +277,15 @@ def fetch_jobs_from_company(company):
         and custom_api_adapter is not None
     ):
         return custom_api_adapter(company)
+
+    custom_api_adapter_by_ats_type = CUSTOM_API_ADAPTERS_BY_ATS_TYPE.get(
+        str(ats_type)
+    )
+    if (
+        company.get("fetch_strategy") == "api"
+        and custom_api_adapter_by_ats_type is not None
+    ):
+        return custom_api_adapter_by_ats_type(company)
 
     custom_browser_adapter = CUSTOM_BROWSER_ADAPTERS.get(str(ats_type))
     if (
