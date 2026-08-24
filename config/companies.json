@@ -142,9 +142,8 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "custom",
-    "fetch_strategy": "browser",
-    "api_url": "https://elbitsystemscareer.com/Recruitment-Page/",
-    "job_selector": "a[href*='/job']",
+    "fetch_strategy": "api",
+    "api_url": "https://elbitsystemscareer.com/cron/jobs.json",
     "location_filters": [
       "Israel",
       "Haifa",
@@ -155,7 +154,7 @@
       "Yokneam"
     ],
     "target_keywords": [],
-    "notes": "Official JS-rendered Elbit recruitment page. Extract rendered job links with Playwright."
+    "notes": "The recruitment page is a Next.js shell whose job list never reaches the DOM as anchors; fetch the site's own first-party JSON feed directly instead."
   },
   {
     "company_id": "iai",

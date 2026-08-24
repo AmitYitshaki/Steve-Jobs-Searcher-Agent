@@ -6,7 +6,6 @@ import hashlib
 import json
 import logging
 import os
-import re
 import threading
 import time
 from contextlib import AbstractContextManager
@@ -36,6 +35,7 @@ from playwright_stealth import Stealth
 from models.job import JobRecord
 from models.results import ScrapeResult, ScrapeStatus
 from paths import ARTIFACTS_DIR, LOGS_DIR
+from scrapers.artifacts import extract_sample_titles, write_company_artifacts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -141,6 +141,7 @@ class WafChallengeDetector:
         "enable javascript and cookies",
         "attention required",
         "access denied",
+        "loading challenge",
     )
     CHALLENGE_STATUSES = frozenset({401, 403, 429, 503})
 
@@ -432,11 +433,6 @@ class _BrowserSessionScraper:
         "meet-our-team",
     })
     SELECTOR_TIMEOUT_MS = 10_000
-    SENSITIVE_HTML_PATTERN = re.compile(
-        r"(?i)([?&](?:access_token|api_key|apikey|auth|authorization|"
-        r"code|key|session|sessionid|sig|signature|token)=)"
-        r"([^&\"'\s<>]+)"
-    )
 
     def __init__(
         self,
@@ -520,8 +516,15 @@ class _BrowserSessionScraper:
         selector_timeout_ms: int = SELECTOR_TIMEOUT_MS,
         response_handler: ResponseHandler | None = None,
         result_builder: BrowserResultBuilder | None = None,
+        write_diagnostics: bool = True,
     ) -> ScrapeResult:
-        """Run one shared browser session and close every owned resource."""
+        """Run one shared browser session and close every owned resource.
+
+        ``write_diagnostics=False`` lets a caller that already captured a
+        good artifact set for this company earlier in the same logical run
+        (e.g. an earlier page of a multi-page fetch) skip writing again, so
+        a later empty/failed attempt can never overwrite it.
+        """
 
         browser: Any = None
         context: Any = None
@@ -564,13 +567,14 @@ class _BrowserSessionScraper:
             waf_reason = self.detector.detect_reason(html, status_code)
 
             if waf_reason:
-                diagnostic_paths = self._write_diagnostics(
-                    page=page,
-                    company_id=company_id,
-                    html=html,
-                    status_code=status_code,
-                    waf_reason=waf_reason,
-                )
+                if write_diagnostics:
+                    diagnostic_paths = self._write_diagnostics(
+                        page=page,
+                        company_id=company_id,
+                        html=html,
+                        status_code=status_code,
+                        waf_reason=waf_reason,
+                    )
                 return ScrapeResult(
                     status=ScrapeStatus.WAF_BLOCKED,
                     jobs=[],
@@ -589,16 +593,14 @@ class _BrowserSessionScraper:
                 )
             )
             result, html = active_result_builder(page, html)
-            if (
-                result.status is not ScrapeStatus.SUCCESS
-                and not result.diagnostic_paths
-            ):
+            if write_diagnostics and not result.diagnostic_paths:
                 diagnostic_paths = self._write_diagnostics(
                     page=page,
                     company_id=company_id,
                     html=html,
                     status_code=status_code,
                     waf_reason=None,
+                    result=result,
                 )
                 result = replace(
                     result,
@@ -606,7 +608,7 @@ class _BrowserSessionScraper:
                 )
             return result
         except Exception as error:
-            if page is not None:
+            if page is not None and write_diagnostics:
                 try:
                     if not html:
                         html = page.content()
@@ -740,26 +742,13 @@ class _BrowserSessionScraper:
         html: str,
         status_code: int | None,
         waf_reason: str | None,
+        result: ScrapeResult | None = None,
     ) -> tuple[str, ...]:
-        """Write sanitized HTML, screenshot, and navigation metadata."""
+        """Write the HTML/screenshot/notes trio for one visited company."""
 
-        html_path = self.debug_dir / f"{company_id}.html"
-        screenshot_path = self.debug_dir / f"{company_id}.png"
-        metadata_path = self.debug_dir / f"{company_id}_diagnostic.json"
-        written_paths: list[str] = []
-
-        sanitized_html = self.SENSITIVE_HTML_PATTERN.sub(
-            r"\1[REDACTED]",
-            html,
-        )
-        html_path.write_text(sanitized_html, encoding="utf-8")
-        written_paths.append(str(html_path))
+        screenshot_bytes: bytes | None = None
         try:
-            page.screenshot(
-                path=str(screenshot_path),
-                timeout=5000,
-            )
-            written_paths.append(str(screenshot_path))
+            screenshot_bytes = page.screenshot(timeout=5000)
         except Exception as error:
             LOGGER.warning(
                 "Could not capture screenshot for %s: %s",
@@ -767,22 +756,29 @@ class _BrowserSessionScraper:
                 error,
             )
 
-        with metadata_path.open("w", encoding="utf-8") as metadata_file:
-            json.dump(
-                {
-                    "company_id": company_id,
-                    "navigation_status": status_code,
-                    "waf_detected": waf_reason is not None,
-                    "waf_reason": waf_reason,
-                    "captured_at": datetime.now(timezone.utc).isoformat(),
-                },
-                metadata_file,
-                ensure_ascii=False,
-                indent=2,
-            )
-        written_paths.append(str(metadata_path))
+        notes: dict[str, Any] = {
+            "navigation_status": status_code,
+            "waf_detected": waf_reason is not None,
+            "waf_reason": waf_reason,
+            "status": result.status.value if result is not None else None,
+            "message": result.message if result is not None else "",
+            "job_count": len(result.jobs) if result is not None else 0,
+            "sample_titles": (
+                extract_sample_titles(result.jobs)
+                if result is not None
+                else []
+            ),
+        }
 
-        return tuple(written_paths)
+        return write_company_artifacts(
+            company_id,
+            source="browser",
+            primary_content=html,
+            primary_extension="html",
+            screenshot_bytes=screenshot_bytes,
+            notes=notes,
+            debug_dir=self.debug_dir,
+        )
 
     @staticmethod
     def _first_text_line(raw_title: str) -> str:
@@ -953,8 +949,15 @@ class EmbeddedJsonScraper(_BrowserSessionScraper):
         self,
         company: CompanyConfig,
         data_parser_fn: ResponseParser,
+        write_diagnostics: bool = True,
     ) -> ScrapeResult:
-        """Evaluate embedded scripts and normalize parser-produced jobs."""
+        """Evaluate embedded scripts and normalize parser-produced jobs.
+
+        ``write_diagnostics=False`` skips this call's artifact write, for
+        callers that make several internal calls per public fetch (e.g.
+        paginating) and want a later empty page to never overwrite an
+        earlier successful one.
+        """
 
         company_id = str(company.get("company_id", "")).strip()
         url = str(company.get("api_url", "")).strip()
@@ -1024,6 +1027,7 @@ class EmbeddedJsonScraper(_BrowserSessionScraper):
                     company_id=company_id,
                     url=url,
                     result_builder=build_result,
+                    write_diagnostics=write_diagnostics,
                 )
         except Exception as error:
             LOGGER.exception(

@@ -174,8 +174,7 @@ class ScraperProducerTests(unittest.TestCase):
                 patch(
                     "scrapers.orchestrator.analyze_job"
                 ) as analyze_job,
-                patch("scrapers.orchestrator.logging.debug") as debug,
-                patch("builtins.print"),
+                patch("scrapers.orchestrator.LOGGER.debug") as debug,
             ):
                 scraper.run_scraper(
                     queue=queue,
@@ -390,7 +389,7 @@ class ScraperProducerTests(unittest.TestCase):
                 patch(
                     "scrapers.orchestrator.analyze_job"
                 ) as analyze_job,
-                patch("builtins.print") as print_output,
+                patch("scrapers.orchestrator.LOGGER.info") as info,
             ):
                 scraper.run_scraper(
                     queue=queue,
@@ -410,7 +409,7 @@ class ScraperProducerTests(unittest.TestCase):
         self.assertTrue(
             any(
                 "1 duplicates" in str(call_args)
-                for call_args in print_output.call_args_list
+                for call_args in info.call_args_list
             )
         )
 
@@ -436,8 +435,8 @@ class ScraperProducerTests(unittest.TestCase):
                 patch(
                     "scrapers.orchestrator.analyze_job"
                 ) as analyze_job,
-                patch("scrapers.orchestrator.logging.debug") as debug,
-                patch("builtins.print") as print_output,
+                patch("scrapers.orchestrator.LOGGER.debug") as debug,
+                patch("scrapers.orchestrator.LOGGER.info") as info,
             ):
                 scraper.run_scraper(
                     queue=queue,
@@ -460,7 +459,7 @@ class ScraperProducerTests(unittest.TestCase):
         self.assertFalse(
             any(
                 "Budapest" in str(call_args)
-                for call_args in print_output.call_args_list
+                for call_args in info.call_args_list
             )
         )
 

@@ -1,4 +1,5 @@
 import hashlib
+import html
 import logging
 import requests
 from typing import Any, Mapping
@@ -6,6 +7,7 @@ from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from models.results import ScrapeStatus
+from scrapers.artifacts import extract_sample_titles, write_company_artifacts
 from scrapers.browser.playwright_driver import (
     CompanyConfig,
     EmbeddedJsonScraper,
@@ -220,6 +222,10 @@ def scrape_google(company: CompanyConfig) -> list[dict[str, str]]:
     embedded_scraper = EmbeddedJsonScraper()
     accumulated_jobs: list[dict[str, str]] = []
     company_id = str(company.get("company_id", "google"))
+    # Once one page in this fetch has found real jobs, later empty/failed
+    # pages (including the terminating NO_JOBS page of each variant) must
+    # never overwrite that good artifact set on disk.
+    has_found_jobs = False
 
     for variant in GOOGLE_QUERY_VARIANTS:
         page_number = 1
@@ -231,7 +237,10 @@ def scrape_google(company: CompanyConfig) -> list[dict[str, str]]:
             result = embedded_scraper.scrape(
                 company=page_company,
                 data_parser_fn=_google_job_parser,
+                write_diagnostics=not has_found_jobs,
             )
+            if result.status is ScrapeStatus.SUCCESS and result.jobs:
+                has_found_jobs = True
 
             if result.status is ScrapeStatus.FAILED:
                 LOGGER.error(
@@ -395,6 +404,19 @@ def scrape_eightfold(
             )
 
         if jobs:
+            write_company_artifacts(
+                company_id,
+                source="api",
+                primary_content=response.text,
+                primary_extension="json",
+                screenshot_bytes=None,
+                notes={
+                    "status": "success",
+                    "message": "",
+                    "job_count": len(jobs),
+                    "sample_titles": extract_sample_titles(jobs),
+                },
+            )
             return jobs
         LOGGER.warning(
             "Eightfold API returned no usable jobs for %s; using "
@@ -423,22 +445,50 @@ def scrape_iai(
         LOGGER.error("IAI adapter requires an api_url")
         return []
 
+    response_text: str | None = None
     try:
         response = requests.get(
             api_url,
             headers=IAI_REQUEST_HEADERS,
             timeout=HTTP_TIMEOUT_SECONDS,
         )
+        response_text = response.text
         response.raise_for_status()
         payload = response.json()
     except (requests.RequestException, ValueError, TypeError) as error:
         LOGGER.error("IAI jobs API request failed: %s", error)
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=response_text,
+            primary_extension="json",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": f"{type(error).__name__}: {error}",
+                "job_count": 0,
+                "sample_titles": [],
+            },
+        )
         return []
 
     if not isinstance(payload, list):
         LOGGER.error(
             "IAI jobs API returned %s instead of a list",
             type(payload).__name__,
+        )
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=response_text,
+            primary_extension="json",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": f"Unexpected payload type: {type(payload).__name__}",
+                "job_count": 0,
+                "sample_titles": [],
+            },
         )
         return []
 
@@ -470,6 +520,137 @@ def scrape_iai(
             }
         )
 
+    write_company_artifacts(
+        company_id,
+        source="api",
+        primary_content=response_text,
+        primary_extension="json",
+        screenshot_bytes=None,
+        notes={
+            "status": "success" if jobs else "no_jobs",
+            "message": "",
+            "job_count": len(jobs),
+            "sample_titles": extract_sample_titles(jobs),
+        },
+    )
+    return jobs
+
+
+def scrape_elbit(
+    company: Mapping[str, Any],
+) -> list[dict[str, str]]:
+    """Normalize Elbit Systems' first-party JSON feed into shared records.
+
+    The careers page is a Next.js shell whose job list never reaches the DOM
+    as anchors (confirmed live), so this bypasses the frontend entirely and
+    reads the same ``cron/jobs.json`` feed the page itself fetches.
+    """
+
+    company_id = (
+        str(company.get("company_id", "elbit_systems")).strip()
+        or "elbit_systems"
+    )
+    api_url = str(company.get("api_url", "")).strip()
+    if not api_url:
+        LOGGER.error("Elbit adapter requires an api_url")
+        return []
+
+    response_text: str | None = None
+    try:
+        response = requests.get(
+            api_url,
+            headers=IAI_REQUEST_HEADERS,
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
+        response_text = response.text
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError, TypeError) as error:
+        LOGGER.error("Elbit jobs feed request failed: %s", error)
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=response_text,
+            primary_extension="json",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": f"{type(error).__name__}: {error}",
+                "job_count": 0,
+                "sample_titles": [],
+            },
+        )
+        return []
+
+    if not isinstance(payload, list):
+        LOGGER.error(
+            "Elbit jobs feed returned %s instead of a list",
+            type(payload).__name__,
+        )
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=response_text,
+            primary_extension="json",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": f"Unexpected payload type: {type(payload).__name__}",
+                "job_count": 0,
+                "sample_titles": [],
+            },
+        )
+        return []
+
+    parsed_api_url = urlsplit(api_url)
+    origin = urlunsplit(
+        (parsed_api_url.scheme, parsed_api_url.netloc, "/", "", "")
+    )
+    jobs: list[dict[str, str]] = []
+    for item in payload:
+        if not isinstance(item, Mapping):
+            continue
+
+        raw_job_id = item.get("jobId")
+        title = str(item.get("jobTitle", "")).strip()
+        if raw_job_id is None or not title:
+            continue
+        job_id = str(raw_job_id).strip()
+        if not job_id:
+            continue
+
+        raw_description = str(item.get("description") or "")
+        content = BeautifulSoup(
+            html.unescape(raw_description),
+            "lxml",
+        ).get_text(" ", strip=True)
+
+        jobs.append(
+            {
+                "id": f"{company_id}_{job_id}",
+                "title": title,
+                "location": str(item.get("area") or "").strip(),
+                "url": urljoin(
+                    origin,
+                    f"Recruitment-Page/?jobId={quote(job_id, safe='')}",
+                ),
+                "content": content,
+            }
+        )
+
+    write_company_artifacts(
+        company_id,
+        source="api",
+        primary_content=response_text,
+        primary_extension="json",
+        screenshot_bytes=None,
+        notes={
+            "status": "success" if jobs else "no_jobs",
+            "message": "",
+            "job_count": len(jobs),
+            "sample_titles": extract_sample_titles(jobs),
+        },
+    )
     return jobs
 
 
@@ -571,6 +752,8 @@ def scrape_thales_phenom(
     jobs: list[dict[str, str]] = []
     seen_job_ids: set[str] = set()
     page_offset = 0
+    first_page_response_text: str | None = None
+    fetch_error: str = ""
 
     for _page_number in range(THALES_PHENOM_MAX_PAGES):
         try:
@@ -580,6 +763,8 @@ def scrape_thales_phenom(
                 headers=THALES_REQUEST_HEADERS,
                 timeout=HTTP_TIMEOUT_SECONDS,
             )
+            if first_page_response_text is None:
+                first_page_response_text = response.text
             response.raise_for_status()
             items, total_hits = _thales_phenom_page(response.json())
         except (
@@ -592,6 +777,7 @@ def scrape_thales_phenom(
                 page_offset,
                 error,
             )
+            fetch_error = f"{type(error).__name__}: {error}"
             break
 
         if not items:
@@ -649,6 +835,21 @@ def scrape_thales_phenom(
             break
         page_offset = next_offset
 
+    write_company_artifacts(
+        company_id,
+        source="api",
+        primary_content=first_page_response_text,
+        primary_extension="json",
+        screenshot_bytes=None,
+        notes={
+            "status": "failed" if fetch_error else (
+                "success" if jobs else "no_jobs"
+            ),
+            "message": fetch_error,
+            "job_count": len(jobs),
+            "sample_titles": extract_sample_titles(jobs),
+        },
+    )
     return jobs
 
 
@@ -664,10 +865,12 @@ def scrape_successfactors(company):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
+    response_text = None
     try:
         response = requests.get(url, headers=headers, timeout=15)
+        response_text = response.text
         response.raise_for_status()
-        
+
         # הופך את טקסט האתר לאובייקט שאפשר לחפש בו
         soup = BeautifulSoup(response.text, 'lxml')
         
@@ -712,11 +915,37 @@ def scrape_successfactors(company):
                 "url": job_link,
                 "content": content,
             })
-            
+
+        write_company_artifacts(
+            str(company_id),
+            source="api",
+            primary_content=response_text,
+            primary_extension="html",
+            screenshot_bytes=None,
+            notes={
+                "status": "success" if jobs else "no_jobs",
+                "message": "",
+                "job_count": len(jobs),
+                "sample_titles": extract_sample_titles(jobs),
+            },
+        )
         return jobs
-        
+
     except Exception as e:
-        print(f"❌ Error scraping HTML for {company_id}: {e}")
+        LOGGER.error("Error scraping HTML for %s: %s", company_id, e)
+        write_company_artifacts(
+            str(company_id),
+            source="api",
+            primary_content=response_text,
+            primary_extension="html",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": f"{type(e).__name__}: {e}",
+                "job_count": 0,
+                "sample_titles": [],
+            },
+        )
         return []
 
 def scrape_universal_playwright(
@@ -725,17 +954,22 @@ def scrape_universal_playwright(
     """Run the OOP Playwright scraper while preserving the legacy API."""
 
     company_id = str(company.get("company_id", "unknown"))
-    print(f"🕵️ מפעיל סורק אוניברסלי (Playwright) עבור {company_id}...")
+    LOGGER.info("🕵️ מפעיל סורק אוניברסלי (Playwright) עבור %s...", company_id)
 
     result = PlaywrightJobScraper().scrape(company)
     if result.status is ScrapeStatus.WAF_BLOCKED:
-        print(
-            f"🛡️ {company_id} נחסם על ידי אתגר WAF: {result.message}. "
-            "בדוק את logs/api_discovery_log.json."
+        LOGGER.warning(
+            "🛡️ %s נחסם על ידי אתגר WAF: %s. בדוק את logs/api_discovery_log.json.",
+            company_id,
+            result.message,
         )
     elif result.status is ScrapeStatus.NO_JOBS:
-        print(f"⚠️ {company_id} החזיר 0 משרות: {result.message}")
+        LOGGER.warning("⚠️ %s החזיר 0 משרות: %s", company_id, result.message)
     elif result.status is ScrapeStatus.FAILED:
-        print(f"❌ שגיאה בסריקה אוניברסלית של {company_id}: {result.message}")
+        LOGGER.error(
+            "❌ שגיאה בסריקה אוניברסלית של %s: %s",
+            company_id,
+            result.message,
+        )
 
     return result.jobs

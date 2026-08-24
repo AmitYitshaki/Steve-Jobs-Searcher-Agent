@@ -62,6 +62,38 @@ class WafChallengeDetectorTests(unittest.TestCase):
             "HTTP 403 returned with sparse response content",
         )
 
+    def test_detects_fiverr_style_soft_block_despite_long_body_text(
+        self,
+    ) -> None:
+        """Recognize a wordy challenge page that isn't "sparse" by length.
+
+        Reproduces the real Fiverr 403 response body verified live: its
+        challenge copy runs well past SPARSE_TEXT_THRESHOLD, so only the
+        challenge-text match (not the sparse-content heuristic) can catch
+        it. Confirms the fix targets the actual gap, not a side effect.
+        """
+
+        html = (
+            "<html><body><h1>It needs a human touch</h1>"
+            "<p>Complete the task and we will get you right back into "
+            "Fiverr.</p><p>Loading challenge</p>"
+            "<p>Quick fixes: disable any browser extensions that could be "
+            "interfering with the website. This includes ad blockers, "
+            "privacy extensions, or VPNs that may modify web traffic. "
+            "Clear your browser's cache and cookies, then reload the "
+            "page to try again.</p></body></html>"
+        )
+        detector = WafChallengeDetector()
+        body_text = detector._extract_body_text(html)
+        self.assertGreater(len(body_text), detector.SPARSE_TEXT_THRESHOLD)
+
+        reason = detector.detect_reason(html, 403)
+
+        self.assertEqual(
+            reason,
+            "Browser challenge text detected in the response body",
+        )
+
     def test_does_not_flag_legitimate_empty_page(self) -> None:
         """Avoid treating every empty successful page as a WAF block."""
 
@@ -468,8 +500,9 @@ class PlaywrightJobScraperTests(unittest.TestCase):
             )
             self.assertEqual(first_result.jobs[0]["content"], "")
             page.locator.assert_not_called()
-            page.screenshot.assert_not_called()
-            self.assertFalse(
+            # Diagnostics are written on every outcome now, success included.
+            page.screenshot.assert_called()
+            self.assertTrue(
                 (Path(temporary_directory) / "example.html").exists()
             )
 
@@ -870,10 +903,7 @@ class PlaywrightJobScraperTests(unittest.TestCase):
                     waf_reason=None,
                 )
 
-            page.screenshot.assert_called_once_with(
-                path=str(Path(temporary_directory) / "taboola.png"),
-                timeout=5000,
-            )
+            page.screenshot.assert_called_once_with(timeout=5000)
             self.assertNotIn(
                 str(Path(temporary_directory) / "taboola.png"),
                 paths,
@@ -966,7 +996,8 @@ class NetworkInterceptScraperTests(unittest.TestCase):
         parser.assert_called_once_with(payload)
         response.json.assert_called_once_with()
         self.stealth.assert_called_once_with(page)
-        page.screenshot.assert_not_called()
+        # Diagnostics are written on every outcome now, success included.
+        page.screenshot.assert_called()
         context.close.assert_called_once_with()
         browser.close.assert_called_once_with()
 
@@ -1202,6 +1233,79 @@ class EmbeddedJsonScraperTests(unittest.TestCase):
         parser.assert_not_called()
         context.close.assert_called_once_with()
         browser.close.assert_called_once_with()
+
+    def test_write_diagnostics_false_preserves_prior_artifacts(self) -> None:
+        """Never let a later empty page overwrite an earlier good one."""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            scraper = EmbeddedJsonScraper(
+                debug_dir=temporary_directory,
+                settle_time_ms=0,
+            )
+
+            success_page = MagicMock()
+            success_page.goto.return_value = SimpleNamespace(status=200)
+            success_page.content.return_value = (
+                "<html><body>Page with real jobs.</body></html>"
+            )
+            success_page.evaluate.return_value = [["raw job"]]
+            success_manager, _, _ = self._browser_manager(success_page)
+            scraper.playwright_factory = MagicMock(
+                return_value=success_manager
+            )
+            first_result = scraper.scrape(
+                company={
+                    "company_id": "google",
+                    "api_url": "https://example.test/jobs?page=1",
+                },
+                data_parser_fn=MagicMock(
+                    return_value=[{
+                        "id": "google_1",
+                        "title": "Real Job",
+                        "location": "Tel Aviv, Israel",
+                        "url": "https://example.test/jobs/1",
+                        "content": "",
+                    }]
+                ),
+                write_diagnostics=True,
+            )
+
+            empty_page = MagicMock()
+            empty_page.goto.return_value = SimpleNamespace(status=200)
+            empty_page.content.return_value = (
+                "<html><body>Terminating empty page.</body></html>"
+            )
+            empty_page.evaluate.return_value = None
+            empty_manager, _, _ = self._browser_manager(empty_page)
+            scraper.playwright_factory = MagicMock(
+                return_value=empty_manager
+            )
+            second_result = scraper.scrape(
+                company={
+                    "company_id": "google",
+                    "api_url": "https://example.test/jobs?page=2",
+                },
+                data_parser_fn=MagicMock(),
+                write_diagnostics=False,
+            )
+
+            self.assertEqual(first_result.status, ScrapeStatus.SUCCESS)
+            self.assertEqual(second_result.status, ScrapeStatus.NO_JOBS)
+            self.assertEqual(second_result.diagnostic_paths, ())
+
+            html_path = Path(temporary_directory) / "google.html"
+            self.assertIn("Page with real jobs.", html_path.read_text())
+            self.assertNotIn(
+                "Terminating empty page.", html_path.read_text()
+            )
+
+            notes = json.loads(
+                (
+                    Path(temporary_directory) / "google_diagnostic.json"
+                ).read_text()
+            )
+            self.assertEqual(notes["status"], "success")
+            self.assertEqual(notes["job_count"], 1)
 
     def test_extraction_exception_returns_failed_and_logs_error(self) -> None:
         """Isolate Python-side evaluation failures and close resources."""

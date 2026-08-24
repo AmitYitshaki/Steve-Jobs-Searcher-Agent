@@ -201,7 +201,11 @@ def analyze_job(
     cost = log_cost(prompt_tokens, completion_tokens)
     
     # הדפסה נחמדה שתופיע ליד הלוגים של טלגרם
-    print(f"💰 [מעקב עלויות] צריכה: {prompt_tokens + completion_tokens} טוקנים | עלות: ${cost:.6f}")
+    LOGGER.info(
+        "💰 [מעקב עלויות] צריכה: %s טוקנים | עלות: $%.6f",
+        prompt_tokens + completion_tokens,
+        cost,
+    )
 
     return response.choices[0].message.content
 

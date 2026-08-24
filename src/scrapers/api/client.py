@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, Mapping
 
@@ -9,6 +10,9 @@ import requests
 from bs4 import BeautifulSoup
 
 from scrapers.api.mappings import AtsMapping
+from scrapers.artifacts import extract_sample_titles, write_company_artifacts
+
+LOGGER = logging.getLogger(__name__)
 
 HTTP_TIMEOUT_SECONDS = 15
 RETRY_DELAY_SECONDS = 0.5
@@ -115,9 +119,7 @@ def _request_jobs_response(
                 if status_code is not None
                 else type(error).__name__
             )
-            print(
-                f"Retrying {company_id} once after {reason}."
-            )
+            LOGGER.info("Retrying %s once after %s.", company_id, reason)
             time.sleep(delay_seconds)
             attempt += 1
 
@@ -189,6 +191,26 @@ def fetch_ats_jobs(
         "headers": request_headers,
         "timeout": HTTP_TIMEOUT_SECONDS,
     }
+    first_page_response_text: str | None = None
+
+    def _write_artifacts(
+        status: str,
+        message: str,
+        jobs_for_notes: list[dict],
+    ) -> None:
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=first_page_response_text,
+            primary_extension="json",
+            screenshot_bytes=None,
+            notes={
+                "status": status,
+                "message": message,
+                "job_count": len(jobs_for_notes),
+                "sample_titles": extract_sample_titles(jobs_for_notes),
+            },
+        )
 
     try:
         payload_overrides: Mapping[str, Any] | None = None
@@ -213,9 +235,10 @@ def fetch_ats_jobs(
                     company,
                 )
             if payload_overrides is None:
-                print(
-                    f"⚠️ {company_id} exposed no Israel location facet; "
-                    "falling back to paginated Workday searchText."
+                LOGGER.warning(
+                    "⚠️ %s exposed no Israel location facet; falling back "
+                    "to paginated Workday searchText.",
+                    company_id,
                 )
 
         base_url = (
@@ -237,14 +260,22 @@ def fetch_ats_jobs(
                 page_offset=page_offset,
                 payload_overrides=payload_overrides,
             )
+            if first_page_response_text is None:
+                first_page_response_text = response.text
             payload = response.json()
             if mapping.envelope_key is None:
                 items = payload
             elif isinstance(payload, Mapping):
                 items = payload.get(mapping.envelope_key, [])
             else:
+                _write_artifacts(
+                    "success" if jobs else "no_jobs", "", jobs
+                )
                 return jobs
             if not isinstance(items, list):
+                _write_artifacts(
+                    "success" if jobs else "no_jobs", "", jobs
+                )
                 return jobs
 
             for item in items:
@@ -287,13 +318,15 @@ def fetch_ats_jobs(
             ):
                 break
             if pages_fetched >= pagination.max_pages:
-                print(
-                    f"⚠️ {company_id} pagination stopped after "
-                    f"{pagination.max_pages} pages."
+                LOGGER.warning(
+                    "⚠️ %s pagination stopped after %s pages.",
+                    company_id,
+                    pagination.max_pages,
                 )
                 break
             page_offset = next_offset
 
+        _write_artifacts("success" if jobs else "no_jobs", "", jobs)
         return jobs
     except requests.exceptions.HTTPError as error:
         response = error.response
@@ -301,15 +334,26 @@ def fetch_ats_jobs(
             response.status_code if response is not None else None
         )
         if status_code in mapping.http_error_status_map:
-            print(
-                f"⚠️ {company_id} API returned {status_code} "
+            message = (
+                f"API returned {status_code} "
                 "(Requires specific payload or auth)."
             )
+            LOGGER.warning("⚠️ %s %s", company_id, message)
         elif status_code is not None:
-            print(f"❌ Network error on {company_id}: {status_code}")
+            message = f"Network error: {status_code}"
+            LOGGER.error("❌ Network error on %s: %s", company_id, status_code)
         else:
-            print(f"❌ Error scanning {ats_type} {company_id}: {error}")
+            message = f"{type(error).__name__}: {error}"
+            LOGGER.error(
+                "❌ Error scanning %s %s: %s", ats_type, company_id, error
+            )
+        _write_artifacts("failed", message, [])
         return []
     except Exception as error:
-        print(f"❌ Error scanning {ats_type} {company_id}: {error}")
+        LOGGER.error(
+            "❌ Error scanning %s %s: %s", ats_type, company_id, error
+        )
+        _write_artifacts(
+            "failed", f"{type(error).__name__}: {error}", []
+        )
         return []

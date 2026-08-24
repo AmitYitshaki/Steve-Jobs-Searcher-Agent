@@ -17,6 +17,7 @@ from scrapers.api.client import fetch_ats_jobs
 from scrapers.api.mappings import ATS_FIELD_MAP
 from scrapers.browser.custom_adapters import (
     scrape_eightfold,
+    scrape_elbit,
     scrape_google,
     scrape_iai,
     scrape_meta,
@@ -34,6 +35,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
+LOGGER = logging.getLogger(__name__)
 
 # טעינת משתני הסביבה
 load_dotenv()
@@ -51,6 +53,7 @@ CustomApiAdapter = Callable[
     list[dict[str, str]],
 ]
 CUSTOM_API_ADAPTERS: dict[str, CustomApiAdapter] = {
+    "elbit_systems": scrape_elbit,
     "iai": scrape_iai,
     "imperva_thales": scrape_thales_phenom,
 }
@@ -254,7 +257,9 @@ def fetch_jobs_from_company(company):
     api_url = company.get("api_url")
     company_id = company.get("company_id")
 
-    print(f"🔍 Scanning {company.get('company_name')} (ATS: {ats_type})...")
+    LOGGER.info(
+        "🔍 Scanning %s (ATS: %s)...", company.get("company_name"), ats_type
+    )
 
     custom_api_adapter = CUSTOM_API_ADAPTERS.get(str(company_id))
     if (
@@ -288,7 +293,7 @@ def fetch_jobs_from_company(company):
 
     # 4. אם מסיבה כלשהי משהו נפל בין הכיסאות
     else:
-        logging.warning(
+        LOGGER.warning(
             "No adapter available; skipping company_id=%s ats_type=%s",
             company_id,
             ats_type,
@@ -320,13 +325,13 @@ def _send_heartbeat(notifier: HeartbeatSender | None) -> None:
     try:
         result = notifier.send(HEARTBEAT_MESSAGE)
     except Exception as error:
-        logging.warning(
+        LOGGER.warning(
             "Heartbeat delivery raised %s; the cycle still succeeded.",
             type(error).__name__,
         )
         return
     if not getattr(result, "success", True):
-        logging.warning("Heartbeat delivery did not succeed.")
+        LOGGER.warning("Heartbeat delivery did not succeed.")
 
 
 def run_scraper(
@@ -343,7 +348,7 @@ def run_scraper(
     scheduler is never mistaken for a silent failure.
     """
 
-    print("🚀 מתחיל סריקת משרות...")
+    LOGGER.info("🚀 מתחיל סריקת משרות...")
     total_start_time = time.time()  # תחילת המדידה הכוללת
     alert_queue = queue or PendingAlertQueue(PENDING_ALERTS_FILE)
     active_history_store = history_store or JobHistoryStore(HISTORY_FILE)
@@ -356,12 +361,12 @@ def run_scraper(
     companies = load_json(CONFIG_DIR / "companies.json")
     unroutable_company_ids = validate_company_routing(companies)
     if unroutable_company_ids:
-        logging.error(
+        LOGGER.error(
             "Unroutable active company configurations: %s",
             ", ".join(unroutable_company_ids),
         )
     if not companies:
-        print("⚠️ קובץ config/companies.json ריק.")
+        LOGGER.warning("⚠️ קובץ config/companies.json ריק.")
         return
 
     history = active_history_store.load()
@@ -401,7 +406,7 @@ def run_scraper(
                         match_details = (
                             f" '{title_decision.matched_keyword}'"
                         )
-                    logging.debug(
+                    LOGGER.debug(
                         "Rejecting %s: title %s%s.",
                         job["id"],
                         title_decision.reason,
@@ -425,7 +430,7 @@ def run_scraper(
                             f" '{location_decision.matched_location}'"
                             f" in {location_decision.source}"
                         )
-                    logging.debug(
+                    LOGGER.debug(
                         "Rejecting %s: location %s%s.",
                         job["id"],
                         location_decision.reason,
@@ -439,7 +444,7 @@ def run_scraper(
                 )
                 if not location_match:
                     tracker.record_location_rejection()
-                    logging.debug(
+                    LOGGER.debug(
                         "Rejecting %s: adapter location %r does not match "
                         "configured filters %r.",
                         job["id"],
@@ -467,13 +472,13 @@ def run_scraper(
                 queued_job_ids.add(job["id"])
         except Exception as error:
             tracker.record_failure(error)
-            logging.exception(
+            LOGGER.exception(
                 "Company scrape failed for %s.",
                 company_id,
             )
         finally:
             new_health_state[company_id] = tracker.snapshot()
-            print(tracker.summary_line())
+            LOGGER.info("%s", tracker.summary_line())
 
     active_health_store.save(new_health_state)
 
@@ -481,15 +486,17 @@ def run_scraper(
 
     # --- שלב 2: ניתוח והוספה לתור ---
     if not new_jobs_found:
-        print("\n😴 לא נמצאו משרות חדשות רלוונטיות הפעם.")
+        LOGGER.info("😴 לא נמצאו משרות חדשות רלוונטיות הפעם.")
         _send_heartbeat(heartbeat_notifier)
     else:
-        print(f"\n✅ נמצאו {len(new_jobs_found)} משרות חדשות רלוונטיות. מעביר לסטיב...\n")
-        
+        LOGGER.info(
+            "✅ נמצאו %s משרות חדשות רלוונטיות. מעביר לסטיב...",
+            len(new_jobs_found),
+        )
+
         for job in new_jobs_found:
-            print(
-                f"🤖 מנתח את: {job['title']} "
-                f"במיקום {job['location']}"
+            LOGGER.info(
+                "🤖 מנתח את: %s במיקום %s", job["title"], job["location"]
             )
 
             try:
@@ -499,9 +506,9 @@ def run_scraper(
                     job_content=job.get("content", ""),
                 )
             except Exception as error:
-                print(
-                    "❌ ניתוח המשרה נכשל; המשרה לא תיכנס לתור: "
-                    f"{type(error).__name__}"
+                LOGGER.error(
+                    "❌ ניתוח המשרה נכשל; המשרה לא תיכנס לתור: %s",
+                    type(error).__name__,
                 )
                 continue
 
@@ -524,10 +531,10 @@ def run_scraper(
             )
             if alert_queue.append(alert):
                 pending_ids.add(job["id"])
-                print(f"✅ המשרה {job['id']} נשמרה בתור ההתראות.")
+                LOGGER.info("✅ המשרה %s נשמרה בתור ההתראות.", job["id"])
             else:
-                print(f"ℹ️ המשרה {job['id']} כבר קיימת בתור.")
-            print("-" * 40)
+                LOGGER.info("ℹ️ המשרה %s כבר קיימת בתור.", job["id"])
+            LOGGER.info("-" * 40)
     
     analysis_end_time = time.time()  # סיום שלב הניתוח
     
@@ -536,18 +543,20 @@ def run_scraper(
     analysis_duration = analysis_end_time - scraping_end_time
     total_duration = analysis_end_time - total_start_time
     
-    print("\n🏁 הסריקה הושלמה.")
-    print("⏱️ דו\"ח ביצועים:")
-    print(f"   - זמן סריקת אתרים: {scraping_duration:.1f} שניות")
-    print(f"   - זמן ניתוח (AI) ושמירה לתור: {analysis_duration:.1f} שניות")
-    print(f"   - סך הכל זמן ריצה: {total_duration:.1f} שניות")
+    LOGGER.info("🏁 הסריקה הושלמה.")
+    LOGGER.info("⏱️ דו\"ח ביצועים:")
+    LOGGER.info("   - זמן סריקת אתרים: %.1f שניות", scraping_duration)
+    LOGGER.info(
+        "   - זמן ניתוח (AI) ושמירה לתור: %.1f שניות", analysis_duration
+    )
+    LOGGER.info("   - סך הכל זמן ריצה: %.1f שניות", total_duration)
 
 if __name__ == "__main__":
     heartbeat_notifier: TelegramNotifier | None = None
     try:
         heartbeat_notifier = TelegramNotifier.from_environment()
     except ValueError as error:
-        logging.warning("Heartbeat disabled: %s", error)
+        LOGGER.warning("Heartbeat disabled: %s", error)
 
     try:
         run_scraper(heartbeat_notifier=heartbeat_notifier)

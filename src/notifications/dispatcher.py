@@ -16,6 +16,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
+LOGGER = logging.getLogger(__name__)
 
 
 class AlertSender(Protocol):
@@ -60,8 +61,8 @@ class AlertConsumer:
             if self.history.contains(alert.job_id):
                 self.queue.remove(alert.job_id)
                 skipped += 1
-                print(
-                    f"ℹ️ {alert.job_id} כבר בהיסטוריה והוסר מהתור."
+                LOGGER.info(
+                    "ℹ️ %s כבר בהיסטוריה והוסר מהתור.", alert.job_id
                 )
                 continue
 
@@ -69,18 +70,21 @@ class AlertConsumer:
                 result = self.notifier.send(alert.llm_summary)
             except Exception as error:
                 failed += 1
-                print(
-                    f"❌ שליחת {alert.job_id} נכשלה "
-                    f"({type(error).__name__}); ההתראה נשארה בתור."
+                LOGGER.error(
+                    "❌ שליחת %s נכשלה (%s); ההתראה נשארה בתור.",
+                    alert.job_id,
+                    type(error).__name__,
                 )
                 continue
 
             if not result.success:
                 failed += 1
-                print(
-                    f"❌ שליחת {alert.job_id} נכשלה "
-                    f"({result.status.value}, {result.attempts} ניסיונות); "
-                    "ההתראה נשארה בתור."
+                LOGGER.error(
+                    "❌ שליחת %s נכשלה (%s, %s ניסיונות); "
+                    "ההתראה נשארה בתור.",
+                    alert.job_id,
+                    result.status.value,
+                    result.attempts,
                 )
                 continue
 
@@ -89,9 +93,10 @@ class AlertConsumer:
             self.history.add(alert.job_id)
             self.queue.remove(alert.job_id)
             sent += 1
-            print(
-                f"✅ ההתראה עבור {alert.company_name} "
-                f"({alert.job_id}) נשלחה ונשמרה בהיסטוריה."
+            LOGGER.info(
+                "✅ ההתראה עבור %s (%s) נשלחה ונשמרה בהיסטוריה.",
+                alert.company_name,
+                alert.job_id,
             )
 
         return DeliverySummary(
@@ -113,14 +118,14 @@ def main() -> int:
                 notifier=notifier,
             ).run()
     except (OSError, ValueError) as error:
-        print(f"❌ לא ניתן לעבד את תור ההתראות: {error}")
+        LOGGER.error("❌ לא ניתן לעבד את תור ההתראות: %s", error)
         return 1
 
-    print(
-        "🏁 עיבוד התור הסתיים: "
-        f"{summary.sent} נשלחו, "
-        f"{summary.failed} נכשלו, "
-        f"{summary.skipped} דולגו."
+    LOGGER.info(
+        "🏁 עיבוד התור הסתיים: %s נשלחו, %s נכשלו, %s דולגו.",
+        summary.sent,
+        summary.failed,
+        summary.skipped,
     )
     return 1 if summary.failed else 0
 

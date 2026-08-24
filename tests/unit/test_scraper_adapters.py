@@ -667,7 +667,7 @@ class FetchAtsJobsTests(unittest.TestCase):
                 "scrapers.api.client.requests.post",
                 return_value=response,
             ),
-            patch("builtins.print") as print_output,
+            patch("scrapers.api.client.LOGGER.warning") as warning,
         ):
             jobs = scraper.fetch_ats_jobs(
                 self._company("workday"),
@@ -675,7 +675,7 @@ class FetchAtsJobsTests(unittest.TestCase):
             )
 
         self.assertEqual(jobs, [])
-        self.assertIn("403", str(print_output.call_args))
+        self.assertIn("403", str(warning.call_args))
 
     def test_greenhouse_eu_reuses_greenhouse_mapping(self) -> None:
         """Keep the EU ATS name as a true alias of Greenhouse rules."""
@@ -795,17 +795,21 @@ class CompanyConfigurationTests(unittest.TestCase):
         )
         self.assertEqual(company["job_selector"], "a[href*='/job/']")
 
-    def test_elbit_uses_browser_recruitment_page(self) -> None:
-        """Keep Elbit on its JS-rendered recruitment search page."""
+    def test_elbit_uses_first_party_json_feed(self) -> None:
+        """Route Elbit through its custom API adapter, not DOM scraping.
+
+        The recruitment page is a Next.js shell whose job list never reaches
+        the DOM as anchors (confirmed live), so this is fetched directly.
+        """
 
         company = self.companies["elbit_systems"]
         self.assertEqual(company["ats_type"], "custom")
-        self.assertEqual(company["fetch_strategy"], "browser")
+        self.assertEqual(company["fetch_strategy"], "api")
         self.assertEqual(
             company["api_url"],
-            "https://elbitsystemscareer.com/Recruitment-Page/",
+            "https://elbitsystemscareer.com/cron/jobs.json",
         )
-        self.assertEqual(company["job_selector"], "a[href*='/job']")
+        self.assertNotIn("job_selector", company)
 
     def test_synopsys_uses_async_result_anchor(self) -> None:
         """Wait for actual job anchors without relying on a stale class."""
@@ -1223,6 +1227,7 @@ class ScraperAdapterTests(unittest.TestCase):
                         ),
                     },
                     data_parser_fn=custom_adapters._google_job_parser,
+                    write_diagnostics=True,
                 ),
                 call(
                     company={
@@ -1233,6 +1238,7 @@ class ScraperAdapterTests(unittest.TestCase):
                         ),
                     },
                     data_parser_fn=custom_adapters._google_job_parser,
+                    write_diagnostics=False,
                 ),
                 call(
                     company={
@@ -1243,6 +1249,7 @@ class ScraperAdapterTests(unittest.TestCase):
                         ),
                     },
                     data_parser_fn=custom_adapters._google_job_parser,
+                    write_diagnostics=False,
                 ),
                 call(
                     company={
@@ -1253,6 +1260,7 @@ class ScraperAdapterTests(unittest.TestCase):
                         ),
                     },
                     data_parser_fn=custom_adapters._google_job_parser,
+                    write_diagnostics=False,
                 ),
             ],
         )
@@ -1484,6 +1492,123 @@ class ScraperAdapterTests(unittest.TestCase):
             patch.dict(
                 scraper.CUSTOM_API_ADAPTERS,
                 {"iai": adapter},
+            ),
+            patch("builtins.print"),
+        ):
+            jobs = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(jobs, expected_jobs)
+        adapter.assert_called_once_with(company)
+
+    def test_elbit_normalizes_first_party_json_feed(self) -> None:
+        """Extract Elbit's cron/jobs.json feed into the shared job schema."""
+
+        response = MagicMock()
+        response.json.return_value = [
+            {
+                "jobId": 20839,
+                "jobTitle": "Electronics Development Engineer",
+                "area": "Shfela",
+                "description": (
+                    "&lt;div&gt;Design multidisciplinary systems.&lt;/div&gt;"
+                    "&lt;div&gt;&lt;br&gt;&lt;/div&gt;"
+                ),
+            },
+            "ignore non-object entries",
+            {"jobId": 1, "area": "North"},  # missing title, skipped
+            {"jobTitle": "No id", "area": "Center"},  # missing id, skipped
+            {"jobId": 2, "jobTitle": "No area listed", "area": None},
+        ]
+        company = {
+            "company_id": "elbit_systems",
+            "company_name": "Elbit Systems",
+            "ats_type": "custom",
+            "fetch_strategy": "api",
+            "api_url": "https://elbitsystemscareer.com/cron/jobs.json",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=response,
+        ) as get:
+            jobs = custom_adapters.scrape_elbit(company)
+
+        response.raise_for_status.assert_called_once_with()
+        self.assertEqual(get.call_args.args[0], company["api_url"])
+        self.assertEqual(get.call_args.kwargs["timeout"], 15)
+        self.assertIn("User-Agent", get.call_args.kwargs["headers"])
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "elbit_systems_20839",
+                    "title": "Electronics Development Engineer",
+                    "location": "Shfela",
+                    "url": (
+                        "https://elbitsystemscareer.com/Recruitment-Page/"
+                        "?jobId=20839"
+                    ),
+                    "content": "Design multidisciplinary systems.",
+                },
+                {
+                    "id": "elbit_systems_2",
+                    "title": "No area listed",
+                    "location": "",
+                    "url": (
+                        "https://elbitsystemscareer.com/Recruitment-Page/"
+                        "?jobId=2"
+                    ),
+                    "content": "",
+                },
+            ],
+        )
+
+    def test_elbit_requires_api_url(self) -> None:
+        """Fail closed instead of guessing an endpoint."""
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+        ) as get:
+            jobs = custom_adapters.scrape_elbit({"company_id": "elbit_systems"})
+
+        get.assert_not_called()
+        self.assertEqual(jobs, [])
+
+    def test_elbit_rejects_non_list_payload(self) -> None:
+        """Tolerate an unexpected feed shape without raising."""
+
+        response = MagicMock()
+        response.json.return_value = {"unexpected": "shape"}
+        company = {
+            "company_id": "elbit_systems",
+            "api_url": "https://elbitsystemscareer.com/cron/jobs.json",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=response,
+        ):
+            jobs = custom_adapters.scrape_elbit(company)
+
+        self.assertEqual(jobs, [])
+
+    def test_elbit_custom_api_routes_to_registered_adapter(self) -> None:
+        """Dispatch Elbit's custom API instead of the browser fallback."""
+
+        company = {
+            "company_id": "elbit_systems",
+            "company_name": "Elbit Systems",
+            "ats_type": "custom",
+            "fetch_strategy": "api",
+            "api_url": "https://elbitsystemscareer.com/cron/jobs.json",
+        }
+        expected_jobs = [{"id": "elbit_systems_20839"}]
+        adapter = MagicMock(return_value=expected_jobs)
+
+        with (
+            patch.dict(
+                scraper.CUSTOM_API_ADAPTERS,
+                {"elbit_systems": adapter},
             ),
             patch("builtins.print"),
         ):
@@ -1751,10 +1876,7 @@ class ScraperAdapterTests(unittest.TestCase):
     def test_unknown_ats_emits_logging_warning(self) -> None:
         """Make unsupported ATS types visible through standard logging."""
 
-        with (
-            patch("scrapers.orchestrator.logging.warning") as warning,
-            patch("builtins.print"),
-        ):
+        with patch("scrapers.orchestrator.LOGGER.warning") as warning:
             jobs = scraper.fetch_jobs_from_company(
                 self._company("unsupported")
             )
