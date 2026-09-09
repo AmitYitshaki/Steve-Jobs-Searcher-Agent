@@ -36,9 +36,15 @@ class AutonomousScheduler:
     # scrape is force-terminated when its timeout elapses, so the scheduler
     # never blocks forever. A Python thread could detect the hang but could not
     # be terminated the same way, which is why a subprocess is used here.
+    # Sized from measured throughput: a 55-company scan took ~423s wall
+    # clock (~7.7s/company, dominated by browser adapters at ~13s each).
+    # The producer budget covers a ~200-company catalogue plus LLM analysis
+    # with headroom. This is a watchdog, not a scan budget: it bounds a
+    # totally hung phase, so it must stay well above a healthy run's length.
+    # Keep in sync with pipeline.E2ERunner.SCRIPT_TIMEOUTS.
     PHASE_TIMEOUTS_SECONDS = {
-        "scrapers.orchestrator": 900,
-        "notifications.dispatcher": 300,
+        "scrapers.orchestrator": 3600,
+        "notifications.dispatcher": 600,
     }
     TIMEOUT_EXIT_CODE = 124
     LAUNCH_FAILURE_EXIT_CODE = 127
@@ -65,12 +71,14 @@ class AutonomousScheduler:
                 phase_name="Producer scraping phase",
             )
             if producer_code != 0:
+                # Delivery is deliberately NOT skipped. The queue is durable
+                # and can still hold alerts analyzed in an earlier cycle; a
+                # failed scrape must not strand work that is ready to send.
                 LOGGER.warning(
-                    "Producer phase exited with code %s; skipping alert "
-                    "delivery for this cycle.",
+                    "Producer phase exited with code %s; still delivering "
+                    "any alerts already queued.",
                     producer_code,
                 )
-                return
 
             consumer_code = self._run_phase(
                 module_name="notifications.dispatcher",
@@ -87,6 +95,16 @@ class AutonomousScheduler:
             LOGGER.exception(
                 "Scheduled job-search cycle failed; the scheduler will "
                 "continue running."
+            )
+            return
+
+        if producer_code != 0:
+            # The consumer ran and may have delivered queued work, but the
+            # scan itself did not complete. Never report that as a clean cycle.
+            LOGGER.warning(
+                "Scheduled cycle finished with a failed producer "
+                "(code %s); alert delivery still ran.",
+                producer_code,
             )
             return
 

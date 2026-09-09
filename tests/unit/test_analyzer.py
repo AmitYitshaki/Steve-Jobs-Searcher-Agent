@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import os
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
-
-from analysis.ai.analyzer import (  # noqa: E402
+# No OPENAI_API_KEY is set here on purpose: importing the analyzer must not
+# construct a client or require credentials.
+from analysis.ai.analyzer import (
     analyze_job,
     build_job_analysis_prompt,
     load_file,
@@ -87,13 +86,12 @@ class JobAnalysisPromptTests(unittest.TestCase):
                 "analysis.ai.analyzer.load_file",
                 return_value="context",
             ),
-            patch(
-                "analysis.ai.analyzer.client.chat.completions.create",
-                return_value=response,
-            ) as create,
+            patch("analysis.ai.analyzer.get_client") as get_client,
             patch("analysis.ai.analyzer.log_cost", return_value=0.0),
             patch("builtins.print"),
         ):
+            create = get_client.return_value.chat.completions.create
+            create.return_value = response
             result = analyze_job(
                 job_title="Student Data Analyst",
                 job_location="Jerusalem, Israel",
@@ -105,6 +103,18 @@ class JobAnalysisPromptTests(unittest.TestCase):
         self.assertIn("Student Data Analyst", user_message)
         self.assertIn("NO FULL JOB DESCRIPTION WAS AVAILABLE", user_message)
 
+
+    def test_importing_the_analyzer_does_not_build_a_client(self) -> None:
+        """Keep AI initialization out of import time.
+
+        Config and routing tooling imports ``scrapers.orchestrator``, which
+        transitively imports this module. Building a client at import time
+        made a credential-free import impossible.
+        """
+
+        import analysis.ai.analyzer as analyzer_module
+
+        self.assertIsNone(analyzer_module._client)
 
     def test_load_file_falls_back_when_missing(self) -> None:
         """Return the fallback and warn instead of raising on a missing file."""
@@ -141,13 +151,12 @@ class JobAnalysisPromptTests(unittest.TestCase):
                 "analysis.ai.analyzer.PROMPTS_DIR",
                 Path("/nonexistent/prompts"),
             ),
-            patch(
-                "analysis.ai.analyzer.client.chat.completions.create",
-                return_value=response,
-            ) as create,
+            patch("analysis.ai.analyzer.get_client") as get_client,
             patch("analysis.ai.analyzer.log_cost", return_value=0.0),
             patch("builtins.print"),
         ):
+            create = get_client.return_value.chat.completions.create
+            create.return_value = response
             result = analyze_job(
                 job_title="Student Software Engineer",
                 job_location="Haifa, Israel",

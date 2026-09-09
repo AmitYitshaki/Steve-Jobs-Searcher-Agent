@@ -735,6 +735,31 @@ class CompanyRoutingValidationTests(unittest.TestCase):
 
         self.assertEqual(scraper.validate_company_routing(companies), [])
 
+    def test_shared_custom_api_adapter_by_ats_type_is_routable(self) -> None:
+        """Recognize ATS types served by one shared custom API adapter.
+
+        ``fetch_jobs_from_company`` routes these through
+        ``CUSTOM_API_ADAPTERS_BY_ATS_TYPE``; validation that does not know
+        that registry reports healthy companies as unroutable every run.
+        """
+
+        companies = [
+            {
+                "company_id": "oracle",
+                "ats_type": "oracle_recruiting_cloud",
+                "fetch_strategy": "api",
+                "is_active": True,
+            },
+            {
+                "company_id": "akamai",
+                "ats_type": "oracle_recruiting_cloud",
+                "fetch_strategy": "api",
+                "is_active": True,
+            },
+        ]
+
+        self.assertEqual(scraper.validate_company_routing(companies), [])
+
     def test_bad_active_config_returns_company_id(self) -> None:
         """Report active configs that have no available fetch route."""
 

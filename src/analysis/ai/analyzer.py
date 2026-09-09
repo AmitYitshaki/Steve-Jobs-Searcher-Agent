@@ -11,7 +11,21 @@ LOGGER = logging.getLogger(__name__)
 
 # טעינת מפתח ה-API מקובץ .env
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# The client is built on first use, not at import time. Importing this
+# module (directly, or transitively via scrapers.orchestrator) must not
+# require an API key or open a client, so routing/config tooling can reuse
+# orchestrator logic without dragging in AI initialization.
+_client: OpenAI | None = None
+
+
+def get_client() -> OpenAI:
+    """Return the process-wide OpenAI client, creating it on first use."""
+
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
 
 COSTS_FILE = DATA_DIR / "costs_log.json"
 
@@ -186,7 +200,7 @@ def analyze_job(
     )
 
     # 4. קריאה ל-API
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},

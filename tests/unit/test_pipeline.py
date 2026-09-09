@@ -13,6 +13,9 @@ from unittest.mock import MagicMock, call, patch
 import pipeline
 from pipeline import E2ERunner
 
+PRODUCER_TIMEOUT = E2ERunner.SCRIPT_TIMEOUTS["scrapers.orchestrator"]
+CONSUMER_TIMEOUT = E2ERunner.SCRIPT_TIMEOUTS["notifications.dispatcher"]
+
 
 class E2ERunnerTests(unittest.TestCase):
     """Verify orchestration without changing WARP or running live scripts."""
@@ -146,7 +149,7 @@ class E2ERunnerTests(unittest.TestCase):
             self._completed(["warp-cli", "disconnect"]),
             subprocess.TimeoutExpired(
                 cmd=[sys.executable, "-m", "scrapers.orchestrator"],
-                timeout=900,
+                timeout=PRODUCER_TIMEOUT,
             ),
             self._completed(["warp-cli", "connect"]),
             self._completed(
@@ -164,7 +167,7 @@ class E2ERunnerTests(unittest.TestCase):
         self.logger.error.assert_any_call(
             "⏱️ %s timed out after %s seconds.",
             "scrapers.orchestrator",
-            900,
+            PRODUCER_TIMEOUT,
         )
 
     def test_subprocess_crash_reconnects_warp_in_finally(self) -> None:
@@ -264,7 +267,7 @@ class E2ERunnerTests(unittest.TestCase):
             call(
                 [sys.executable, "-m", "scrapers.orchestrator"],
                 cwd=self.project_root,
-                timeout=900,
+                timeout=PRODUCER_TIMEOUT,
             ),
             call(
                 ["warp-cli", "connect"],
@@ -274,7 +277,7 @@ class E2ERunnerTests(unittest.TestCase):
             call(
                 [sys.executable, "-m", "notifications.dispatcher"],
                 cwd=self.project_root,
-                timeout=300,
+                timeout=CONSUMER_TIMEOUT,
             ),
         ]
 

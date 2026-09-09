@@ -9,6 +9,10 @@ from unittest.mock import MagicMock
 
 from scheduler import AutonomousScheduler, ScheduleModule
 
+PRODUCER_TIMEOUT = AutonomousScheduler.PHASE_TIMEOUTS_SECONDS[
+    "scrapers.orchestrator"
+]
+
 
 def _completed(returncode: int) -> "subprocess.CompletedProcess[bytes]":
     """Build a minimal completed-process stub for the injected runner."""
@@ -49,8 +53,13 @@ class AutonomousSchedulerTests(unittest.TestCase):
             ["scrapers.orchestrator", "notifications.dispatcher"],
         )
 
-    def test_run_cycle_skips_consumer_when_producer_fails(self) -> None:
-        """Never deliver alerts when the producer phase exits non-zero."""
+    def test_run_cycle_still_delivers_when_producer_fails(self) -> None:
+        """Deliver already-queued alerts even when the scrape phase fails.
+
+        The queue is durable and can hold alerts analyzed in an earlier
+        cycle. Gating delivery on a fresh successful scrape stranded that
+        work until the next healthy cycle.
+        """
 
         self.command_runner.return_value = _completed(1)
 
@@ -58,7 +67,7 @@ class AutonomousSchedulerTests(unittest.TestCase):
 
         self.assertEqual(
             self._launched_modules(),
-            ["scrapers.orchestrator"],
+            ["scrapers.orchestrator", "notifications.dispatcher"],
         )
 
     def test_run_cycle_survives_producer_timeout(self) -> None:
@@ -66,16 +75,16 @@ class AutonomousSchedulerTests(unittest.TestCase):
 
         self.command_runner.side_effect = subprocess.TimeoutExpired(
             cmd="scrapers.orchestrator",
-            timeout=900,
+            timeout=PRODUCER_TIMEOUT,
         )
 
-        # Must not raise; a timeout is treated as a failed producer, so the
-        # consumer is never launched for this cycle.
+        # Must not raise. A timed-out producer is a failed producer, but
+        # delivery of previously queued alerts still runs.
         self.scheduler.run_cycle()
 
         self.assertEqual(
             self._launched_modules(),
-            ["scrapers.orchestrator"],
+            ["scrapers.orchestrator", "notifications.dispatcher"],
         )
 
     def test_run_cycle_uses_current_interpreter_and_timeout(self) -> None:
@@ -88,7 +97,7 @@ class AutonomousSchedulerTests(unittest.TestCase):
             producer_call.args[0],
             [sys.executable, "-m", "scrapers.orchestrator"],
         )
-        self.assertEqual(producer_call.kwargs["timeout"], 900)
+        self.assertEqual(producer_call.kwargs["timeout"], PRODUCER_TIMEOUT)
 
     def test_serve_forever_runs_immediately_and_schedules_eight_hours(
         self,

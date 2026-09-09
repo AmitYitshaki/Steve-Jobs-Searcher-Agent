@@ -99,7 +99,11 @@ WEAK_ENTRY_LEVEL_KEYWORDS = [
     "entry-level", "new grad", "new graduate", "new college grad",
     "college graduate", "recent graduate", "graduate", "graduate position",
     "graduate program", "early career", "early careers",
-    "early in profession", "trainee"
+    "early in profession", "trainee",
+    # "grad" is not a prefix of "graduate" under whole-phrase matching, so
+    # "Software Engineer, University Grad" matched nothing before these.
+    # Safe as weak signals: they still require a target-role match to pass.
+    "grad", "university grad", "university graduate", "college grad",
 ]
 
 TARGET_ROLE_KEYWORDS = [
@@ -170,15 +174,48 @@ def _first_matching_keyword(
     )
 
 
+def _matching_keywords(title: str, keywords: list[str]) -> list[str]:
+    """Return every complete keyword phrase found in ``title``."""
+
+    return [
+        keyword for keyword in keywords if contains_phrase(title, keyword)
+    ]
+
+
+def _blocking_exclusions(title: str, role_keyword: str | None) -> list[str]:
+    """Return exclusions that are not merely part of a target role name.
+
+    ``EXCLUDE_KEYWORDS`` holds seniority and out-of-scope function words, but
+    some of them appear inside role names we explicitly target: "manager" is a
+    substring of "product manager intern", which ``TARGET_ROLE_KEYWORDS`` lists
+    verbatim. Excluding on such a word contradicts our own target list, so an
+    exclusion contained in the matched role phrase is discarded. Any exclusion
+    outside that phrase ("senior", "sales") still blocks the title.
+    """
+
+    exclusions = _matching_keywords(title, EXCLUDE_KEYWORDS)
+    if role_keyword is None:
+        return exclusions
+    return [
+        keyword
+        for keyword in exclusions
+        if not contains_phrase(role_keyword, keyword)
+    ]
+
+
 def is_relevant_job(title: str) -> TitleDecision:
     """Evaluate title relevance while preserving strong-signal recall."""
 
-    excluded_keyword = _first_matching_keyword(title, EXCLUDE_KEYWORDS)
-    if excluded_keyword is not None:
+    role_keyword = _first_matching_keyword(
+        title,
+        TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS,
+    )
+    blocking_exclusions = _blocking_exclusions(title, role_keyword)
+    if blocking_exclusions:
         return TitleDecision(
             allowed=False,
             reason="excluded title keyword",
-            matched_keyword=excluded_keyword,
+            matched_keyword=blocking_exclusions[0],
         )
 
     strong_keyword = _first_matching_keyword(
@@ -195,10 +232,6 @@ def is_relevant_job(title: str) -> TitleDecision:
     weak_keyword = _first_matching_keyword(
         title,
         WEAK_ENTRY_LEVEL_KEYWORDS,
-    )
-    role_keyword = _first_matching_keyword(
-        title,
-        TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS,
     )
     if weak_keyword is not None and role_keyword is not None:
         return TitleDecision(
@@ -249,11 +282,19 @@ def validate_company_routing(companies: list[dict]) -> list[str]:
             and company.get("fetch_strategy") == "api"
             and company_id in CUSTOM_API_ADAPTERS
         )
+        # Mirrors the ats_type-keyed branch in fetch_jobs_from_company. Without
+        # it, every ATS served by a shared custom adapter (oracle_recruiting_
+        # cloud today) is reported unroutable on every run despite routing fine.
+        has_custom_api_route_by_ats_type = (
+            company.get("fetch_strategy") == "api"
+            and ats_type in CUSTOM_API_ADAPTERS_BY_ATS_TYPE
+        )
         has_route = (
             ats_type in ATS_FIELD_MAP
             or ats_type in directly_routed_ats_types
             or company.get("fetch_strategy") == "browser"
             or has_custom_api_route
+            or has_custom_api_route_by_ats_type
         )
         if not has_route:
             unroutable_company_ids.append(company_id)

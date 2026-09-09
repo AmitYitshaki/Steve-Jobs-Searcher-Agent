@@ -124,6 +124,69 @@ class ScraperProducerTests(unittest.TestCase):
             with self.subTest(title=title):
                 self.assertFalse(scraper.is_relevant_job(title).allowed)
 
+    def test_target_role_survives_an_exclusion_inside_its_own_name(
+        self,
+    ) -> None:
+        """Accept product roles this config explicitly targets.
+
+        ``TARGET_ROLE_KEYWORDS`` lists these phrases verbatim, but "manager"
+        sits in ``EXCLUDE_KEYWORDS``, so the filter used to contradict its own
+        target list and reject every one of them.
+        """
+
+        cases = (
+            ("Product Manager Intern", "intern"),
+            ("Student Product Manager", "student"),
+            ("Technical Product Manager Intern", "intern"),
+        )
+
+        for title, expected_keyword in cases:
+            with self.subTest(title=title):
+                decision = scraper.is_relevant_job(title)
+                self.assertTrue(decision.allowed)
+                self.assertEqual(
+                    decision.reason,
+                    "strong entry-level signal",
+                )
+                self.assertEqual(decision.matched_keyword, expected_keyword)
+
+    def test_exclusion_outside_the_role_name_still_rejects(self) -> None:
+        """Only exclusions contained in a matched role name are forgiven."""
+
+        cases = (
+            # "manager" with no target role around it.
+            ("Engineering Manager", "manager"),
+            ("Product Manager", "manager"),
+            # Seniority sits outside the role phrase.
+            ("Senior Product Manager", "senior"),
+            # A second, unrelated exclusion must still block the title.
+            ("Product Manager Intern, Sales", "sales"),
+        )
+
+        for title, expected_keyword in cases:
+            with self.subTest(title=title):
+                decision = scraper.is_relevant_job(title)
+                self.assertFalse(decision.allowed)
+                self.assertEqual(decision.reason, "excluded title keyword")
+                self.assertEqual(decision.matched_keyword, expected_keyword)
+
+    def test_abbreviated_grad_titles_are_recognized(self) -> None:
+        """Match "Grad" phrasings that are not prefixes of "graduate"."""
+
+        cases = (
+            "Software Engineer, University Grad",
+            "Data Analyst Grad Program",
+        )
+
+        for title in cases:
+            with self.subTest(title=title):
+                decision = scraper.is_relevant_job(title)
+                self.assertTrue(decision.allowed)
+                self.assertEqual(
+                    decision.reason,
+                    "weak entry-level and target-role signals",
+                )
+
     def test_non_relevant_title_returns_structured_reason(self) -> None:
         """Explain why an otherwise valid title did not qualify."""
 

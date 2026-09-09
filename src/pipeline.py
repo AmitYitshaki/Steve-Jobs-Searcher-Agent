@@ -32,9 +32,14 @@ class E2ERunner:
         DATA_DIR.relative_to(PROJECT_ROOT) / "pending_alerts.json",
     )
     WARP_TIMEOUT_SECONDS = 30
+    # Sized from measured throughput: a 55-company scan took ~423s wall
+    # clock (~7.7s/company, dominated by browser adapters at ~13s each).
+    # The producer budget covers a ~200-company catalogue plus LLM analysis
+    # with headroom; the 8-hour cycle leaves no contention for a long run.
+    # Keep in sync with scheduler.AutonomousScheduler.PHASE_TIMEOUTS_SECONDS.
     SCRIPT_TIMEOUTS = {
-        "scrapers.orchestrator": 900,
-        "notifications.dispatcher": 300,
+        "scrapers.orchestrator": 3600,
+        "notifications.dispatcher": 600,
     }
 
     def __init__(
