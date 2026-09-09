@@ -2705,5 +2705,66 @@
       "Israel"
     ],
     "notes": "Custom Hebrew careers page with a purpose-built job-card class; verified live (10 clean jobs incl. DevOps and QA automation roles)."
+  },
+  {
+    "company_id": "exodigo",
+    "company_name": "Exodigo",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/exodigo/89.005",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found via web search during the earlier URL-discovery pass; verified live via scrape_comeet (53 jobs)."
+  },
+  {
+    "company_id": "ironscales",
+    "company_name": "IRONSCALES",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/ironscales/1A.007",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet (14 jobs)."
+  },
+  {
+    "company_id": "voyantis",
+    "company_name": "Voyantis",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/voyantis/86.00B",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet (8 jobs)."
+  },
+  {
+    "company_id": "lightrun",
+    "company_name": "Lightrun",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.lightrun.com/careers",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet WordPress-plugin DOM variant (.comeet-position elements) rendered directly on the company own page, no separate board URL needed; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "skai",
+    "company_name": "Skai",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.skai.io/careers",
+    "job_selector": ".job-card",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job-card class; verified live (5 clean jobs, mostly US-based)."
   }
 ]
