@@ -2536,5 +2536,50 @@
       "Israel"
     ],
     "notes": "Greenhouse token found via web search; verified live via direct request (354 jobs)."
+  },
+  {
+    "company_id": "mitiga",
+    "company_name": "Mitiga",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/mitiga/26.00B",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "zscaler",
+    "company_name": "Zscaler",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/zscaler/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Greenhouse token found via web search; verified live (363 jobs)."
+  },
+  {
+    "company_id": "liveperson",
+    "company_name": "LivePerson",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/liveperson/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Greenhouse token found via web search; verified live (17 jobs)."
+  },
+  {
+    "company_id": "bmc_software",
+    "company_name": "BMC Software",
+    "is_active": true,
+    "ats_type": "workday",
+    "api_url": "https://bmc.wd1.myworkdayjobs.com/wday/cxs/bmc/BMC/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workday tenant/site found via web search; verified live (860 jobs worldwide, 0 in Israel currently -- a genuine result, not a wrong endpoint)."
   }
 ]
