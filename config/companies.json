@@ -2252,5 +2252,96 @@
       "Israel"
     ],
     "notes": "Eightfold-hosted careers site on the company's own careers.teva subdomain; verified live via scrape_eightfold."
+  },
+  {
+    "company_id": "ceva",
+    "company_name": "Ceva",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.ceva-ip.com/career/location/israel/",
+    "job_selector": ".item.read-more-click",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom WordPress careers page; job_selector isolates real job cards from nav/menu links, verified live (19 clean jobs incl. a student role)."
+  },
+  {
+    "company_id": "yotpo",
+    "company_name": "Yotpo",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.yotpo.com/careers/",
+    "job_selector": ".yotpo-careers__job-card",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job-card class; verified live (16 clean jobs incl. a junior role)."
+  },
+  {
+    "company_id": "kaltura",
+    "company_name": "Kaltura",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://corp.kaltura.com/company/careers/",
+    "job_selector": ".b-new-careers-lobby__job",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job-card class; verified live (24 clean jobs)."
+  },
+  {
+    "company_id": "weka",
+    "company_name": "WEKA",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.weka.io/careers/",
+    "job_selector": ".mrkto-job",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom Marketo-backed careers page; job_selector isolates real job entries from nav; verified live (46 clean jobs)."
+  },
+  {
+    "company_id": "hibob",
+    "company_name": "HiBob",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.hibob.com/careers/",
+    "job_selector": ".hibob-careers__job",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Not a real Comeet integration despite coincidental CSS class names; own purpose-built job-card class works cleanly, verified live (68 jobs)."
+  },
+  {
+    "company_id": "lusha",
+    "company_name": "Lusha",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.lusha.com/careers/",
+    "job_selector": ".careers-position",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job class; verified live (7 clean jobs)."
+  },
+  {
+    "company_id": "siemens",
+    "company_name": "Siemens",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://jobs.sw.siemens.com/jobs/",
+    "job_selector": ".job-listing",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; verified live (10 clean jobs incl. a student program). Listing may be paginated -- only the first page is currently captured."
   }
 ]

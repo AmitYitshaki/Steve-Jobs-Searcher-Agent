@@ -1,0 +1,446 @@
+[
+  {
+    "company_name": "Siemens",
+    "careers_url": "https://jobs.sw.siemens.com/jobs/"
+  },
+  {
+    "company_name": "WEKA",
+    "careers_url": "https://www.weka.io/careers/"
+  },
+  {
+    "company_name": "DriveNets",
+    "careers_url": "https://drivenets.com/careers/"
+  },
+  {
+    "company_name": "Yotpo",
+    "careers_url": "https://www.yotpo.com/careers/"
+  },
+  {
+    "company_name": "Gilat",
+    "careers_url": "https://www.gilat.com/career/"
+  },
+  {
+    "company_name": "Lusha",
+    "careers_url": "https://www.lusha.com/careers/"
+  },
+  {
+    "company_name": "HiBob",
+    "careers_url": "https://www.hibob.com/careers/"
+  },
+  {
+    "company_name": "Datarails",
+    "careers_url": "https://www.datarails.com/careers/"
+  },
+  {
+    "company_name": "Kaltura",
+    "careers_url": "https://corp.kaltura.com/company/careers/"
+  },
+  {
+    "company_name": "Pentera",
+    "careers_url": "https://pentera.io/careers/"
+  },
+  {
+    "company_name": "Valens",
+    "careers_url": "https://www.valens.com/positions/"
+  },
+  {
+    "company_name": "Ceva",
+    "careers_url": "https://www.ceva-ip.com/career/location/israel/"
+  },
+  {
+    "company_name": "Island",
+    "careers_url": "https://www.island.io/careers"
+  },
+  {
+    "company_name": "Radware",
+    "careers_url": "https://www.radware.com/careers/"
+  },
+  {
+    "company_name": "SolarEdge",
+    "careers_url": "https://corporate.solaredge.com/en/careers/open-positions"
+  },
+  {
+    "company_name": "Playtika",
+    "careers_url": "https://www.playtika.com/careers/"
+  },
+  {
+    "company_name": "Plarium",
+    "careers_url": "https://company.plarium.com/en/career/"
+  },
+  {
+    "company_name": "Axonius",
+    "careers_url": "https://www.axonius.com/company/careers/open-jobs"
+  },
+  {
+    "company_name": "ZoomInfo",
+    "careers_url": "https://www.zoominfo.com/about/careers"
+  },
+  {
+    "company_name": "Nayax",
+    "careers_url": "https://www.nayax.com/careers/"
+  },
+  {
+    "company_name": "Verbit",
+    "careers_url": "https://verbit.ai/careers/"
+  },
+  {
+    "company_name": "Bizzabo",
+    "careers_url": "https://www.bizzabo.com/careers"
+  },
+  {
+    "company_name": "Deel",
+    "careers_url": "https://www.deel.com/careers/"
+  },
+  {
+    "company_name": "Papaya Global",
+    "careers_url": "https://www.papayaglobal.com/careers/"
+  },
+  {
+    "company_name": "WalkMe",
+    "careers_url": "https://www.walkme.com/careers/careers_list/"
+  },
+  {
+    "company_name": "Guesty",
+    "careers_url": "https://www.guesty.com/careers/"
+  },
+  {
+    "company_name": "TytoCare",
+    "careers_url": "https://www.tytocare.com/careers/"
+  },
+  {
+    "company_name": "Connecteam",
+    "careers_url": "https://connecteam.com/careers/"
+  },
+  {
+    "company_name": "MyHeritage",
+    "careers_url": "https://careers.myheritage.com/"
+  },
+  {
+    "company_name": "Deep Instinct",
+    "careers_url": "https://www.deepinstinct.com/careers"
+  },
+  {
+    "company_name": "Apiiro",
+    "careers_url": "https://www.apiiro.com/careers"
+  },
+  {
+    "company_name": "Astrix",
+    "careers_url": "https://www.astrix.security/careers"
+  },
+  {
+    "company_name": "Reco",
+    "careers_url": "https://www.reco.ai/careers"
+  },
+  {
+    "company_name": "Legit Security",
+    "careers_url": "https://www.legitsecurity.com/careers"
+  },
+  {
+    "company_name": "ThetaRay",
+    "careers_url": "https://www.thetaray.com/careers"
+  },
+  {
+    "company_name": "Hailo",
+    "careers_url": "https://www.hailo.ai/careers"
+  },
+  {
+    "company_name": "Tabnine",
+    "careers_url": "https://www.tabnine.com/careers"
+  },
+  {
+    "company_name": "Alpha Tau Medical",
+    "careers_url": "https://www.alphatau.com/careers"
+  },
+  {
+    "company_name": "General Motors",
+    "careers_url": "https://www.gm.com/careers"
+  },
+  {
+    "company_name": "Johnson & Johnson",
+    "careers_url": "https://www.jnj.com/careers"
+  },
+  {
+    "company_name": "GE HealthCare",
+    "careers_url": "https://www.gehealthcare.com"
+  },
+  {
+    "company_name": "Unity",
+    "careers_url": "https://www.unity.com/careers"
+  },
+  {
+    "company_name": "Datadog",
+    "careers_url": "https://www.datadoghq.com/careers"
+  },
+  {
+    "company_name": "Fortinet",
+    "careers_url": "https://www.fortinet.com"
+  },
+  {
+    "company_name": "Elastic",
+    "careers_url": "https://www.elastic.co/careers"
+  },
+  {
+    "company_name": "Zscaler",
+    "careers_url": "https://www.zscaler.com/careers"
+  },
+  {
+    "company_name": "UVision",
+    "careers_url": "https://www.uvisionuav.com/careers"
+  },
+  {
+    "company_name": "XTEND",
+    "careers_url": "https://www.xtend.me/careers"
+  },
+  {
+    "company_name": "Ness",
+    "careers_url": "https://www.ness-tech.co.il/joinus"
+  },
+  {
+    "company_name": "Priority Software",
+    "careers_url": "https://www.priority-software.com/careers"
+  },
+  {
+    "company_name": "LivePerson",
+    "careers_url": "https://www.liveperson.com/careers"
+  },
+  {
+    "company_name": "Nexxen",
+    "careers_url": "https://www.nexxen.com/careers"
+  },
+  {
+    "company_name": "BMC Software",
+    "careers_url": "https://www.bmc.com/careers"
+  },
+  {
+    "company_name": "Mitiga",
+    "careers_url": "https://www.mitiga.io/careers"
+  },
+  {
+    "company_name": "Noma Security",
+    "careers_url": "https://www.noma.security/careers"
+  },
+  {
+    "company_name": "Alice",
+    "careers_url": "https://www.alice.tech/careers"
+  },
+  {
+    "company_name": "SQream",
+    "careers_url": "https://www.sqream.com/careers"
+  },
+  {
+    "company_name": "Glassbox",
+    "careers_url": "https://www.glassbox.com/careers"
+  },
+  {
+    "company_name": "Quantum Machines",
+    "careers_url": "https://www.quantum-machines.co/careers"
+  },
+  {
+    "company_name": "Qodo",
+    "careers_url": "https://www.qodo.ai/careers"
+  },
+  {
+    "company_name": "Fundbox",
+    "careers_url": "https://www.fundbox.com/careers"
+  },
+  {
+    "company_name": "Mesh Payments",
+    "careers_url": "https://www.meshpayments.com/careers"
+  },
+  {
+    "company_name": "ONE ZERO",
+    "careers_url": "https://www.onezerobank.com/careers"
+  },
+  {
+    "company_name": "Plus500",
+    "careers_url": "https://www.plus500.com/careers"
+  },
+  {
+    "company_name": "PayEm",
+    "careers_url": "https://www.payem.com/careers"
+  },
+  {
+    "company_name": "HARMAN",
+    "careers_url": "https://www.harman.com"
+  },
+  {
+    "company_name": "Eitan Medical",
+    "careers_url": "https://www.eitanmedical.com/careers"
+  },
+  {
+    "company_name": "Arpeely",
+    "careers_url": "https://www.arpeely.com/about/careers"
+  },
+  {
+    "company_name": "Immunai",
+    "careers_url": "https://www.immunai.com/careers"
+  },
+  {
+    "company_name": "Navina",
+    "careers_url": "https://www.navina.io"
+  },
+  {
+    "company_name": "Medison",
+    "careers_url": "https://www.medison.co"
+  },
+  {
+    "company_name": "Aman",
+    "careers_url": "https://www.aman.co.il/careers"
+  },
+  {
+    "company_name": "Sela",
+    "careers_url": "https://www.sela.co.il"
+  },
+  {
+    "company_name": "Cloudinary",
+    "careers_url": "https://www.cloudinary.com/careers"
+  },
+  {
+    "company_name": "Duda",
+    "careers_url": "https://www.duda.co/careers"
+  },
+  {
+    "company_name": "BigPanda",
+    "careers_url": "https://www.bigpanda.io/careers"
+  },
+  {
+    "company_name": "Pecan AI",
+    "careers_url": "https://www.pecan.ai/careers"
+  },
+  {
+    "company_name": "Incredibuild",
+    "careers_url": "https://www.incredibuild.com/careers"
+  },
+  {
+    "company_name": "Skai",
+    "careers_url": "https://www.skai.io/careers"
+  },
+  {
+    "company_name": "Upstream Security",
+    "careers_url": "https://www.upstream.auto/careers"
+  },
+  {
+    "company_name": "Exodigo",
+    "careers_url": "https://www.exodigo.com/careers"
+  },
+  {
+    "company_name": "Valence Security",
+    "careers_url": "https://www.valencesecurity.com/careers"
+  },
+  {
+    "company_name": "Lightrun",
+    "careers_url": "https://www.lightrun.com/careers"
+  },
+  {
+    "company_name": "Komodor",
+    "careers_url": "https://www.komodor.com/careers"
+  },
+  {
+    "company_name": "env zero",
+    "careers_url": "https://www.envzero.com/careers"
+  },
+  {
+    "company_name": "Firefly",
+    "careers_url": "https://www.fireflyai.com"
+  },
+  {
+    "company_name": "IRONSCALES",
+    "careers_url": "https://www.ironscales.com/careers"
+  },
+  {
+    "company_name": "Voyantis",
+    "careers_url": "https://www.voyantis.ai/careers"
+  },
+  {
+    "company_name": "Sunbit",
+    "careers_url": "https://www.sunbit.com/careers"
+  },
+  {
+    "company_name": "SysAid",
+    "careers_url": "https://www.sysaid.com/careers"
+  },
+  {
+    "company_name": "DealHub.io",
+    "careers_url": "https://www.dealhub.io/careers"
+  },
+  {
+    "company_name": "Chargeflow",
+    "careers_url": "https://www.chargeflow.io/careers"
+  },
+  {
+    "company_name": "Beach Bum",
+    "careers_url": "https://www.beachbum.co/careers"
+  },
+  {
+    "company_name": "Bright Data",
+    "careers_url": "https://www.brightdata.com/careers"
+  },
+  {
+    "company_name": "Adnimation",
+    "careers_url": "https://www.adnimation.com/careers"
+  },
+  {
+    "company_name": "Intent IQ",
+    "careers_url": "https://www.intentiq.com/careers"
+  },
+  {
+    "company_name": "IBEX Medical Analytics",
+    "careers_url": "https://www.ibeximaging.com"
+  },
+  {
+    "company_name": "Credo Technology Group",
+    "careers_url": "https://www.credosemi.com/careers"
+  },
+  {
+    "company_name": "Intuitive Surgical",
+    "careers_url": "https://www.intuitive.com/careers"
+  },
+  {
+    "company_name": "ZOLL Medical",
+    "careers_url": "https://www.zoll.com/careers"
+  },
+  {
+    "company_name": "Augury",
+    "careers_url": "https://www.augury.com/careers"
+  },
+  {
+    "company_name": "Utron",
+    "careers_url": "https://utron.com/careers/"
+  },
+  {
+    "company_name": "Align Technology",
+    "careers_url": "https://www.aligntech.com/careers"
+  },
+  {
+    "company_name": "Edwards Lifesciences",
+    "careers_url": "https://www.edwards.com/careers"
+  },
+  {
+    "company_name": "Autobrains",
+    "careers_url": "https://www.autobrains.ai"
+  },
+  {
+    "company_name": "Renesas Electronics",
+    "careers_url": "https://www.renesas.com/careers"
+  },
+  {
+    "company_name": "ASML",
+    "careers_url": "https://www.asml.com/careers"
+  },
+  {
+    "company_name": "Fives Intralogistics",
+    "careers_url": "https://jobs.fivesgroup.com/en/"
+  },
+  {
+    "company_name": "IDE Technologies",
+    "careers_url": "https://ide-tech.com/en/join-us/"
+  },
+  {
+    "company_name": "ForSight Robotics",
+    "careers_url": "https://forsightrobotics.com/careers"
+  },
+  {
+    "company_name": "X-trodes",
+    "careers_url": "https://xtrodes.applytojob.com/apply"
+  }
+]
