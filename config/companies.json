@@ -2343,5 +2343,69 @@
       "Israel"
     ],
     "notes": "Custom careers page; verified live (10 clean jobs incl. a student program). Listing may be paginated -- only the first page is currently captured."
+  },
+  {
+    "company_id": "plarium",
+    "company_name": "Plarium",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://company.plarium.com/en/career/",
+    "job_selector": ".VacancyRow-module__SiaY1G__position",
+    "location_filters": [
+      "Israel",
+      "Herzliya"
+    ],
+    "notes": "Custom Next.js careers page; job_selector uses a CSS-module hashed classname (may break on redeploy), verified live (11 clean jobs incl. Herzliya roles)."
+  },
+  {
+    "company_id": "verbit",
+    "company_name": "Verbit",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://verbit.ai/careers/",
+    "job_selector": ".job-card",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job-card class; verified live (3 clean jobs)."
+  },
+  {
+    "company_id": "island",
+    "company_name": "Island",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.island.io/careers",
+    "job_selector": ".job-item",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom Webflow careers page; verified live (45 clean jobs, mostly US-based)."
+  },
+  {
+    "company_id": "solaredge",
+    "company_name": "SolarEdge Technologies",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/solaredge/71.00A",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Direct Comeet board URL surfaced in the original discovery roster but not re-tested by the sniffing pass; verified live via scrape_comeet (104 jobs incl. Herzliya roles)."
+  },
+  {
+    "company_id": "bizzabo",
+    "company_name": "Bizzabo",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/bizzabo/A5.000",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly linked from the company careers page; verified live via scrape_comeet."
   }
 ]
