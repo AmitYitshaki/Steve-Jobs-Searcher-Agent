@@ -2457,5 +2457,84 @@
       "Israel"
     ],
     "notes": "Custom careers page; job_selector uses a CSS-module hashed classname (may break on redeploy), verified live (10 clean jobs)."
+  },
+  {
+    "company_id": "thetaray",
+    "company_name": "ThetaRay",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/thetaray/72.00F",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found via rendered-page inspection (plain HTTP was WAF-blocked); verified live via scrape_comeet."
+  },
+  {
+    "company_id": "hailo",
+    "company_name": "Hailo",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/hailo/D5.007",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found via web search; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "johnson_and_johnson",
+    "company_name": "Johnson & Johnson",
+    "is_active": true,
+    "ats_type": "workday",
+    "api_url": "https://jj.wd5.myworkdayjobs.com/wday/cxs/jj/JJ/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workday tenant/site found via web search (own page was WAF-blocked to a plain fetch); verified live via direct request."
+  },
+  {
+    "company_id": "general_motors",
+    "company_name": "General Motors",
+    "is_active": true,
+    "ats_type": "workday",
+    "api_url": "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workday tenant/site found via web search (own page was WAF-blocked, even via a real browser); verified live via direct request."
+  },
+  {
+    "company_id": "ge_healthcare",
+    "company_name": "GE HealthCare",
+    "is_active": true,
+    "ats_type": "workday",
+    "api_url": "https://gehc.wd5.myworkdayjobs.com/wday/cxs/gehc/GEHC_ExternalSite/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workday tenant/site found via web search; verified live via direct request."
+  },
+  {
+    "company_id": "datadog",
+    "company_name": "Datadog",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/datadog/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Greenhouse token found via web search (own page returned near-empty content to a plain fetch); verified live via direct request."
+  },
+  {
+    "company_id": "elastic",
+    "company_name": "Elastic",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/elastic/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Greenhouse token found via web search; verified live via direct request (354 jobs)."
   }
 ]
