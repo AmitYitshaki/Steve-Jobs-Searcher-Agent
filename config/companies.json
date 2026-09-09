@@ -2656,5 +2656,54 @@
       "Israel"
     ],
     "notes": "Custom careers page with a purpose-built job-offers-card class; verified live (9 clean jobs)."
+  },
+  {
+    "company_id": "immunai",
+    "company_name": "Immunai",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/immunai/37.009",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet (16 jobs)."
+  },
+  {
+    "company_id": "incredibuild",
+    "company_name": "Incredibuild",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/incredibuild/66.00F",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "duda",
+    "company_name": "Duda",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.duda.co/careers",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; the default universal-extraction heuristic already isolates clean job links with no job_selector needed, verified live (9 real jobs)."
+  },
+  {
+    "company_id": "aman",
+    "company_name": "Aman",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.aman.co.il/careers",
+    "job_selector": ".aman-job-card",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom Hebrew careers page with a purpose-built job-card class; verified live (10 clean jobs incl. DevOps and QA automation roles)."
   }
 ]
