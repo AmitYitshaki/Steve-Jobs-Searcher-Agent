@@ -2766,5 +2766,52 @@
       "Israel"
     ],
     "notes": "Custom careers page with a purpose-built job-card class; verified live (5 clean jobs, mostly US-based)."
+  },
+  {
+    "company_id": "sysaid",
+    "company_name": "SysAid",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/sysaid/43.00A",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet, incl. Tel Aviv roles."
+  },
+  {
+    "company_id": "intuitive_surgical",
+    "company_name": "Intuitive Surgical",
+    "is_active": true,
+    "ats_type": "smartrecruiters",
+    "api_url": "https://api.smartrecruiters.com/v1/companies/Intuitive/postings",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "SmartRecruiters token found directly on the company careers page; verified live (100 postings)."
+  },
+  {
+    "company_id": "zoll_medical",
+    "company_name": "ZOLL Medical",
+    "is_active": true,
+    "ats_type": "workday",
+    "api_url": "https://zoll.wd5.myworkdayjobs.com/wday/cxs/zoll/ZOLLMedicalCorp/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workday tenant/site found via web search after a false-positive myworkdayjobs.com match on the company own page turned out to be an unrelated third-party domain listed in a cookie-consent widget; verified live via direct request."
+  },
+  {
+    "company_id": "dealhub",
+    "company_name": "DealHub.io",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.dealhub.io/careers",
+    "job_selector": ".career-item",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job class (renders both mobile and desktop lists, dedup handles the overlap); verified live (real job titles incl. some department headers mixed in, which the title filter downstream discards)."
   }
 ]
