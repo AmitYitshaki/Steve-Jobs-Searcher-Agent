@@ -144,11 +144,11 @@
   {
     "company_name": "WEKA",
     "careers_url": "https://www.weka.io/careers/",
-    "detected_ats": "comeet",
-    "evidence": "page source contains 'comeet-groups-list'",
+    "detected_ats": "custom",
+    "evidence": "RETRACTED: initially matched on comeet-groups-list/comeet-g-r CSS classnames only; re-verified directly and found no comeetvar/comeet_token/COMEET.init/comeet.co host reference anywhere on the page. Likely a leftover class name from a past integration or a coincidental match. Needs manual investigation.",
     "http_status": 200,
     "error": null,
-    "method": "static_html_or_url",
+    "method": "reclassified_after_manual_reverification",
     "candidate_endpoints": []
   },
   {
@@ -431,11 +431,11 @@
   {
     "company_name": "HiBob",
     "careers_url": "https://www.hibob.com/careers/",
-    "detected_ats": "comeet",
-    "evidence": "page source contains 'comeet-groups-list'",
+    "detected_ats": "custom",
+    "evidence": "RETRACTED: initially matched on comeet-groups-list/comeet-g-r CSS classnames only; re-verified directly and found no comeetvar/comeet_token/COMEET.init/comeet.co host reference anywhere on the page. Likely a leftover class name from a past integration or a coincidental match. Needs manual investigation.",
     "http_status": 200,
     "error": null,
-    "method": "static_html_or_url",
+    "method": "reclassified_after_manual_reverification",
     "candidate_endpoints": []
   },
   {
@@ -2439,11 +2439,11 @@
   {
     "company_name": "Medison",
     "careers_url": "https://www.medison.co",
-    "detected_ats": "comeet",
-    "evidence": "page source contains 'comeet-groups-list'",
+    "detected_ats": "custom",
+    "evidence": "RETRACTED: initially matched on comeet-groups-list/comeet-g-r CSS classnames only; re-verified directly and found no comeetvar/comeet_token/COMEET.init/comeet.co host reference anywhere on the page. Likely a leftover class name from a past integration or a coincidental match. Needs manual investigation.",
     "http_status": 200,
     "error": null,
-    "method": "static_html_or_url",
+    "method": "reclassified_after_manual_reverification",
     "candidate_endpoints": []
   },
   {
@@ -2671,11 +2671,11 @@
   {
     "company_name": "Skai",
     "careers_url": "https://www.skai.io/careers",
-    "detected_ats": "comeet",
-    "evidence": "page source contains 'comeet-groups-list'",
+    "detected_ats": "custom",
+    "evidence": "RETRACTED: initially matched on comeet-groups-list/comeet-g-r CSS classnames only; re-verified directly and found no comeetvar/comeet_token/COMEET.init/comeet.co host reference anywhere on the page. Likely a leftover class name from a past integration or a coincidental match. Needs manual investigation.",
     "http_status": 200,
     "error": null,
-    "method": "static_html_or_url",
+    "method": "reclassified_after_manual_reverification",
     "candidate_endpoints": []
   },
   {
@@ -2741,11 +2741,11 @@
   {
     "company_name": "Lightrun",
     "careers_url": "https://www.lightrun.com/careers",
-    "detected_ats": "comeet",
-    "evidence": "page source contains 'comeet-groups-list'",
+    "detected_ats": "custom",
+    "evidence": "RETRACTED: initially matched on comeet-groups-list/comeet-g-r CSS classnames only; re-verified directly and found no comeetvar/comeet_token/COMEET.init/comeet.co host reference anywhere on the page. Likely a leftover class name from a past integration or a coincidental match. Needs manual investigation.",
     "http_status": 200,
     "error": null,
-    "method": "static_html_or_url",
+    "method": "reclassified_after_manual_reverification",
     "candidate_endpoints": []
   },
   {

@@ -1,12 +1,15 @@
 import hashlib
 import html
+import json
 import logging
+import re
 import requests
 from typing import Any, Mapping
 from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from models.results import ScrapeStatus
+from scrapers.api.client import normalize_job_content
 from scrapers.artifacts import extract_sample_titles, write_company_artifacts
 from scrapers.browser.playwright_driver import (
     CompanyConfig,
@@ -40,6 +43,13 @@ THALES_REQUEST_HEADERS = {
     **IAI_REQUEST_HEADERS,
     "Accept": "application/json",
     "Content-Type": "application/json",
+}
+# Comeet boards and embeds return HTML, not JSON; requesting
+# Accept: application/json (IAI_REQUEST_HEADERS' default) gets a 406 from
+# Comeet's edge.
+COMEET_REQUEST_HEADERS = {
+    **IAI_REQUEST_HEADERS,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
 
@@ -766,6 +776,310 @@ def scrape_amdocs(
         screenshot_bytes=None,
         notes={
             "status": "failed" if fetch_error else (
+                "success" if jobs else "no_jobs"
+            ),
+            "message": fetch_error,
+            "job_count": len(jobs),
+            "sample_titles": extract_sample_titles(jobs),
+        },
+    )
+    return jobs
+
+
+_COMEET_POSITIONS_DATA_PATTERN = re.compile(
+    r"COMPANY_POSITIONS_DATA\s*=\s*(\[.*?\])\s*;", re.S
+)
+_COMEET_INIT_CONFIG_PATTERN = re.compile(
+    r"COMEET\.init\(\s*\{(.*?)\}\s*\)", re.S
+)
+_COMEET_JOB_UID_IN_URL_PATTERN = re.compile(r"/([0-9A-Za-z]{1,3}\.[0-9A-Za-z]{2,5})(?:/|$)")
+
+
+def _comeet_positions_from_html(html_text: str) -> list[Mapping[str, Any]] | None:
+    """Parse Comeet's inline ``COMPANY_POSITIONS_DATA`` array, when present.
+
+    Every genuinely Comeet-hosted board (``comeet.com/jobs/<name>/<uid>``)
+    renders this JS array directly into the page on first load -- a plain
+    GET returns it, no browser or separate API call required. Returns
+    ``None`` (not an empty list) when the marker is absent, so callers can
+    distinguish "this response uses a different Comeet embed shape" from
+    "this board genuinely has zero open positions."
+    """
+
+    match = _COMEET_POSITIONS_DATA_PATTERN.search(html_text)
+    if match is None:
+        return None
+    try:
+        data = json.loads(match.group(1))
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(data, list):
+        return None
+    return [item for item in data if isinstance(item, Mapping)]
+
+
+def _comeet_board_url_candidates(
+    html_text: str,
+    configured_url: str,
+) -> list[str]:
+    """Derive candidate direct Comeet board URLs from a widget's own config.
+
+    Some companies embed Comeet as a JS widget (``COMEET.init({...})``) on
+    their own careers page instead of hosting directly on comeet.com. The
+    widget config names its own ``company-uid`` and a ``company-name`` --
+    the exact two path segments Comeet's own board URLs use -- but the
+    slug Comeet actually assigned is not always a plain lowercase/hyphenate
+    of that display name (confirmed live: Moon Active's real slug is
+    "moonactive", not "moon-active", which instead 302-redirects to
+    Comeet's homepage). Neither candidate here is invented: one comes from
+    the widget's own declared name, the other from the same domain the
+    company already configured as its careers page. Both are real
+    identifiers the company itself asserts; the caller fetches and
+    validates each in turn, and a name mismatch degrades to no candidate
+    working rather than ever trusting an unconfirmed response.
+    """
+
+    match = _COMEET_INIT_CONFIG_PATTERN.search(html_text)
+    if match is None:
+        return []
+    config_text = match.group(1)
+    uid_match = re.search(r'"company-uid"\s*:\s*"([^"]+)"', config_text)
+    if uid_match is None:
+        return []
+    company_uid = uid_match.group(1).strip()
+    if not company_uid:
+        return []
+
+    slug_candidates: list[str] = []
+    name_match = re.search(r'"company-name"\s*:\s*"([^"]+)"', config_text)
+    if name_match is not None:
+        name_slug = name_match.group(1).strip().casefold().replace(" ", "-")
+        if name_slug:
+            slug_candidates.append(name_slug)
+    domain_host = urlsplit(configured_url).netloc.casefold()
+    domain_slug = re.sub(r"^www\.", "", domain_host).split(".")[0]
+    if domain_slug and domain_slug not in slug_candidates:
+        slug_candidates.append(domain_slug)
+
+    return [
+        "https://www.comeet.com/jobs/"
+        f"{quote(slug, safe='-')}/{quote(company_uid, safe='.')}"
+        for slug in slug_candidates
+    ]
+
+
+def _comeet_job_from_position_data(
+    item: Mapping[str, Any],
+    company_id: str,
+) -> dict[str, str] | None:
+    """Normalize one ``COMPANY_POSITIONS_DATA`` entry into a shared record."""
+
+    raw_uid = item.get("uid")
+    title = str(item.get("name") or "").strip()
+    if not raw_uid or not title:
+        return None
+    job_uid = str(raw_uid).strip()
+    if not job_uid:
+        return None
+
+    location_value = item.get("location")
+    location = (
+        _join_distinct_text(
+            location_value.get("city"),
+            location_value.get("state"),
+            location_value.get("name"),
+        )
+        if isinstance(location_value, Mapping)
+        else ""
+    )
+
+    job_url = str(
+        item.get("url_active_page") or item.get("url_comeet_hosted_page") or ""
+    ).strip()
+
+    content_parts: list[Any] = []
+    custom_fields = item.get("custom_fields")
+    if isinstance(custom_fields, Mapping):
+        details = custom_fields.get("details")
+        if isinstance(details, list):
+            content_parts.extend(
+                detail.get("value")
+                for detail in details
+                if isinstance(detail, Mapping)
+            )
+    content = normalize_job_content(*content_parts)
+
+    return {
+        "id": f"{company_id}_{job_uid}",
+        "title": title,
+        "location": location,
+        "url": job_url,
+        "content": content,
+    }
+
+
+def _comeet_jobs_from_dom(
+    html_text: str,
+    base_url: str,
+    company_id: str,
+) -> list[dict[str, str]]:
+    """Extract jobs from Comeet's WordPress-plugin embed as a last resort.
+
+    This shape server-renders ``.comeet-position`` elements directly into
+    the page instead of exposing ``COMPANY_POSITIONS_DATA``, so there is no
+    structured location or description field to read -- only what is
+    visible in the listing itself, matching the DOM-fallback shape used
+    elsewhere in this module when no richer API response is available.
+    """
+
+    soup = BeautifulSoup(html_text, "lxml")
+    jobs: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+
+    for element in soup.select(".comeet-position"):
+        link = element.select_one("a[href]")
+        title_element = element.select_one(".comeet-position-name")
+        if link is None or title_element is None:
+            continue
+        title = title_element.get_text(strip=True)
+        href = str(link.get("href", "")).strip()
+        if not title or not href:
+            continue
+
+        full_url = urljoin(base_url, href)
+        if full_url in seen_urls:
+            continue
+        seen_urls.add(full_url)
+
+        meta_element = element.select_one(".comeet-position-meta")
+        location = (
+            meta_element.get_text(" ", strip=True) if meta_element else ""
+        )
+        uid_match = _COMEET_JOB_UID_IN_URL_PATTERN.search(full_url)
+        job_id = (
+            uid_match.group(1)
+            if uid_match is not None
+            else hashlib.sha256(full_url.encode("utf-8")).hexdigest()[:16]
+        )
+        jobs.append(
+            {
+                "id": f"{company_id}_{job_id}",
+                "title": title,
+                "location": location,
+                "url": full_url,
+                "content": "",
+            }
+        )
+
+    return jobs
+
+
+def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
+    """Fetch and normalize jobs from any of Comeet's three embed shapes.
+
+    Comeet integrations found across the catalogue take one of three
+    concrete shapes, tried here in order of data richness:
+
+    1. A direct Comeet-hosted board (``api_url`` already points at
+       ``comeet.com/jobs/<name>/<uid>``) renders every open position into
+       an inline ``COMPANY_POSITIONS_DATA`` JS array on first load -- one
+       plain GET, no browser needed.
+    2. A company's own careers page embeds Comeet as a JS widget
+       (``COMEET.init({...})``). That config names the exact board from
+       shape 1, so it is derived and fetched next.
+    3. A company's own careers page uses Comeet's WordPress plugin, which
+       server-renders ``.comeet-position`` elements with no separate data
+       call; those are DOM-scraped as a last resort (job description is
+       not available without a per-job follow-up this adapter does not
+       perform, same limitation as other DOM-only extraction in this
+       module).
+
+    A single ``ats_type: comeet`` adapter serves every company regardless
+    of which shape it uses -- ``api_url`` is the only per-company input.
+    """
+
+    company_id = str(company.get("company_id", "")).strip()
+    api_url = str(company.get("api_url", "")).strip()
+    if not company_id or not api_url:
+        LOGGER.error("Comeet adapter requires an api_url")
+        return []
+
+    response_text: str | None = None
+    fetch_error = ""
+    try:
+        response = requests.get(
+            api_url,
+            headers=COMEET_REQUEST_HEADERS,
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
+        response_text = response.text
+        response.raise_for_status()
+    except requests.RequestException as error:
+        LOGGER.error("Comeet request failed for %s: %s", company_id, error)
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=response_text,
+            primary_extension="html",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": f"{type(error).__name__}: {error}",
+                "job_count": 0,
+                "sample_titles": [],
+            },
+        )
+        return []
+
+    positions = _comeet_positions_from_html(response_text)
+
+    if positions is None:
+        for board_url in _comeet_board_url_candidates(response_text, api_url):
+            if board_url == api_url:
+                continue
+            try:
+                board_response = requests.get(
+                    board_url,
+                    headers=COMEET_REQUEST_HEADERS,
+                    timeout=HTTP_TIMEOUT_SECONDS,
+                )
+                board_response.raise_for_status()
+            except requests.RequestException as error:
+                LOGGER.warning(
+                    "Comeet derived board request failed for %s (%s): %s",
+                    company_id,
+                    board_url,
+                    error,
+                )
+                fetch_error = f"derived board request failed: {error}"
+                continue
+            # A wrong slug 302s to Comeet's own homepage rather than a 4xx,
+            # so only a response that actually contains position data counts
+            # as a confirmed candidate; anything else moves on to the next.
+            candidate_positions = _comeet_positions_from_html(board_response.text)
+            if candidate_positions is not None:
+                positions = candidate_positions
+                fetch_error = ""
+                break
+
+    if positions is not None:
+        jobs = [
+            job
+            for item in positions
+            if (job := _comeet_job_from_position_data(item, company_id))
+            is not None
+        ]
+    else:
+        jobs = _comeet_jobs_from_dom(response_text, api_url, company_id)
+
+    write_company_artifacts(
+        company_id,
+        source="api",
+        primary_content=response_text,
+        primary_extension="html",
+        screenshot_bytes=None,
+        notes={
+            "status": "failed" if (fetch_error and not jobs) else (
                 "success" if jobs else "no_jobs"
             ),
             "message": fetch_error,

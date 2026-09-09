@@ -24,7 +24,15 @@ TIMEOUT_SECONDS = 15
 
 # (ats_name, [signature substrings to search for, case-insensitive])
 SIGNATURES: list[tuple[str, list[str]]] = [
-    ("comeet", ["comeet.co/careers-api", "comeet-jsapi", "comeet.init", "comeet-groups-list", "comeet-g-r"]),
+    # "comeet-groups-list"/"comeet-g-r" deliberately excluded: verified false
+    # positives on live sites (WEKA, HiBob, Medison, Skai, Lightrun) where
+    # those CSS classnames were leftover/coincidental with zero functioning
+    # Comeet integration -- no comeetvar, comeet_token, or comeet.co/.com
+    # reference anywhere on the page. Require a marker Comeet itself emits.
+    ("comeet", [
+        "comeet.co/careers-api", "comeet-jsapi", "comeet.init",
+        "comeetvar", "comeet_token", "comeet-wp-plugin",
+    ]),
     ("greenhouse", ["boards.greenhouse.io", "job-boards.greenhouse.io", "greenhouse.io/embed", "grnhse_iframe"]),
     ("lever", ["jobs.lever.co", "lever-jobs-embed"]),
     ("ashby", ["jobs.ashbyhq.com", "ashby_embed", "ashbyhq.com/embed"]),

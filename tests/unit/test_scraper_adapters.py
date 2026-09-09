@@ -2213,5 +2213,229 @@ class ScraperAdapterTests(unittest.TestCase):
         }
 
 
+class ComeetAdapterTests(unittest.TestCase):
+    """Verify the generalized Comeet adapter across its three embed shapes."""
+
+    def test_direct_board_parses_embedded_positions_data(self) -> None:
+        """Extract jobs from a board's inline COMPANY_POSITIONS_DATA array."""
+
+        html_response = MagicMock()
+        html_response.text = """
+        <html><script>
+        window.COMPANY_POSITIONS_DATA = [{
+            "name": "Student Software Engineer",
+            "uid": "34.C6F",
+            "location": {"city": "Ramat-Gan", "state": "Tel Aviv District", "name": "Israel"},
+            "url_active_page": "https://wsc-sports.com/career/student-swe/",
+            "url_comeet_hosted_page": "https://www.comeet.com/jobs/wsc-sports/93.007/x/34.C6F",
+            "custom_fields": {"details": [{"name": "Description", "value": "<p>Build things.</p>"}]}
+        }];
+        </script></html>
+        """
+        company = {
+            "company_id": "wsc_sports",
+            "api_url": "https://www.comeet.com/jobs/wsc-sports/93.007",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=html_response,
+        ) as get:
+            jobs = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(get.call_args.args[0], company["api_url"])
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "wsc_sports_34.C6F",
+                    "title": "Student Software Engineer",
+                    "location": "Ramat-Gan | Tel Aviv District | Israel",
+                    "url": "https://wsc-sports.com/career/student-swe/",
+                    "content": "Build things.",
+                }
+            ],
+        )
+
+    def test_js_widget_embed_derives_and_fetches_direct_board(self) -> None:
+        """Follow a COMEET.init widget's own company-name/uid to the board."""
+
+        widget_response = MagicMock()
+        widget_response.text = """
+        <script>
+        COMEET.init({"token": "X", "company-uid": "C0.008", "company-name": "Checkmarx"});
+        </script>
+        """
+        board_response = MagicMock()
+        board_response.text = """
+        window.COMPANY_POSITIONS_DATA = [{
+            "name": "AppSec Engineer", "uid": "78.66E",
+            "location": {"city": "Tel Aviv", "name": "Israel"},
+            "url_active_page": "https://checkmarx.com/jobs/78.66E",
+            "custom_fields": {}
+        }];
+        """
+        company = {"company_id": "checkmarx", "api_url": "https://checkmarx.com/company/careers/"}
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[widget_response, board_response],
+        ) as get:
+            jobs = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual(get.call_count, 2)
+        self.assertEqual(
+            get.call_args_list[1].args[0],
+            "https://www.comeet.com/jobs/checkmarx/C0.008",
+        )
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "checkmarx_78.66E",
+                    "title": "AppSec Engineer",
+                    "location": "Tel Aviv | Israel",
+                    "url": "https://checkmarx.com/jobs/78.66E",
+                    "content": "",
+                }
+            ],
+        )
+
+    def test_widget_falls_back_to_domain_slug_when_name_slug_has_no_data(
+        self,
+    ) -> None:
+        """Try a domain-derived slug when the display-name slug is wrong.
+
+        Confirmed live: Moon Active's widget declares "company-name":
+        "Moon Active", but the real Comeet slug is "moonactive" -- the
+        naive "moon-active" slug 302-redirects to Comeet's own homepage
+        (a 200 with no position data), not an error.
+        """
+
+        widget_response = MagicMock()
+        widget_response.text = """
+        <script>
+        COMEET.init({"token": "X", "company-uid": "A2.00C", "company-name": "Moon Active"});
+        </script>
+        """
+        wrong_slug_response = MagicMock()
+        wrong_slug_response.text = "<html>Comeet homepage, no position data here</html>"
+        right_slug_response = MagicMock()
+        right_slug_response.text = """
+        window.COMPANY_POSITIONS_DATA = [{
+            "name": "Game Designer", "uid": "11.111",
+            "location": {"name": "Israel"}, "url_active_page": "https://moonactive.com/jobs/11",
+            "custom_fields": {}
+        }];
+        """
+        company = {"company_id": "moon_active", "api_url": "https://www.moonactive.com/careers/"}
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[widget_response, wrong_slug_response, right_slug_response],
+        ) as get:
+            jobs = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual(get.call_count, 3)
+        self.assertEqual(
+            get.call_args_list[1].args[0],
+            "https://www.comeet.com/jobs/moon-active/A2.00C",
+        )
+        self.assertEqual(
+            get.call_args_list[2].args[0],
+            "https://www.comeet.com/jobs/moonactive/A2.00C",
+        )
+        self.assertEqual(jobs[0]["id"], "moon_active_11.111")
+
+    def test_wordpress_plugin_dom_fallback_when_no_widget_or_data(self) -> None:
+        """DOM-scrape server-rendered positions from Comeet's WP plugin.
+
+        This embed shape (confirmed live on ChargeAfter) exposes neither
+        COMPANY_POSITIONS_DATA nor a COMEET.init widget -- positions are
+        rendered directly as .comeet-position elements with no separate
+        structured location or description field.
+        """
+
+        html_response = MagicMock()
+        html_response.text = """
+        <html><body>
+        <div class="comeet-position">
+            <a href="/careers/co/remote/41.B6E/customer-success">
+                <div class="comeet-position-name">Customer Success Manager</div>
+                <div class="comeet-position-meta">Remote | Full-time</div>
+            </a>
+        </div>
+        </body></html>
+        """
+        company = {"company_id": "chargeafter", "api_url": "https://chargeafter.com/careers/"}
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=html_response,
+        ):
+            jobs = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "chargeafter_41.B6E",
+                    "title": "Customer Success Manager",
+                    "location": "Remote | Full-time",
+                    "url": "https://chargeafter.com/careers/co/remote/41.B6E/customer-success",
+                    "content": "",
+                }
+            ],
+        )
+
+    def test_position_missing_uid_or_title_is_skipped(self) -> None:
+        """Drop malformed entries instead of producing an empty-id record."""
+
+        html_response = MagicMock()
+        html_response.text = """
+        window.COMPANY_POSITIONS_DATA = [
+            {"name": "Valid Role", "uid": "11.111", "location": {}, "custom_fields": {}},
+            {"name": "", "uid": "22.222"},
+            {"uid": "33.333"},
+            {"name": "No UID Role"}
+        ];
+        """
+        company = {"company_id": "example", "api_url": "https://www.comeet.com/jobs/example/1"}
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=html_response,
+        ):
+            jobs = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual([job["id"] for job in jobs], ["example_11.111"])
+
+    def test_request_failure_returns_empty_list(self) -> None:
+        """Fail closed instead of raising when the board is unreachable."""
+
+        company = {"company_id": "example", "api_url": "https://www.comeet.com/jobs/example/1"}
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=custom_adapters.requests.RequestException("boom"),
+        ):
+            jobs = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual(jobs, [])
+
+    def test_missing_company_id_or_api_url_returns_empty_list(self) -> None:
+        """Refuse to guess when required configuration is absent."""
+
+        with patch("scrapers.browser.custom_adapters.requests.get") as get:
+            self.assertEqual(
+                custom_adapters.scrape_comeet({"api_url": "https://x.test"}), []
+            )
+            self.assertEqual(
+                custom_adapters.scrape_comeet({"company_id": "x"}), []
+            )
+        get.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

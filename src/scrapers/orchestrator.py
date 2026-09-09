@@ -17,6 +17,7 @@ from scrapers.api.client import fetch_ats_jobs
 from scrapers.api.mappings import ATS_FIELD_MAP
 from scrapers.browser.custom_adapters import (
     scrape_amdocs,
+    scrape_comeet,
     scrape_eightfold,
     scrape_elbit,
     scrape_google,
@@ -69,6 +70,7 @@ CUSTOM_BROWSER_ADAPTERS: dict[str, CustomApiAdapter] = {
 # platform rather than one company_id at a time.
 CUSTOM_API_ADAPTERS_BY_ATS_TYPE: dict[str, CustomApiAdapter] = {
     "oracle_recruiting_cloud": scrape_oracle_rc,
+    "comeet": scrape_comeet,
 }
 
 
