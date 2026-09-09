@@ -2813,5 +2813,52 @@
       "Israel"
     ],
     "notes": "Custom careers page with a purpose-built job class (renders both mobile and desktop lists, dedup handles the overlap); verified live (real job titles incl. some department headers mixed in, which the title filter downstream discards)."
+  },
+  {
+    "company_id": "forsight_robotics",
+    "company_name": "ForSight Robotics",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/forsightrobotics/E9.008",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found via web search during the earlier URL-discovery pass; verified live via scrape_comeet (5 jobs incl. a junior role)."
+  },
+  {
+    "company_id": "autobrains",
+    "company_name": "Autobrains",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/autobrains/57.004",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "renesas",
+    "company_name": "Renesas Electronics",
+    "is_active": true,
+    "ats_type": "smartrecruiters",
+    "api_url": "https://api.smartrecruiters.com/v1/companies/RenesasElectronics/postings",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "SmartRecruiters token found directly on the company careers page (own-brand community link, verified not a third-party reference); verified live (100 postings)."
+  },
+  {
+    "company_id": "augury",
+    "company_name": "Augury",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.augury.com/careers",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; the default universal-extraction heuristic already isolates clean job links with no job_selector needed, verified live (18 real jobs incl. R&D and senior engineering roles)."
   }
 ]
