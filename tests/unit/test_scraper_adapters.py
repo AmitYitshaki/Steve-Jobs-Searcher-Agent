@@ -2389,6 +2389,48 @@ class ComeetAdapterTests(unittest.TestCase):
             ],
         )
 
+    def test_wordpress_plugin_dom_fallback_when_position_is_the_anchor(
+        self,
+    ) -> None:
+        """Handle the WP-plugin shape where .comeet-position is itself <a>.
+
+        Confirmed live on Nuvoton: unlike ChargeAfter's wrapper-div-around-
+        an-anchor markup, some renders of this plugin put the href directly
+        on the ".comeet-position" element. A version of this adapter that
+        only looked for a *nested* anchor silently returned zero jobs here
+        despite genuine, correctly-rendered position data being present.
+        """
+
+        html_response = MagicMock()
+        html_response.text = """
+        <html><body>
+        <a class="comeet-position" href="https://nuvoton.co.il/careers/co/ai-npu/3B.969/lead">
+            <div class="comeet-position-name">Lead AI Engineer</div>
+            <div class="comeet-position-meta">Nuvoton-Herzliya | Full-time</div>
+        </a>
+        </body></html>
+        """
+        company = {"company_id": "nuvoton", "api_url": "https://nuvoton.co.il/careers/"}
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=html_response,
+        ):
+            jobs = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "nuvoton_3B.969",
+                    "title": "Lead AI Engineer",
+                    "location": "Nuvoton-Herzliya | Full-time",
+                    "url": "https://nuvoton.co.il/careers/co/ai-npu/3B.969/lead",
+                    "content": "",
+                }
+            ],
+        )
+
     def test_position_missing_uid_or_title_is_skipped(self) -> None:
         """Drop malformed entries instead of producing an empty-id record."""
 

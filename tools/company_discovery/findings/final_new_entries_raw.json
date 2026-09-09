@@ -1,0 +1,472 @@
+[
+  {
+    "company_name": "NetApp",
+    "ats_type": "eightfold",
+    "api_url": "https://netapp.eightfold.ai/careers"
+  },
+  {
+    "company_name": "Astera Labs",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/asteralabs/jobs?content=true"
+  },
+  {
+    "company_name": "HPE",
+    "ats_type": "workday",
+    "api_url": "https://hpe.wd5.myworkdayjobs.com/wday/cxs/hpe/Jobsathpe/jobs"
+  },
+  {
+    "company_name": "F5",
+    "ats_type": "workday",
+    "api_url": "https://ffive.wd5.myworkdayjobs.com/wday/cxs/ffive/f5jobs/jobs"
+  },
+  {
+    "company_name": "Sandisk",
+    "ats_type": "smartrecruiters",
+    "api_url": "https://api.smartrecruiters.com/v1/companies/sandisk/postings"
+  },
+  {
+    "company_name": "Philips",
+    "ats_type": "workday",
+    "api_url": "https://philips.wd3.myworkdayjobs.com/wday/cxs/philips/jobs-and-careers/jobs"
+  },
+  {
+    "company_name": "Medtronic",
+    "ats_type": "workday",
+    "api_url": "https://medtronic.wd1.myworkdayjobs.com/wday/cxs/medtronic/MedtronicCareers/jobs"
+  },
+  {
+    "company_name": "Melio",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/melio/jobs?content=true"
+  },
+  {
+    "company_name": "Bringg",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/bringg/jobs?content=true"
+  },
+  {
+    "company_name": "Parallel Wireless",
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/parallelwireless?mode=json"
+  },
+  {
+    "company_name": "Tenable",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/tenableinc/jobs?content=true"
+  },
+  {
+    "company_name": "Perion",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/perionnetworkltd/jobs?content=true"
+  },
+  {
+    "company_name": "D-Fend",
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/d-fendsolutions?mode=json"
+  },
+  {
+    "company_name": "Pagaya",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/pagayais/jobs?content=true"
+  },
+  {
+    "company_name": "Torq",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/torq/jobs?content=true"
+  },
+  {
+    "company_name": "Red Hat",
+    "ats_type": "workday",
+    "api_url": "https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/jobs"
+  },
+  {
+    "company_name": "Semperis",
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/semperis"
+  },
+  {
+    "company_name": "K Health",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/khealthcareers/jobs?content=true"
+  },
+  {
+    "company_name": "Dynamic Yield",
+    "ats_type": "workday",
+    "api_url": "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"
+  },
+  {
+    "company_name": "Motorola Solutions",
+    "ats_type": "workday",
+    "api_url": "https://motorolasolutions.wd5.myworkdayjobs.com/wday/cxs/motorolasolutions/Careers/jobs"
+  },
+  {
+    "company_name": "Sisense",
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/sisense"
+  },
+  {
+    "company_name": "SciPlay",
+    "ats_type": "workday",
+    "api_url": "https://lnw.wd5.myworkdayjobs.com/wday/cxs/lnw/SciPlayExternalCareersSite/jobs"
+  },
+  {
+    "company_name": "Pinecone",
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/pinecone"
+  },
+  {
+    "company_name": "Abbott",
+    "ats_type": "workday",
+    "api_url": "https://abbott.wd5.myworkdayjobs.com/wday/cxs/abbott/abbottcareers/jobs"
+  },
+  {
+    "company_name": "Harmonic",
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/harmonic-ai"
+  },
+  {
+    "company_name": "Proofpoint",
+    "ats_type": "workday",
+    "api_url": "https://proofpoint.wd5.myworkdayjobs.com/wday/cxs/proofpoint/proofpointcareers/jobs"
+  },
+  {
+    "company_name": "PTC",
+    "ats_type": "workday",
+    "api_url": "https://ptc.wd1.myworkdayjobs.com/wday/cxs/ptc/PTC/jobs"
+  },
+  {
+    "company_name": "Descope",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/descope/jobs?content=true"
+  },
+  {
+    "company_name": "Singular",
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/singular"
+  },
+  {
+    "company_name": "Logz.io",
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/logz?mode=json"
+  },
+  {
+    "company_name": "Analog Devices",
+    "ats_type": "workday",
+    "api_url": "https://analogdevices.wd1.myworkdayjobs.com/wday/cxs/analogdevices/External/jobs"
+  },
+  {
+    "company_name": "NXP Semiconductors",
+    "ats_type": "workday",
+    "api_url": "https://nxp.wd3.myworkdayjobs.com/wday/cxs/nxp/careers/jobs"
+  },
+  {
+    "company_name": "Cybereason",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/cybereason/jobs?content=true"
+  },
+  {
+    "company_name": "Teads",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/teads1/jobs?content=true"
+  },
+  {
+    "company_name": "Cymulate",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/cymulate/jobs?content=true"
+  },
+  {
+    "company_name": "Bluevine",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/bluevineisrael/jobs?content=true"
+  },
+  {
+    "company_name": "Cloudflare",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs?content=true"
+  },
+  {
+    "company_name": "Guardz",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/guardz/jobs?content=true"
+  },
+  {
+    "company_name": "Lendbuzz",
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/lendbuzz?mode=json"
+  },
+  {
+    "company_name": "At-Bay",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/atbayjobs/jobs?content=true"
+  },
+  {
+    "company_name": "ScaleOps",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/scaleops/jobs?content=true"
+  },
+  {
+    "company_name": "Fireblocks",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/fireblocks/jobs?content=true"
+  },
+  {
+    "company_name": "Transmit Security",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/transmitsecurity/jobs?content=true"
+  },
+  {
+    "company_name": "SafeBreach",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/safebreach/jobs?content=true"
+  },
+  {
+    "company_name": "Novocure",
+    "ats_type": "successfactors",
+    "api_url": "https://careers.novocure.com/go/Israel/8193400/"
+  },
+  {
+    "company_name": "Insightec",
+    "ats_type": "comeet",
+    "api_url": "https://insightec.com/careers/"
+  },
+  {
+    "company_name": "Kissterra",
+    "ats_type": "comeet",
+    "api_url": "https://www.kissterra.com/careers"
+  },
+  {
+    "company_name": "Pulsenmore",
+    "ats_type": "comeet",
+    "api_url": "https://www.pulsenmore.com/careers"
+  },
+  {
+    "company_name": "Gauzy",
+    "ats_type": "comeet",
+    "api_url": "https://www.gauzy.com/careers"
+  },
+  {
+    "company_name": "Ceragon",
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/ceragon/d3.003"
+  },
+  {
+    "company_name": "Stampli",
+    "ats_type": "comeet",
+    "api_url": "https://www.stampli.com/careers"
+  },
+  {
+    "company_name": "REE Automotive",
+    "ats_type": "comeet",
+    "api_url": "https://ree.auto/careers/"
+  },
+  {
+    "company_name": "Orbit Communication Systems",
+    "ats_type": "comeet",
+    "api_url": "https://www.orbit-cs.com/careers"
+  },
+  {
+    "company_name": "Samsung Electronics",
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/samsung/D4.005"
+  },
+  {
+    "company_name": "Justt",
+    "ats_type": "comeet",
+    "api_url": "https://www.justt.ai/careers"
+  },
+  {
+    "company_name": "SMARTSHOOTER",
+    "ats_type": "comeet",
+    "api_url": "https://www.smart-shooter.com/careers"
+  },
+  {
+    "company_name": "Cognyte",
+    "ats_type": "comeet",
+    "api_url": "https://www.cognyte.com/careers/"
+  },
+  {
+    "company_name": "Tailor Brands",
+    "ats_type": "comeet",
+    "api_url": "https://www.tailorbrands.com/careers"
+  },
+  {
+    "company_name": "Nuvoton Technology",
+    "ats_type": "comeet",
+    "api_url": "https://nuvoton.co.il/careers/"
+  },
+  {
+    "company_name": "proteanTecs",
+    "ats_type": "comeet",
+    "api_url": "https://www.proteantecs.com/careers"
+  },
+  {
+    "company_name": "Magic Software",
+    "ats_type": "comeet",
+    "api_url": "https://www.magicsoftware.com/careers/"
+  },
+  {
+    "company_name": "Claroty",
+    "ats_type": "comeet",
+    "api_url": "https://claroty.com/open-positions"
+  },
+  {
+    "company_name": "Wiliot",
+    "ats_type": "comeet",
+    "api_url": "https://www.wiliot.com/careers"
+  },
+  {
+    "company_name": "Global-e",
+    "ats_type": "comeet",
+    "api_url": "https://www.global-e.com/careers/"
+  },
+  {
+    "company_name": "Foresight Automotive",
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/foresightauto/13.000/foresight-automotive/DA.63B"
+  },
+  {
+    "company_name": "Natural Intelligence",
+    "ats_type": "comeet",
+    "api_url": "https://www.naturalint.com/careers/"
+  },
+  {
+    "company_name": "Elementor",
+    "ats_type": "comeet",
+    "api_url": "https://elementor.careers/explore/"
+  },
+  {
+    "company_name": "Artlist",
+    "ats_type": "comeet",
+    "api_url": "https://www.artlistjobs.io/"
+  },
+  {
+    "company_name": "ChargeAfter",
+    "ats_type": "comeet",
+    "api_url": "https://chargeafter.com/careers/"
+  },
+  {
+    "company_name": "Zencity",
+    "ats_type": "comeet",
+    "api_url": "https://www.zencity.io/careers"
+  },
+  {
+    "company_name": "Sony Semiconductor Israel",
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/altair_semiconductor/88.003"
+  },
+  {
+    "company_name": "Checkmarx",
+    "ats_type": "comeet",
+    "api_url": "https://checkmarx.com/company/careers/"
+  },
+  {
+    "company_name": "RADCOM",
+    "ats_type": "comeet",
+    "api_url": "https://www.radcom.com/careers"
+  },
+  {
+    "company_name": "Rapyd",
+    "ats_type": "comeet",
+    "api_url": "https://www.rapyd.net/company/careers-search/"
+  },
+  {
+    "company_name": "TriEye",
+    "ats_type": "comeet",
+    "api_url": "https://trieye.tech/careers/"
+  },
+  {
+    "company_name": "Elmo Motion Control",
+    "ats_type": "comeet",
+    "api_url": "https://www.elmomc.com/careers"
+  },
+  {
+    "company_name": "Five Sigma",
+    "ats_type": "comeet",
+    "api_url": "https://fivesigmalabs.com/careers/"
+  },
+  {
+    "company_name": "Primis",
+    "ats_type": "comeet",
+    "api_url": "https://www.primis.tech/careers"
+  },
+  {
+    "company_name": "Cycode",
+    "ats_type": "comeet",
+    "api_url": "https://www.cycode.com/careers"
+  },
+  {
+    "company_name": "VAST Data",
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/vastdata/43.001"
+  },
+  {
+    "company_name": "UVeye",
+    "ats_type": "comeet",
+    "api_url": "https://uveye.com/careers/"
+  },
+  {
+    "company_name": "Gloat",
+    "ats_type": "comeet",
+    "api_url": "https://gloat.com/careers/"
+  },
+  {
+    "company_name": "AllCloud",
+    "ats_type": "comeet",
+    "api_url": "https://allcloud.io/careers/"
+  },
+  {
+    "company_name": "Arbe Robotics",
+    "ats_type": "comeet",
+    "api_url": "https://arberobotics.com/career/"
+  },
+  {
+    "company_name": "Coro",
+    "ats_type": "comeet",
+    "api_url": "https://www.coro.net/careers"
+  },
+  {
+    "company_name": "Trax",
+    "ats_type": "comeet",
+    "api_url": "https://www.traxretail.com/careers"
+  },
+  {
+    "company_name": "OX Security",
+    "ats_type": "comeet",
+    "api_url": "https://www.ox.security/careers"
+  },
+  {
+    "company_name": "Waterfall Security Solutions",
+    "ats_type": "comeet",
+    "api_url": "https://waterfall-security.com/about-waterfall/careers/"
+  },
+  {
+    "company_name": "Upwind",
+    "ats_type": "comeet",
+    "api_url": "https://www.upwind.io/careers"
+  },
+  {
+    "company_name": "BIRD Aerosystems",
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/birdaero/97.006"
+  },
+  {
+    "company_name": "Balance",
+    "ats_type": "comeet",
+    "api_url": "https://www.getbalance.com/careers"
+  },
+  {
+    "company_name": "CrazyLabs",
+    "ats_type": "comeet",
+    "api_url": "https://www.crazylabs.com/careers/israel/"
+  },
+  {
+    "company_name": "Percepto",
+    "ats_type": "comeet",
+    "api_url": "https://percepto.co/careers/"
+  },
+  {
+    "company_name": "Cellebrite",
+    "ats_type": "comeet",
+    "api_url": "https://cellebrite.com/en/about/careers/positions/"
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "company_name": "Cybereason",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/cybereason/jobs?content=true",
+    "job_count": 8
+  },
+  {
+    "company_name": "Teads",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/teads1/jobs?content=true",
+    "job_count": 70
+  },
+  {
+    "company_name": "Cymulate",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/cymulate/jobs?content=true",
+    "job_count": 16
+  },
+  {
+    "company_name": "Bluevine",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/bluevineisrael/jobs?content=true",
+    "job_count": 3
+  },
+  {
+    "company_name": "Cloudflare",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs?content=true",
+    "job_count": 336
+  },
+  {
+    "company_name": "Guardz",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/guardz/jobs?content=true",
+    "job_count": 8
+  },
+  {
+    "company_name": "Lendbuzz",
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/lendbuzz?mode=json",
+    "job_count": 62
+  },
+  {
+    "company_name": "At-Bay",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/atbayjobs/jobs?content=true",
+    "job_count": 33
+  },
+  {
+    "company_name": "ScaleOps",
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/scaleops/jobs?content=true",
+    "job_count": 58
+  }
+]

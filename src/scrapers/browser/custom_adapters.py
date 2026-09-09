@@ -937,7 +937,10 @@ def _comeet_jobs_from_dom(
     seen_urls: set[str] = set()
 
     for element in soup.select(".comeet-position"):
-        link = element.select_one("a[href]")
+        # The plugin renders this shape both ways: sometimes ".comeet-position"
+        # is itself the anchor (confirmed live on Nuvoton), sometimes it is a
+        # wrapper div around a nested one (confirmed live on ChargeAfter).
+        link = element if element.has_attr("href") else element.select_one("a[href]")
         title_element = element.select_one(".comeet-position-name")
         if link is None or title_element is None:
             continue
