@@ -1,0 +1,186 @@
+[
+  {
+    "company_name": "Siemens",
+    "careers_url": "https://jobs.sw.siemens.com/jobs/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (56347 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "DriveNets",
+    "careers_url": "https://drivenets.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (232086 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Nova",
+    "careers_url": "https://www.novami.com/location_filter/israel/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (215834 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Yotpo",
+    "careers_url": "https://www.yotpo.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (392262 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Gilat",
+    "careers_url": "https://www.gilat.com/career/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (1355 bytes fetched)",
+    "http_status": 307,
+    "error": null
+  },
+  {
+    "company_name": "AudioCodes",
+    "careers_url": "https://www.audiocodes.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (254761 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Lusha",
+    "careers_url": "https://www.lusha.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (104557 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Datarails",
+    "careers_url": "https://www.datarails.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (304185 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Kaltura",
+    "careers_url": "https://corp.kaltura.com/company/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (648524 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Pentera",
+    "careers_url": "https://pentera.io/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (217514 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Valens",
+    "careers_url": "https://www.valens.com/positions/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (51098 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Ceva",
+    "careers_url": "https://www.ceva-ip.com/career/location/israel/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (63681 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Island",
+    "careers_url": "https://www.island.io/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (259232 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Personetics",
+    "careers_url": "https://personetics.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (239054 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Radware",
+    "careers_url": "https://www.radware.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (118255 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "SolarEdge",
+    "careers_url": "https://corporate.solaredge.com/en/careers/open-positions",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (127216 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Playtika",
+    "careers_url": "https://www.playtika.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (55764 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Plarium",
+    "careers_url": "https://company.plarium.com/en/career/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (74542 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Snyk",
+    "careers_url": "https://snyk.io/careers/all-jobs/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (68839 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Cybereason",
+    "careers_url": "https://www.cybereason.com/careers/all-jobs",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (69054 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Axonius",
+    "careers_url": "https://www.axonius.com/company/careers/open-jobs",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (711198 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "Aqua Security",
+    "careers_url": "https://www.aquasec.com/about-us/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (250634 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  },
+  {
+    "company_name": "BioCatch",
+    "careers_url": "https://www.biocatch.com/cybersecurity-careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS signature found (145364 bytes fetched)",
+    "http_status": 200,
+    "error": null
+  }
+]

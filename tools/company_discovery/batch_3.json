@@ -1,0 +1,662 @@
+[
+  {
+    "company_name": "Datadog",
+    "careers_url": "https://www.datadoghq.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Snowflake",
+    "careers_url": "https://www.snowflake.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Harmonic",
+    "careers_url": "https://www.harmonic.ai/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Fortinet",
+    "careers_url": "https://www.fortinet.com",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Proofpoint",
+    "careers_url": "https://www.proofpoint.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Elastic",
+    "careers_url": "https://www.elastic.co/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Zscaler",
+    "careers_url": "https://www.zscaler.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "UVision",
+    "careers_url": "https://www.uvisionuav.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "XTEND",
+    "careers_url": "https://www.xtend.me/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "SMARTSHOOTER",
+    "careers_url": "https://www.smart-shooter.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Matrix IT",
+    "careers_url": null,
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "name_only",
+    "status": "needs_url_discovery"
+  },
+  {
+    "company_name": "Ness",
+    "careers_url": "https://www.ness-tech.co.il/joinus",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Priority Software",
+    "careers_url": "https://www.priority-software.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "LivePerson",
+    "careers_url": "https://www.liveperson.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "RADCOM",
+    "careers_url": "https://www.radcom.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Nexxen",
+    "careers_url": "https://www.nexxen.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "BMC Software",
+    "careers_url": "https://www.bmc.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "PTC",
+    "careers_url": "https://www.ptc.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Guardz",
+    "careers_url": "https://www.guardz.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Descope",
+    "careers_url": "https://www.descope.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Mitiga",
+    "careers_url": "https://www.mitiga.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Akeyless",
+    "careers_url": "https://www.akeyless.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Noma Security",
+    "careers_url": "https://www.noma.security/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Alice",
+    "careers_url": "https://www.alice.tech/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "SQream",
+    "careers_url": "https://www.sqream.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Glassbox",
+    "careers_url": "https://www.glassbox.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "EX.CO",
+    "careers_url": "https://www.ex.co/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Singular",
+    "careers_url": "https://www.singular.net/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Primis",
+    "careers_url": "https://www.primis.tech/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Quantum Machines",
+    "careers_url": "https://www.quantum-machines.co/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Qodo",
+    "careers_url": "https://www.qodo.ai/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Trax",
+    "careers_url": "https://www.traxretail.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Fundbox",
+    "careers_url": "https://www.fundbox.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Mesh Payments",
+    "careers_url": "https://www.meshpayments.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Balance",
+    "careers_url": "https://www.getbalance.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "ONE ZERO",
+    "careers_url": "https://www.onezerobank.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Plus500",
+    "careers_url": "https://www.plus500.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "PayEm",
+    "careers_url": "https://www.payem.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Stampli",
+    "careers_url": "https://www.stampli.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "HARMAN",
+    "careers_url": "https://www.harman.com",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Alma Lasers",
+    "careers_url": "https://www.almalasers.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Eitan Medical",
+    "careers_url": "https://www.eitanmedical.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "BIRD Aerosystems",
+    "careers_url": "https://www.birdaero.com/careers/",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "PLAYSTUDIOS",
+    "careers_url": "https://www.playstudios.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Arpeely",
+    "careers_url": "https://www.arpeely.com/about/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Immunai",
+    "careers_url": "https://www.immunai.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Navina",
+    "careers_url": "https://www.navina.io",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Medison",
+    "careers_url": "https://www.medison.co",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Aman",
+    "careers_url": "https://www.aman.co.il/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Sela",
+    "careers_url": "https://www.sela.co.il",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "OX Security",
+    "careers_url": "https://www.ox.security/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Logz.io",
+    "careers_url": "https://www.logz.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Cloudinary",
+    "careers_url": "https://www.cloudinary.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Duda",
+    "careers_url": "https://www.duda.co/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "IONIX",
+    "careers_url": "https://www.ionix.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Port",
+    "careers_url": "https://www.getport.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Trullion",
+    "careers_url": "https://www.trullion.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "BigPanda",
+    "careers_url": "https://www.bigpanda.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Pecan AI",
+    "careers_url": "https://www.pecan.ai/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Incredibuild",
+    "careers_url": "https://www.incredibuild.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Lendbuzz",
+    "careers_url": "https://www.lendbuzz.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "GeoEdge",
+    "careers_url": "https://www.geoedge.com/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Minute Media",
+    "careers_url": "https://www.minutemedia.com/company/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Skai",
+    "careers_url": "https://www.skai.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Upstream Security",
+    "careers_url": "https://www.upstream.auto/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Zencity",
+    "careers_url": "https://www.zencity.io/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "discovered_by_claude_direct_probe",
+    "status": "ready_for_sniffing"
+  }
+]

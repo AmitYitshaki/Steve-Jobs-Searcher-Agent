@@ -1,0 +1,662 @@
+[
+  {
+    "company_name": "NetApp",
+    "careers_url": "https://careers.netapp.com/tel-aviv-isr",
+    "ats_hint": "Eightfold",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Nuvoton Technology",
+    "careers_url": "https://nuvoton.co.il/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Arm",
+    "careers_url": "https://careers.arm.com/location/israel-jobs/33099/294640/2",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Astera Labs",
+    "careers_url": "https://job-boards.greenhouse.io/asteralabs",
+    "ats_hint": "Greenhouse",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Samsung Electronics",
+    "careers_url": "https://www.comeet.com/jobs/samsung/D4.005",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Sony Semiconductor Israel",
+    "careers_url": "https://www.comeet.com/jobs/altair_semiconductor/88.003",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Siemens",
+    "careers_url": "https://jobs.sw.siemens.com/jobs/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "HPE",
+    "careers_url": "https://hpe.wd5.myworkdayjobs.com/Jobsathpe",
+    "ats_hint": "Workday",
+    "board_url": null,
+    "sector": "enterprise infrastructure",
+    "israel_presence": "R&D Herzliya",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "F5",
+    "careers_url": "https://ffive.wd5.myworkdayjobs.com/f5jobs",
+    "ats_hint": "Workday",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "HP",
+    "careers_url": "https://apply.hp.com/careers",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Sandisk",
+    "careers_url": "https://careers.smartrecruiters.com/sandisk",
+    "ats_hint": "SmartRecruiters",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Philips",
+    "careers_url": "https://www.careers.philips.com/global/en/search-results",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Medtronic",
+    "careers_url": "https://medtronic.wd1.myworkdayjobs.com/MedtronicCareers",
+    "ats_hint": "Workday",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Dell",
+    "careers_url": "https://enterpriseplatform.dell.com/hcmUI/CandidateExperience/en/sites/careers/jobs",
+    "ats_hint": "Oracle Recruiting Cloud",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "WEKA",
+    "careers_url": "https://www.weka.io/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "VAST Data",
+    "careers_url": "https://www.comeet.com/jobs/vastdata/43.001",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "DriveNets",
+    "careers_url": "https://drivenets.com/careers/",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Nova",
+    "careers_url": "https://www.novami.com/location_filter/israel/",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Moon Active",
+    "careers_url": "https://www.moonactive.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Melio",
+    "careers_url": "https://job-boards.greenhouse.io/melio",
+    "ats_hint": "Greenhouse",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Bringg",
+    "careers_url": "https://job-boards.greenhouse.io/bringg",
+    "ats_hint": "Greenhouse",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Rapyd",
+    "careers_url": "https://www.rapyd.net/company/careers-search/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Yotpo",
+    "careers_url": "https://www.yotpo.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Global-e",
+    "careers_url": "https://www.global-e.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Checkmarx",
+    "careers_url": "https://checkmarx.com/company/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "UVeye",
+    "careers_url": "https://uveye.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Insightec",
+    "careers_url": "https://insightec.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Healthy.io",
+    "careers_url": "https://healthy.io/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Gilat",
+    "careers_url": "https://www.gilat.com/career/",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "AudioCodes",
+    "careers_url": "https://www.audiocodes.com/careers",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Ceragon",
+    "careers_url": "https://www.comeet.com/jobs/ceragon/d3.003",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Parallel Wireless",
+    "careers_url": "https://jobs.lever.co/parallelwireless",
+    "ats_hint": "Lever",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Tenable",
+    "careers_url": "https://job-boards.greenhouse.io/tenableinc",
+    "ats_hint": "Greenhouse",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Fireblocks",
+    "careers_url": "https://www.fireblocks.com/careers",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Lusha",
+    "careers_url": "https://www.lusha.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "HiBob",
+    "careers_url": "https://www.hibob.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Datarails",
+    "careers_url": "https://www.datarails.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Earnix",
+    "careers_url": "https://earnix.com/our-story/careers/israel/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Perion",
+    "careers_url": "https://job-boards.greenhouse.io/perionnetworkltd",
+    "ats_hint": "Greenhouse",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Kaltura",
+    "careers_url": "https://corp.kaltura.com/company/careers/",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Pentera",
+    "careers_url": "https://pentera.io/careers/",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Valens",
+    "careers_url": "https://www.valens.com/positions/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Ceva",
+    "careers_url": "https://www.ceva-ip.com/career/location/israel/",
+    "ats_hint": "Comeet",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "NextSilicon",
+    "careers_url": "https://www.nextsilicon.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "D-Fend",
+    "careers_url": "https://jobs.lever.co/d-fendsolutions",
+    "ats_hint": "Lever",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Pagaya",
+    "careers_url": "https://job-boards.greenhouse.io/pagayais",
+    "ats_hint": "Greenhouse",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Torq",
+    "careers_url": "https://job-boards.greenhouse.io/torq",
+    "ats_hint": "Greenhouse",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Island",
+    "careers_url": "https://www.island.io/careers",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Upwind",
+    "careers_url": "https://www.upwind.io/careers",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Personetics",
+    "careers_url": "https://personetics.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": null,
+    "israel_presence": null,
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Red Hat",
+    "careers_url": "https://www.redhat.com/en/jobs",
+    "ats_hint": "Workday",
+    "board_url": "https://redhat.wd5.myworkdayjobs.com/",
+    "sector": "enterprise software",
+    "israel_presence": "R&D center Ra'anana",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Radware",
+    "careers_url": "https://www.radware.com/careers/",
+    "ats_hint": "Oracle Taleo",
+    "board_url": "https://radware.taleo.net/careersection/ex/joblist.ftl",
+    "sector": "cybersecurity",
+    "israel_presence": "R&D Tel Aviv and Jerusalem",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "SolarEdge",
+    "careers_url": "https://corporate.solaredge.com/en/careers/open-positions",
+    "ats_hint": "Comeet",
+    "board_url": "https://www.comeet.com/jobs/solaredge/71.00A",
+    "sector": "energy hardware",
+    "israel_presence": "HQ Herzliya",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Playtika",
+    "careers_url": "https://www.playtika.com/careers/",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": "gaming",
+    "israel_presence": "HQ Herzliya",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Plarium",
+    "careers_url": "https://company.plarium.com/en/career/",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "gaming",
+    "israel_presence": "R&D Herzliya",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Cellebrite",
+    "careers_url": "https://cellebrite.com/en/about/careers/positions/",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "digital forensics",
+    "israel_presence": "HQ Petah Tikva",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Verint",
+    "careers_url": "https://www.verint.com/careers/",
+    "ats_hint": "Oracle Recruiting Cloud",
+    "board_url": null,
+    "sector": "enterprise software",
+    "israel_presence": "R&D Herzliya",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Cognyte",
+    "careers_url": "https://www.cognyte.com/careers/",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "security analytics",
+    "israel_presence": "HQ Herzliya",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Snyk",
+    "careers_url": "https://snyk.io/careers/all-jobs/",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "developer security",
+    "israel_presence": "R&D Tel Aviv",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Claroty",
+    "careers_url": "https://claroty.com/open-positions",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "industrial cybersecurity",
+    "israel_presence": "R&D Tel Aviv",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Cybereason",
+    "careers_url": "https://www.cybereason.com/careers/all-jobs",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "cybersecurity",
+    "israel_presence": "R&D Tel Aviv",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Axonius",
+    "careers_url": "https://www.axonius.com/company/careers/open-jobs",
+    "ats_hint": "custom",
+    "board_url": null,
+    "sector": "cybersecurity",
+    "israel_presence": "R&D Tel Aviv",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Aqua Security",
+    "careers_url": "https://www.aquasec.com/about-us/careers/",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "cloud security",
+    "israel_presence": "R&D Ramat Gan",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Transmit Security",
+    "careers_url": "https://transmitsecurity.com/about/careers",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "identity security",
+    "israel_presence": "R&D Tel Aviv",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "BioCatch",
+    "careers_url": "https://www.biocatch.com/cybersecurity-careers",
+    "ats_hint": "Lever",
+    "board_url": "https://jobs.lever.co/biocatch",
+    "sector": "fraud prevention",
+    "israel_presence": "R&D Tel Aviv",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  },
+  {
+    "company_name": "Semperis",
+    "careers_url": "https://www.semperis.com/careers/",
+    "ats_hint": "unknown",
+    "board_url": null,
+    "sector": "identity security",
+    "israel_presence": "Semperis Labs Ramat Gan",
+    "source": "recovered_from_local_batch",
+    "status": "ready_for_sniffing"
+  }
+]

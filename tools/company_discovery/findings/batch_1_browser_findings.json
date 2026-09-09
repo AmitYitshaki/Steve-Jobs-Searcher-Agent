@@ -1,0 +1,405 @@
+[
+  {
+    "company_name": "Siemens",
+    "careers_url": "https://jobs.sw.siemens.com/jobs/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 1 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://prod-search-api.jobsyn.org/api/v1/solr/search?page=1&num_items=10"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "DriveNets",
+    "careers_url": "https://drivenets.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 12 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://script.crazyegg.com/pages/data-scripts/0118/4627/site/drivenets.com.json?t=1",
+      "https://pixel-config.reddit.com/pixels/a2_ij04u4noyq9s/config",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=4703737&time=1788935339373&url=https%3A%2F%2Fdrivenets.com%2Fcareers%2F&tm=gtmv2",
+      "https://consentcdn.cookiebot.com/consentconfig/856cfca9-1cec-471b-8f61-e76818ed27cb/settings.json",
+      "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=7397370&utk=",
+      "https://script.crazyegg.com/pages/data-scripts/0118/4627/sampling/drivenets.com.json?t=1",
+      "https://content.hotjar.io/?site_id=2129042&gzip=1",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=7397370",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=7397370&currentUrl=https%3A%2F%2Fdrivenets.com%2Fcareers%2F",
+      "https://api.userway.org/api/v1/tunings/F7wcVjV1k1",
+      "https://cdn.userway.org/widgetapp/2026-09-01-10-22-26/locales/en-US.json",
+      "https://cdn.userway.org/remediations/consolidated/1939309/JcgczzRqvPS65S3n.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Nova",
+    "careers_url": "https://www.novami.com/location_filter/israel/",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "candidate_endpoints": [
+      "https://www.comeet.co/careers-api/api.js",
+      "https://www.novami.com/wp-content/themes/corppix/career_site/JSON/slide-7.json",
+      "https://www.novami.com/wp-content/themes/corppix/career_site/JSON/slide-3.json",
+      "https://www.novami.com/wp-content/themes/corppix/career_site/JSON/slide-2.json",
+      "https://www.novami.com/wp-content/themes/corppix/career_site/JSON/slide-6.json",
+      "https://www.novami.com/wp-content/themes/corppix/career_site/JSON/slide-1.json",
+      "https://www.novami.com/wp-content/themes/corppix/career_site/JSON/slide-5.json",
+      "https://www.novami.com/wp-content/themes/corppix/career_site/JSON/slide-4.json",
+      "https://www.comeet.co/jobs/A5.007/DA.810/social?token=5A71C4332DFB4E10F532DFB4E32DF0B4E&company-uid=A5.007&company-name=NOVA&color=6a00ff&font-size=13px&embedded=true&version=rc-310-0&referrer=www.novami.com&coref=undefined&candidate-source-storage=true&social-whatsapp=true&social-pinterest=false&position-uid=DA.810&css-url=https%3A%2F%2Fnovami.com%2Fwp-content%2Fplugins%2Fcomeet-to-cpt%2FComeetSocialStyle_06.css&pageUrl=https%253A%252F%252Fwww.novami.com%252Flocation_filter%252Fisrael%252F&urlWithCompanyName=false",
+      "https://www.comeet.co/jobs/A5.007/DA.810/apply?token=5A71C4332DFB4E10F532DFB4E32DF0B4E&company-uid=A5.007&company-name=NOVA&color=6a00ff&font-size=13px&embedded=true&version=rc-310-0&referrer=www.novami.com&coref=undefined&candidate-source-storage=true&position-uid=DA.810&button-color=001664&thankyou-url=https%3A%2F%2Fwww.novami.com%2Fthank-you%2F&css-url=%20https%3A%2F%2Fwww.novami.com%2Fwp-content%2Fthemes%2Fcorppix%2Fcareer_site%2FapplyJob.css&css-cache=false&apply-as-employee=true&pageUrl=https%253A%252F%252Fwww.novami.com%252Flocation_filter%252Fisrael%252F&urlWithCompanyName=false",
+      "https://www.comeet.co/common/font-awesome-4.1.0/css/font-awesome.min.css",
+      "https://www.comeet.co/common/css/career.css?rc-310-0",
+      "https://www.comeet.co/common/css/fonts.css",
+      "https://www.comeet.co/common/vendor/1.8.2/angular-resource.min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/1.8.2/angular-sanitize.min.js?rc-310-0"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Yotpo",
+    "careers_url": "https://www.yotpo.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 13 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://fast.wistia.com/embed/medias/tab0jrpmv0.json",
+      "https://cdn.segment.com/v1/projects/BxhQOA0Cxo4wZRJqZ427DUPJPjUuAfox/settings",
+      "https://fast.wistia.com/embed/medias/grhw7be5mv.json",
+      "https://www.yotpo.com/geo-region.php",
+      "https://fast.wistia.com/embed/medias/xa6jtqifhi.json",
+      "https://forms-eu1.hsforms.com/embed/v3/form/25670362/6ae57b89-061a-497b-892b-280605c8e597/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://forms-eu1.hsforms.com/embed/v3/form/25670362/b70f8ba7-f578-49d0-9dbf-c2a3264ee807/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://cdn.equalweb.com/assets/data/methods.json",
+      "https://cdn.equalweb.com/assets/data/lang.json",
+      "https://cdn.equalweb.com/assets/locale/en.json",
+      "https://cookiehub.net/client/9a6430a2/en.json",
+      "https://web-data.yotpo.com/46eigxrdcafus?906973e5=L2RhdGE%2Fdj0yJmV2ZW50PXBhZ2Vfdmlldw%3D%3D",
+      "https://www.yotpo.com/wp-admin/admin-ajax.php"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Gilat",
+    "careers_url": "https://www.gilat.com/career/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 13 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://cdn-cookieyes.com/client_data/35672168150198628a51bf3c/FRiHfLUY.json",
+      "https://cdn.acsbapp.com/config/gilat.com/config.json",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/7373/feedback/schema",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/11303/feedback/schema",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/7014/feedback/schema",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/11304/feedback/schema",
+      "https://cdn-cookieyes.com/client_data/35672168150198628a51bf3c/config/kQ1xIIPH.json",
+      "https://cdn-cookieyes.com/client_data/35672168150198628a51bf3c/translations/8VWvdhIj.json",
+      "https://cdn-cookieyes.com/client_data/35672168150198628a51bf3c/audit-table/YnHx-rD0.json",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/7014/refill",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/7373/refill",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/11303/refill",
+      "https://www.gilat.com/wp-json/contact-form-7/v1/contact-forms/11304/refill"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "AudioCodes",
+    "careers_url": "https://www.audiocodes.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.com/careers-api/api.js",
+    "candidate_endpoints": [
+      "https://www.comeet.com/careers-api/api.js",
+      "https://pixels.spotify.com/v1/config/c6dc3b454f3f49d698bba431fb660bef",
+      "https://pixels.spotify.com/v1/ingest",
+      "https://js.zi-scripts.com/unified/v1/master/getSubscriptions",
+      "https://cdn.cookielaw.org/consent/636f70a4-3ee9-4ed7-95d0-411b2142fac4/636f70a4-3ee9-4ed7-95d0-411b2142fac4.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn.cookielaw.org/consent/636f70a4-3ee9-4ed7-95d0-411b2142fac4/01916f3a-b2db-75e7-b89a-fcaead54aa88/en-us.json",
+      "https://cdn.cookielaw.org/scripttemplates/202504.1.0/assets/v2/otPcCenter.json",
+      "https://cdn.cookielaw.org/scripttemplates/202504.1.0/assets/otCenterRounded.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Lusha",
+    "careers_url": "https://www.lusha.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 9 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://www-services.lusha.com/api/v1/accounts-management/country-locator",
+      "https://www-services.lusha.com/v2/country-locator",
+      "https://www.lusha.com/wp-json/contact-form-7/v1/contact-forms/31080/feedback/schema",
+      "https://cdn.cookielaw.org/consent/d23fb128-a711-4b18-a13c-cc270218467f/d23fb128-a711-4b18-a13c-cc270218467f.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://www.lusha.com/wp-json/custom/v1/visitor-id",
+      "https://cdn.cookielaw.org/consent/d23fb128-a711-4b18-a13c-cc270218467f/019f8348-41c4-743e-a32b-094d2ca8be39/en.json",
+      "https://cdn.cookielaw.org/scripttemplates/202402.1.0/assets/otFloatingRoundedCorner.json",
+      "https://cdn.cookielaw.org/scripttemplates/202402.1.0/assets/v2/otPcPanel.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Datarails",
+    "careers_url": "https://www.datarails.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 12 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://forms.hsforms.com/embed/v3/form/6909491/cee12be3-0cfd-40c4-bc63-d2e27bdd9022/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/47619aaf-3775-40f8-a1d5-677c99e8b167/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/1de9e918-cc38-47c2-b9f0-4c3ccdb5634e/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/4e3efd3e-cade-4649-ba3e-a86d7ff8a83d/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/9f3053a7-d5bf-484b-ad7e-8ef4dd84f2b4/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/d3570807-8db5-42b9-afbd-5089f5e3e925/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/60fc842d-c8b5-40b3-bf31-1584c9e99f50/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/26bcc6e6-6d77-4e73-bb22-8adda53621dc/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/45808e5d-a566-4736-a6b2-e8e68dc345fc/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/4c981344-9093-4493-9e4a-e711b35a75d6/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/0d777acd-f946-4bf0-abf2-29a23c5269bb/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://forms.hsforms.com/embed/v3/form/6909491/4ad1c82c-39e6-4190-89c4-7879743d860d/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Kaltura",
+    "careers_url": "https://corp.kaltura.com/company/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cookie-cdn.cookiepro.com/scripttemplates/202503.2.0/assets/otCookieSettingsButton.json",
+      "https://cookie-cdn.cookiepro.com/scripttemplates/202503.2.0/assets/otFlat.json",
+      "https://cookie-cdn.cookiepro.com/scripttemplates/202503.2.0/assets/v2/otPcCenter.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Pentera",
+    "careers_url": "https://pentera.io/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Valens",
+    "careers_url": "https://www.valens.com/positions/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 8 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://cdn.equalweb.com/assets/locale/en.json",
+      "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=371800&utk=",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=371800",
+      "https://cdn-cookieyes.com/client_data/076c8077ee5afcccb67b0c49/DB8eeI4c.json",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=6401466&time=1788935401002&url=https%3A%2F%2Fwww.valens.com%2Fpositions%2F&tm=gtmv2",
+      "https://cdn-cookieyes.com/client_data/076c8077ee5afcccb67b0c49/config/jnEkATRV.json",
+      "https://cdn-cookieyes.com/client_data/076c8077ee5afcccb67b0c49/translations/FT5jlsbZ.json",
+      "https://cdn-cookieyes.com/client_data/076c8077ee5afcccb67b0c49/audit-table/VMUSE55k.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Ceva",
+    "careers_url": "https://www.ceva-ip.com/career/location/israel/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 6 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://cdn.acsbapp.com/config/ceva-ip.com/config.json",
+      "https://cdn-cookieyes.com/client_data/ca64874e7b863a1f13661eb4/RCoatNH2.json",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=30437&time=1788935407591&url=https%3A%2F%2Fwww.ceva-ip.com%2Fcareer%2Flocation%2Fisrael%2F",
+      "https://cdn-cookieyes.com/client_data/ca64874e7b863a1f13661eb4/config/77JLqjVg.json",
+      "https://cdn-cookieyes.com/client_data/ca64874e7b863a1f13661eb4/translations/Qyxwma67.json",
+      "https://cdn-cookieyes.com/client_data/ca64874e7b863a1f13661eb4/audit-table/e67bnm3q.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Island",
+    "careers_url": "https://www.island.io/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 20 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://api.intellimize.co/context-v2/117793454",
+      "https://api.intellimize.co/prediction/117793454",
+      "https://cdn.cookielaw.org/consent/01922494-4f37-7619-b129-71f0d08645ec/01922494-4f37-7619-b129-71f0d08645ec.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn.cookielaw.org/consent/01922494-4f37-7619-b129-71f0d08645ec/019dd86b-4569-733f-add0-47e79ee84d26/en.json",
+      "https://bzrcdn.openai.com/pixel-config/v1/Y3L3e62PDm4vUPGGPCtw3S.json",
+      "https://cdn.cookielaw.org/scripttemplates/202604.1.0/assets/v2/otPcCenter.json",
+      "https://cdn.cookielaw.org/scripttemplates/202604.1.0/assets/otFloatingRounded.json",
+      "https://pixel-config.reddit.com/pixels/a2_foq35cumltag/config",
+      "https://monitor.fraudblocker.com/fcheck",
+      "https://66b46c88bfe6c5c3eda83f59.services.infinigrow.com/setcookie2",
+      "https://cdn.ravm.tv/ust/ust_Pacc0VyAjfET.config.json",
+      "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=20523459&utk=",
+      "https://d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws/events?cee=no",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=20523459&currentUrl=https%3A%2F%2Fwww.island.io%2Fcareers"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Personetics",
+    "careers_url": "https://personetics.com/careers/",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "candidate_endpoints": [
+      "https://forms.hsforms.com/embed/v3/form/6893095/19e85a7d-2713-459d-97d1-dcc30239abb2/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://www.comeet.co/careers-api/api.js",
+      "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=6893095&utk=",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=6893095"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Radware",
+    "careers_url": "https://www.radware.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "SolarEdge",
+    "careers_url": "https://corporate.solaredge.com/en/careers/open-positions",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 10 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://cdn-cookieyes.com/client_data/921f9f31bb412e26566588cf/CKsxnl_V.json",
+      "https://cdn-cookieyes.com/client_data/921f9f31bb412e26566588cf/config/6V1BsMWL.json",
+      "https://settings.luckyorange.net/?u=https%3A%2F%2Fcorporate.solaredge.com%2Fen%2Fcareers%2Fopen-positions&s=329166",
+      "https://cdn-cookieyes.com/client_data/921f9f31bb412e26566588cf/translations/sS6z0yIT.json",
+      "https://cdn-cookieyes.com/client_data/921f9f31bb412e26566588cf/audit-table/RZsb8A8n.json",
+      "https://settings.luckyorange.com/47443a11",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=8979728",
+      "https://api.userway.org/api/v1/tunings/FrMw9NFwcA",
+      "https://cdn.userway.org/widgetapp/2026-09-01-10-22-26/locales/en-US.json",
+      "https://cdn.userway.org/remediations/consolidated/2507312/PagmJVa8dxTma1C5.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Playtika",
+    "careers_url": "https://www.playtika.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 11 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://www.playtika.com/img/join-the-playground-white-n.json",
+      "https://cdn.cookielaw.org/consent/6a6d0d24-b540-4142-90a6-e8a7b0d8aa89/6a6d0d24-b540-4142-90a6-e8a7b0d8aa89.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/sri-hashes.json",
+      "https://cdn.nagich.co.il/assets/data/methods.json",
+      "https://cdn.nagich.co.il/assets/data/lang.json",
+      "https://cdn.nagich.co.il/assets/locale/en.json",
+      "https://cdn.cookielaw.org/consent/6a6d0d24-b540-4142-90a6-e8a7b0d8aa89/019d3fba-3da2-78c1-bb5b-16eb00010668/en.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/otFlat.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/otCookieSettingsButton.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/v2/otPcTab.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Plarium",
+    "careers_url": "https://company.plarium.com/en/career/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn-ukwest.onetrust.com/scripttemplates/202604.2.0/assets/v2/otPcPanel.json",
+      "https://cdn-ukwest.onetrust.com/scripttemplates/202604.2.0/assets/otFlat.json",
+      "https://www.googleadservices.com/pagead/conversion/857403228/?random=1788935443774&cv=11&fst=1788935443774&fmt=7&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45je6930v9100648639za20gzb9169435301zd9169435301xec&gcs=G111&gcd=13t3t3t3t5l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120213116~120385422~120469145~120469153&u_w=1280&u_h=720&url=https%3A%2F%2Fcompany.plarium.com%2Fen%2Fcareer%2F&rcb=15&capi=1&frm=0&tiba=Work%20at%20Plarium%20%7C%20Vacancies%20%7C%20company.plarium.com&npa=0&pscdl=noapi&auid=606985953.1788935443&label=OoFmCPzs_58YENze65gD&hn=www.googleadservices.com&uaa=x86&uab=64&uafvl=Not%253DA%253FBrand%3B99.0.0.0%7CHeadlessChrome%3B151.0.7922.34%7CChromium%3B151.0.7922.34&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&ec_mode=a&oid=1122102107.1788935444&oidsrc=3&ecsid2=1640678107.1788935444&_tu=CBA&gcl_ctr=1~0~0~0&data=event%3Dgtag.config&category=acrcp_v1_512&em=tv.1&emd=tvd.1&ept=5"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Snyk",
+    "careers_url": "https://snyk.io/careers/all-jobs/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 30 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://snyk.io/api/next/jobs",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/platform.json?slug=platform",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/schedule-a-demo.json",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/comparison/snyk-vs-checkmarx.json?slug=comparison&slug=snyk-vs-checkmarx",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US.json",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/platform/snyk-learn.json?slug=platform&slug=snyk-learn",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/glossaries/ai.json?slug=ai",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/snyk-ambassadors.json?slug=snyk-ambassadors",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/evo.json?slug=evo",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/contact-us.json?slug=contact-us",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/about.json?slug=about",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/platform/deepcode-ai.json?slug=platform&slug=deepcode-ai",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/comparison/snyk-vs-blackduck.json?slug=comparison&slug=snyk-vs-blackduck",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/comparison/snyk-vs-wiz.json?slug=comparison&slug=snyk-vs-wiz",
+      "https://snyk.io/_next/data/zwKPJxaUwZhQ5qHBbrOpA/en-US/comparison/snyk-vs-aikido.json?slug=comparison&slug=snyk-vs-aikido"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Cybereason",
+    "careers_url": "https://www.cybereason.com/careers/all-jobs",
+    "detected_ats": "greenhouse",
+    "evidence": "network request to https://boards-api.greenhouse.io/v1/boards/cybereason/jobs?content=true&callback=getalljobs&_=1788935451265",
+    "candidate_endpoints": [
+      "https://www.cybereason.com/_hcms/forms/embed/v3/form/3354902/2d18af45-9c43-467c-a2f9-d2d14ea2a4b2/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://boards-api.greenhouse.io/v1/boards/cybereason/jobs?content=true&callback=getalljobs&_=1788935451265",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=3354902&currentUrl=https%3A%2F%2Fwww.cybereason.com%2Fcareers%2Fall-jobs&contentId=85514918253",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=3354902",
+      "https://cdn.cookielaw.org/consent/26b02624-42c7-456d-82c2-9669db762671/26b02624-42c7-456d-82c2-9669db762671.json",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=8043033&time=1788935453230&url=https%3A%2F%2Fwww.cybereason.com%2Fcareers%2Fall-jobs",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn.cookielaw.org/consent/26b02624-42c7-456d-82c2-9669db762671/018fde6f-69f2-7da5-b5d1-0530c6ea4dc2/en.json",
+      "https://cdn.cookielaw.org/scripttemplates/6.38.0/assets/otFlat.json",
+      "https://cdn.cookielaw.org/scripttemplates/6.38.0/assets/otCookieSettingsButton.json",
+      "https://cdn.cookielaw.org/scripttemplates/6.38.0/assets/v2/otPcCenter.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Axonius",
+    "careers_url": "https://www.axonius.com/company/careers/open-jobs",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://st.fullcircleinsights.com/v1/visitors/create",
+      "https://global.ketchcdn.com/web/v3/ip",
+      "https://st.fullcircleinsights.com/v1/visits/queue",
+      "https://global.ketchcdn.com/web/v3/config/axonius/axonius_com_public/production/default/en/config.json?hash=14958214138896219278"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Aqua Security",
+    "careers_url": "https://www.aquasec.com/about-us/careers/",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "candidate_endpoints": [
+      "https://www.comeet.co/careers-api/api.js",
+      "https://www.comeet.co/jobs/91.001/social?token=191644966966644E194B3191644644&company-uid=91.001&candidate-source-storage=true&color=278fe6&background-color=&css-url=&apply-as-employee=true&field-email-required=true&field-phone-required=true&field-resume=true&field-linkedin=true&require-profile=resume&field-website=false&field-website-required=false&field-coverletter=true&field-coverletter-required=false&field-portfolio=true&field-portfolio-required=false&field-personalnote=true&field-personalnote-required=false&button-text=&font-size=&button-font-size=&labels-position=responsive&button-color=&social-pinterest=true&social-whatsapp=false&social-employees=true&social-show-title=true&social-share-url=&social-color=native&thankyou-url=https%3A%2F%2Fwww.aquasec.com%2Fthanks-for-applying%2F&embedded=true&version=rc-310-0&referrer=www.aquasec.com&coref=undefined&social-networks=basic&pageUrl=https%253A%252F%252Fwww.aquasec.com%252Fabout-us%252Fcareers%252F&urlWithCompanyName=false",
+      "https://www.comeet.co/common/css/career.css?rc-310-0",
+      "https://www.comeet.co/common/font-awesome-4.1.0/css/font-awesome.min.css",
+      "https://www.comeet.co/common/css/fonts.css",
+      "https://www.comeet.co/common/vendor/1.8.2/angular-resource.min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/1.8.2/angular-sanitize.min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/1.8.2/angular.min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/1.8.2/angular-cookies.min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/1.8.2/angular-touch.min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/1.8.2/angular-animate.min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/1.8.2/underscore-min.js?rc-310-0",
+      "https://www.comeet.co/common/vendor/iframeResizer.contentWindow.min.js",
+      "https://www.comeet.co/common/careers.js?rc-310-0",
+      "https://www.comeet.co/_Incapsula_Resource?SWJIYLWA=719d34d31c8e3a6e6fffd425f7e032f3&ns=3&cb=1923583681"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "BioCatch",
+    "careers_url": "https://www.biocatch.com/cybersecurity-careers",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/2.0/company/03.00e/positions?token=30EF4630E92A1562156292A92A61C92A",
+    "candidate_endpoints": [
+      "https://consentcdn.cookiebot.com/consentconfig/a48664bb-68a6-4efd-8246-d9e45f9f85a7/settings.json",
+      "https://www.comeet.co/careers-api/2.0/company/03.00e/positions?token=30EF4630E92A1562156292A92A61C92A",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=1828513",
+      "https://epsilon.6sense.com/v3/company/details",
+      "https://secure.adnxs.com/getuidj",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=1828513&currentUrl=https%3A%2F%2Fwww.biocatch.com%2Fcybersecurity-careers&contentId=42485017233",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=66240&time=1788935470189&url=https%3A%2F%2Fwww.biocatch.com%2Fcybersecurity-careers"
+    ],
+    "error": null
+  }
+]

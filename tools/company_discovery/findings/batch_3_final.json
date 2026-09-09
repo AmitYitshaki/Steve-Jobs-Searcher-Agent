@@ -1,0 +1,942 @@
+[
+  {
+    "company_name": "Datadog",
+    "careers_url": "https://www.datadoghq.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 7 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://8b61d74c.datadoghq.com/api/v2/rum?_dd.api=fetch-keepalive&batch_time=1788936667762&dd-request-id=dbc516ad-c3c9-40e9-ad54-df112923533c&dd-evp-origin=browser&dd-evp-origin-version=6.26.0&dd-api-key=pube42f28f13ef39539c905913b341f7fc6&ddsource=browser",
+      "https://8b61d74c.datadoghq.com/api/v2/rum?_dd.api=fetch-keepalive&batch_time=1788936667767&dd-request-id=2f4515dc-ff39-41ea-b13e-ae2878e69424&dd-evp-origin=browser&dd-evp-origin-version=6.26.0&dd-api-key=pube42f28f13ef39539c905913b341f7fc6&ddsource=browser",
+      "https://8b61d74c.datadoghq.com/api/v2/rum?_dd.api=fetch-keepalive&batch_time=1788936667741&dd-request-id=da7ea69a-d4e9-4e47-9321-c3760affce9c&dd-evp-origin=browser&dd-evp-origin-version=6.26.0&dd-api-key=pube42f28f13ef39539c905913b341f7fc6&ddsource=browser",
+      "https://8b61d74c.datadoghq.com/api/v2/replay?dd-request-id=87125b8f-a05f-4892-9a25-9b102cfdfd35&dd-evp-origin=browser&dd-evp-origin-version=6.26.0&dd-api-key=pube42f28f13ef39539c905913b341f7fc6&ddsource=browser",
+      "https://8b61d74c.datadoghq.com/api/v2/rum?_dd.api=fetch-keepalive&batch_time=1788936668709&dd-request-id=d3e40f08-4137-466e-a830-69c9b2b9d489&dd-evp-origin=browser&dd-evp-origin-version=6.26.0&dd-api-key=pube42f28f13ef39539c905913b341f7fc6&ddsource=browser",
+      "https://transcend-cdn.com/cm/dc241cd4-6477-4f2b-86c0-6bcb51869e28/translations/en.json",
+      "https://8b61d74c.datadoghq.com/api/v2/rum?_dd.api=fetch-keepalive&batch_time=1788936669041&dd-request-id=ceac56ff-be3a-40a0-a570-eba8b2c8974d&dd-evp-origin=browser&dd-evp-origin-version=6.26.0&dd-api-key=pube42f28f13ef39539c905913b341f7fc6&ddsource=browser"
+    ]
+  },
+  {
+    "company_name": "Snowflake",
+    "careers_url": "https://www.snowflake.com/careers",
+    "detected_ats": "phenom",
+    "evidence": "page source contains 'phenompeople.com'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Harmonic",
+    "careers_url": "https://www.harmonic.ai/careers",
+    "detected_ats": "ashby",
+    "evidence": "page source contains 'jobs.ashbyhq.com'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Fortinet",
+    "careers_url": "https://www.fortinet.com",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 9 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://dpm.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_orgid=ED8739F75677FE917F000101%40AdobeOrg&d_nsid=0&ts=1788936672821",
+      "https://data.schemaapp.com/Fortinet/aHR0cHM6Ly93d3cuZm9ydGluZXQuY29tLw",
+      "https://cdn.schemaapp.com/highlighter/prod/Fortinet/v2/aHR0cHM6Ly93d3cuZm9ydGluZXQuY29t",
+      "https://fortinet.tt.omtrdc.net/rest/v1/delivery?client=fortinet&sessionId=4e2f2f9f480f4647843e5bfd8ccf23f3&version=2.11.8",
+      "https://secure.adnxs.com/getuidj",
+      "https://epsilon.6sense.com/v3/company/details",
+      "https://script.crazyegg.com/pages/data-scripts/0117/0786/site/www.fortinet.com.json?t=1",
+      "https://script.crazyegg.com/pages/data-scripts/0117/0786/sampling/www.fortinet.com.json?t=1",
+      "https://jukebox.pathfactory.com/api/public/v1/init?clientId=LB-99A738AC-11071&image=&title=&url=https%3A%2F%2Fwww.fortinet.com%2F"
+    ]
+  },
+  {
+    "company_name": "Proofpoint",
+    "careers_url": "https://www.proofpoint.com/careers",
+    "detected_ats": "workday",
+    "evidence": "page source contains 'myworkdayjobs.com'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Elastic",
+    "careers_url": "https://www.elastic.co/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 6 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.elastic.co/gdpr-data",
+      "https://api.company-target.com/api/v3/ip.json?referrer=&page=https%3A%2F%2Fwww.elastic.co%2Fcareers&page_title=Careers%20%7C%20Elastic",
+      "https://pixels.spotify.com/v1/config/49f354617bac43e4b2fc97361b8a6022",
+      "https://edge.fullstory.com/s/settings/o-1YRR3Q-na1/v1/web",
+      "https://pixels.spotify.com/v1/ingest",
+      "https://pixel-config.reddit.com/pixels/a2_dzxpwixmjt9l/config"
+    ]
+  },
+  {
+    "company_name": "Zscaler",
+    "careers_url": "https://www.zscaler.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 9 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://consent.app.relyance.ai/api/config/v1/app-53b4f9eb-43e8-502a-8c2f-b0fb8a6ffbe0/script-data-by-purpose?",
+      "https://consent.app.relyance.ai/api/location",
+      "https://consent.app.relyance.ai/api/config/v1/app-53b4f9eb-43e8-502a-8c2f-b0fb8a6ffbe0/behaviors?",
+      "https://consent.app.relyance.ai/api/config/v1/app-53b4f9eb-43e8-502a-8c2f-b0fb8a6ffbe0/banner?regionName=Global",
+      "https://consent.app.relyance.ai/api/config/v1/app-53b4f9eb-43e8-502a-8c2f-b0fb8a6ffbe0/locale?regionName=Global&localeName=en",
+      "https://consent.app.relyance.ai/api/config/v1/app-53b4f9eb-43e8-502a-8c2f-b0fb8a6ffbe0/processing-activities?localeName=en",
+      "https://consent.app.relyance.ai/api/config/v1/app-53b4f9eb-43e8-502a-8c2f-b0fb8a6ffbe0/request-url-by-purpose?",
+      "https://consent.app.relyance.ai/api/config/v1/app-53b4f9eb-43e8-502a-8c2f-b0fb8a6ffbe0/tracking-technologies-localised?regionName=Global&localeName=en",
+      "https://www.zscaler.com/api/search"
+    ]
+  },
+  {
+    "company_name": "UVision",
+    "careers_url": "https://www.uvisionuav.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "XTEND",
+    "careers_url": "https://www.xtend.me/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 11 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://sentry.prpl.global/api/11/envelope/?sentry_version=7&sentry_key=2062b9b7b3e26788329f362f3b69566d&sentry_client=sentry.javascript.browser%2F8.55.0",
+      "https://cdn.acsbapp.com/config/xtend.me/config.json",
+      "https://cdn-cookieyes.com/client_data/22c9c20331372b6a60bcf89d47aec37d/RcHKXjr6.json",
+      "https://cdn-cookieyes.com/client_data/22c9c20331372b6a60bcf89d47aec37d/config/2y8YLUj8.json",
+      "https://cdn-cookieyes.com/client_data/22c9c20331372b6a60bcf89d47aec37d/translations/_Isu8qg6.json",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=9673234&time=1788936696162&url=https%3A%2F%2Fxtend.me%2Fcareers%2F",
+      "https://cdn-cookieyes.com/client_data/22c9c20331372b6a60bcf89d47aec37d/audit-table/ZtvNtBva.json",
+      "https://xtend.me/wp-json/contact-form-7/v1/contact-forms/78/feedback/schema",
+      "https://xtend.me/wp-json/contact-form-7/v1/contact-forms/76/feedback/schema",
+      "https://forms-eu1.hscollectedforms.net/collected-forms/v1/config/json?portalId=149108708&utk=",
+      "https://xtend.me/wp-json/contact-form-7/v1/contact-forms/2572/feedback/schema"
+    ]
+  },
+  {
+    "company_name": "SMARTSHOOTER",
+    "careers_url": "https://www.smart-shooter.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Matrix IT",
+    "careers_url": null,
+    "detected_ats": null,
+    "evidence": "no reliable single careers page found; Matrix IT is a holding company, subsidiaries have separate boards",
+    "http_status": null,
+    "error": "no careers_url",
+    "method": "unresolved",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Ness",
+    "careers_url": "https://www.ness-tech.co.il/joinus",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 1 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://px.ads.linkedin.com/attribution_trigger?pid=4904993&time=1788936700940&url=https%3A%2F%2Fwww.ness-tech.co.il%2Fjoinus&tm=gtmv2"
+    ]
+  },
+  {
+    "company_name": "Priority Software",
+    "careers_url": "https://www.priority-software.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://consentcdn.cookiebot.com/consentconfig/cf04fc9e-aadd-4b95-80b3-11f89bc7bec4/settings.json",
+      "https://www.priority-software.com/careers/",
+      "https://ipapi.co/json/",
+      "https://script.crazyegg.com/pages/data-scripts/0123/1425/site/www.priority-software.com.json?t=1"
+    ]
+  },
+  {
+    "company_name": "LivePerson",
+    "careers_url": "https://www.liveperson.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 17 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.liveperson.com/page-data/app-data.json",
+      "https://www.liveperson.com/page-data/company/careers/page-data.json",
+      "https://www.liveperson.com/page-data/sq/d/3538936180.json",
+      "https://www.liveperson.com/page-data/sq/d/2844520906.json",
+      "https://www.liveperson.com/page-data/sq/d/3912976583.json",
+      "https://www.liveperson.com/page-data/sq/d/2995873194.json",
+      "https://www.liveperson.com/page-data/sq/d/1682016598.json",
+      "https://cdn.cookielaw.org/consent/019c8ab8-7bdb-779c-9f8d-8d7a73622030/019c8ab8-7bdb-779c-9f8d-8d7a73622030.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=51256494&utk=",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=51256494",
+      "https://cdn.cookielaw.org/consent/019c8ab8-7bdb-779c-9f8d-8d7a73622030/019c8aba-bb96-7b9b-a87b-0d1ae296e1f3/en.json",
+      "https://accdn.lpsnmedia.net/api/account/82400935/configuration/setting/accountproperties?__d=24327",
+      "https://accdn.lpsnmedia.net/api/account/82400935/configuration/le-campaigns/zones?fields=id&fields=zoneValue&__d=30713",
+      "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otFloatingRoundedCorner.json"
+    ]
+  },
+  {
+    "company_name": "RADCOM",
+    "careers_url": "https://www.radcom.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Nexxen",
+    "careers_url": "https://www.nexxen.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "BMC Software",
+    "careers_url": "https://www.bmc.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 8 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://s.swiftypecdn.com/install/v2/config/V19U4iKAzwWhzxzh8cxY.json",
+      "https://cdn.acsbapp.com/config/bmc.com/config.json",
+      "https://dpm.demdex.net/id/rd?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_verify=1&d_orgid=90FF097853513F650A490D4C%40AdobeOrg&d_nsid=0&ts=1788936721293",
+      "https://pixels.spotify.com/v1/config/1e75037bf34a4c1886b148b889ea3a83",
+      "https://data.sequel.io/api/analytics/website/pageView",
+      "https://pixels.spotify.com/v1/ingest",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=4383188&time=1788936722134&url=https%3A%2F%2Fwww.bmc.com%2Fcareers%2Fcareers.html%3Fvu%3Dcareers",
+      "https://pixel-config.reddit.com/pixels/a2_gb5nky23tn4d/config"
+    ]
+  },
+  {
+    "company_name": "PTC",
+    "careers_url": "https://www.ptc.com/careers",
+    "detected_ats": "workday",
+    "evidence": "page source contains 'myworkdayjobs.com'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Guardz",
+    "careers_url": "https://www.guardz.com/careers",
+    "detected_ats": "greenhouse",
+    "evidence": "network request to https://boards-api.greenhouse.io/v1/boards/guardz/departments?callback=jQuery371046401255390973595_1788936725796&_=1788936725797",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://boards-api.greenhouse.io/v1/boards/guardz/departments?callback=jQuery371046401255390973595_1788936725796&_=1788936725797",
+      "https://boards-api.greenhouse.io/v1/boards/guardz/offices?callback=jQuery371046401255390973595_1788936725798&_=1788936725799",
+      "https://ppt2emy7nkbhu3nf4fatqm5rpe0ymllj.lambda-url.us-east-1.on.aws/scripts?pk=cml44o3b500050jkybs7mib1i&sid=8e92636b-45ed-4ab8-8bca-a29bd52eae32",
+      "https://cdn.segment.com/v1/projects/vVkqWcBFwONl01mIprdGvgC7PyW24xi4/settings",
+      "https://consentcdn.cookiebot.com/consentconfig/c05ac96b-9f2d-445f-8201-0fd9229fa7f2/settings.json",
+      "https://pro.ip-api.com/json/?fields=61439&key=FF31FlkFbJqhRGy",
+      "https://scout.salesloft.com/r?tid=eyJhbGciOiJIUzI1NiJ9.eyJ0IjoxMTg1MTV9.DgTADkrP9g8XHAuHP5-mOCL3esRjoYsNZoLL9HC_RlA",
+      "https://scout.salesloft.com/i"
+    ]
+  },
+  {
+    "company_name": "Descope",
+    "careers_url": "https://www.descope.com/careers",
+    "detected_ats": "greenhouse",
+    "evidence": "page source contains 'boards.greenhouse.io'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Mitiga",
+    "careers_url": "https://www.mitiga.io/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 2 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://cdn.schema-flow.com/68b741896c644c7106024a46/global.json",
+      "https://cdn.schema-flow.com/68b741896c644c7106024a46/68b741896c644c7106024a28/careers.json"
+    ]
+  },
+  {
+    "company_name": "Akeyless",
+    "careers_url": "https://www.akeyless.io/careers",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.comeet.co/careers-api/api.js",
+      "https://forms.hsforms.com/embed/v3/form/6372253/922c9a1c-aadd-457f-85bc-7d587d46013c/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349"
+    ]
+  },
+  {
+    "company_name": "Noma Security",
+    "careers_url": "https://www.noma.security/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://cdn-cookieyes.com/client_data/535adc4fecc0ef558a5e7a2a/nwHWf8UG.json",
+      "https://cdn-cookieyes.com/client_data/535adc4fecc0ef558a5e7a2a/config/Bqsz3cJk.json",
+      "https://cdn-cookieyes.com/client_data/535adc4fecc0ef558a5e7a2a/translations/k7DB3t6B.json",
+      "https://cdn-cookieyes.com/client_data/535adc4fecc0ef558a5e7a2a/audit-table/9t32vJJW.json"
+    ]
+  },
+  {
+    "company_name": "Alice",
+    "careers_url": "https://www.alice.tech/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "SQream",
+    "careers_url": "https://www.sqream.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://px.ads.linkedin.com/attribution_trigger?pid=1374292&time=1788936755742&url=https%3A%2F%2Fsqream.com%2Fcareers%2F",
+      "https://forms.hsforms.com/embed/v3/form/2548165/c5f9266d-54b9-4a40-8c67-8d5ee77249ba/json?hutk=",
+      "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=2548165&utk=",
+      "https://aplo-evnt.com/api/v1/intent_pixel/can_track_visitor?x_app_id=665744573e63310330be0264"
+    ]
+  },
+  {
+    "company_name": "Glassbox",
+    "careers_url": "https://www.glassbox.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 53 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.glassbox.com/careers/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/customer-journey-analytics/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/product-analytics/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/rapid-response/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/glassbox-insights-assistant/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/tagless-data-capture/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/contact-us/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/struggle-error-analysis/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/funnel-analysis/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/blog/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/interaction-and-heatmaps/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/accessibility/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/voice-of-the-silent/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc",
+      "https://www.glassbox.com/platform/digital-record-keeping/_payload.json?6ebef55b-5332-48c5-a03f-fb67fb5330cc"
+    ]
+  },
+  {
+    "company_name": "EX.CO",
+    "careers_url": "https://www.ex.co/careers",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.comeet.co/careers-api/api.js",
+      "https://forms.hsforms.com/embed/v3/form/6184888/33c442ce-4b81-4f03-a657-edaa3c0a6258/json?hs_static_app=forms-embed&hs_static_app_version=1.11349&X-HubSpot-Static-App-Info=forms-embed-1.11349",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=997995&time=1788936765843&url=https%3A%2F%2Fex.co%2Fcareers%2F",
+      "https://forms.hscollectedforms.net/collected-forms/v1/config/json?portalId=6184888&utk=",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=6184888&currentUrl=https%3A%2F%2Fex.co%2Fcareers%2F",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=6184888",
+      "https://cdn-cookieyes.com/client_data/e54ba0032989ac1a6195d3769ceb9503/S_TYRu3X.json",
+      "https://cdn-cookieyes.com/client_data/e54ba0032989ac1a6195d3769ceb9503/audit-table/qJjvXzfr.json",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=1733697%2C997995&time=1788936767686&url=https%3A%2F%2Fex.co%2Fcareers%2F&tm=gtmv2"
+    ]
+  },
+  {
+    "company_name": "Singular",
+    "careers_url": "https://www.singular.net/careers",
+    "detected_ats": "ashby",
+    "evidence": "page source contains 'jobs.ashbyhq.com'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Primis",
+    "careers_url": "https://www.primis.tech/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet.co/careers-api'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Quantum Machines",
+    "careers_url": "https://www.quantum-machines.co/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 2 captured job-like network responses",
+    "http_status": 403,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://app.enzuzo.com/api/public/v1/analytics/80332b00-8c98-11f0-b1cb-9f49b2963880?__enzuzo_analyticsPayload=%257B%2522cookies-functional%2522%253Atrue%252C%2522settings%2522%253A%257B%2522position%2522%253A%2522bottom-center-floating%2522%257D%252C%2522consent%2522%253A%257B%2522gpc%2522%253Afalse%252C%2522dnt%2522%253Anull%252C%2522googleCmp%2522%253Afalse%257D%252C%2522connection%2522%253A%257B%2522downlink%2522%253A10%252C%2522rtt%2522%253A0%252C%2522effectiveType%2522%253A%25224g%2522%257D%252C%2522document%2522%253A%257B%2522dir%2522%253A%2522%2522%252C%2522visibilityState%2522%253A%2522visible%2522%252C%2522charset%2522%253A%2522UTF-8%2522%252C%2522contentType%2522%253A%2522text%252Fhtml%2522%252C%2522title%2522%253A%2522Quantum%2520Machines%2520Careers%2520%257C%2520Teamme.link%2522%257D%252C%2522geo%2522%253A%257B%2522language%2522%253A%2522en-GB%2522%252C%2522referrer%2522%253A%2522%2522%257D%252C%2522location%2522%253A%257B%2522url%2522%253A%2522https%253A%252F%252Fqm.teamme.link%252F%2522%257D%252C%2522navigator%2522%253A%257B%2522languages%2522%253A%255B%2522en-GB%2522%255D%252C%2522deviceMemory%2522%253A16%252C%2522platform%2522%253A%2522Win32%2522%257D%252C%2522screen%2522%253A%257B%2522h%2522%253A720%252C%2522w%2522%253A1280%252C%2522availHeight%2522%253A720%252C%2522availWidth%2522%253A1280%252C%2522colorDepth%2522%253A24%252C%2522isExtended%2522%253Afalse%252C%2522fullscreen%2522%253Afalse%252C%2522height%2522%253A720%252C%2522orientation%2522%253A%257B%2522angle%2522%253A0%252C%2522type%2522%253A%2522landscape-primary%2522%257D%252C%2522pixelDepth%2522%253A24%252C%2522width%2522%253A1280%257D%252C%2522scroll%2522%253A%257B%2522x%2522%253A0%252C%2522y%2522%253A0%257D%252C%2522uuid%2522%253A%252280332b00-8c98-11f0-b1cb-9f49b2963880%2522%252C%2522gpc%2522%253Afalse%252C%2522mode%2522%253A%2522opt-in%2522%252C%2522action%2522%253A%2522page-view%2522%257D&__enzuzo_apiHost=app.enzuzo.com",
+      "https://teamme.link/api/projects/sdk?apiKey=AIzaSyjsmw_nbpPcMrx9L4b4y-y7q6-7cdXem4b"
+    ]
+  },
+  {
+    "company_name": "Qodo",
+    "careers_url": "https://www.qodo.ai/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 8 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://ppt2emy7nkbhu3nf4fatqm5rpe0ymllj.lambda-url.us-east-1.on.aws/scripts?pk=cmaza8t7d0005ju05kr7kowoj&sid=d5425b28-8db7-48e7-ab62-d7f0abde0afe",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=4646812&time=1788936776539&url=https%3A%2F%2Fwww.qodo.ai%2Fcareers%2F",
+      "https://pro.ip-api.com/json/?fields=61439&key=FF31FlkFbJqhRGy",
+      "https://display.popt.in/api/display/e8837adcf846e",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=4646812&time=1788936777751&url=https%3A%2F%2Fwww.qodo.ai%2Fcareers%2F&tm=gtmv2",
+      "https://bzrcdn.openai.com/pixel-config/v1/P7ScqmQN4SvtgMpgyMzZTo.json",
+      "https://cta-eu1.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=26816375&currentUrl=https%3A%2F%2Fwww.qodo.ai%2Fcareers%2F",
+      "https://api-eu1.hubspot.com/livechat-public/v1/message/public?portalId=26816375&conversations-embed=static-1.28249&mobile=false&messagesUtk=5c60e02faec94951aad860c4f2432630&traceId=5c60e02faec94951aad860c4f2432630"
+    ]
+  },
+  {
+    "company_name": "Trax",
+    "careers_url": "https://www.traxretail.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Fundbox",
+    "careers_url": "https://www.fundbox.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 8 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://edge.fullstory.com/s/settings/Hrh/v1/web",
+      "https://fundbox.com/_nuxt/builds/meta/4b72dbd0-2e12-4f04-9dba-201431d9fbb3.json",
+      "https://fundbox.com/careers/_payload.json?4b72dbd0-2e12-4f04-9dba-201431d9fbb3",
+      "https://rs.fullstory.com/rec/page",
+      "https://fundbox.com/_payload.json?4b72dbd0-2e12-4f04-9dba-201431d9fbb3",
+      "https://fundbox.com/partners/_payload.json?4b72dbd0-2e12-4f04-9dba-201431d9fbb3",
+      "https://fundbox.com/faq/_payload.json?4b72dbd0-2e12-4f04-9dba-201431d9fbb3",
+      "https://fundbox.com/about/_payload.json?4b72dbd0-2e12-4f04-9dba-201431d9fbb3"
+    ]
+  },
+  {
+    "company_name": "Mesh Payments",
+    "careers_url": "https://www.meshpayments.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 11 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://api.usergems.com/v1/identify/usergems",
+      "https://a.usbrowserspeed.com/cs?pid=c59fd74cbd71a58d3d354f836099a3cf5a29e8461d70dad1ea560c3559765bfc&puid=usergems-IoJqhoRcfutL73sp-cf747bf0873240a99da65485f34e1b2f-cf747bf0_8732_40a9_9da6_5485f34e1b2f-%2Fcareers",
+      "https://api.usergems.com/v1/visit",
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=9157499",
+      "https://api.vector.co/pixel/ip-info",
+      "https://api.hubspot.com/livechat-public/v1/message/public?portalId=9157499&conversations-embed=static-1.28340&mobile=false&messagesUtk=6f703494fc8a4e6ca1463c85ee345a17&traceId=6f703494fc8a4e6ca1463c85ee345a17",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=9157499&currentUrl=https%3A%2F%2Fwww.meshpayments.com%2Fcareers",
+      "https://api.usergems.com/v1/flow/success",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=1789364&time=1788936788172&url=https%3A%2F%2Fwww.meshpayments.com%2Fcareers",
+      "https://api.vector.co/pixel/f738c1c0-0e10-46b1-a097-a3576336aa15/settings",
+      "https://api.vector.co/pixel/phoenix/rp/j?dtstmp=1788936787898&did=did-006l&se=e30&duid=0f712d3c47db--01m22f24q9r11d5h2eysba6tpb&tv=v3.17.0&pu=https%3A%2F%2Fwww.meshpayments.com%2Fcareers&wpn=lc-bundle&wpv=v3.17.0&cd=.meshpayments.com&pv=0ae09b91-bfa2-440e-ada6-311f3bdecf5b&n3pc=true"
+    ]
+  },
+  {
+    "company_name": "Balance",
+    "careers_url": "https://www.getbalance.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "ONE ZERO",
+    "careers_url": "https://www.onezerobank.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 2 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://syndication.twitter.com/settings?session_id=bb391ae1e7effd758da643106c552866ff7adc62",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=3891401&time=1788936794436&url=https%3A%2F%2Fwww.onezerobank.com%2F"
+    ]
+  },
+  {
+    "company_name": "Plus500",
+    "careers_url": "https://www.plus500.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 5 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://cdn.cookielaw.org/consent/0192b380-614a-7179-a10e-0aaab199e690/0192b380-614a-7179-a10e-0aaab199e690.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn.cookielaw.org/consent/0192b380-614a-7179-a10e-0aaab199e690/0197e4aa-350f-70b9-ae66-70ae01ca8a8b/he.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/otFlatRtl.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/v2/otPcCenterRtl.json"
+    ]
+  },
+  {
+    "company_name": "PayEm",
+    "careers_url": "https://www.payem.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Stampli",
+    "careers_url": "https://www.stampli.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "HARMAN",
+    "careers_url": "https://www.harman.com",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "http_status": null,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://cdn.cookielaw.org/consent/0197cb9e-2883-7360-aff5-37c6d5a14805/0197cb9e-2883-7360-aff5-37c6d5a14805.json",
+      "https://cdn.cookielaw.org/consent/0197cb9e-2883-7360-aff5-37c6d5a14805/0197f4b1-1c91-7f1c-b247-26bd08f237e0/en.json",
+      "https://cdn.cookielaw.org/scripttemplates/202508.2.0/assets/v2/otPcCenter.json",
+      "https://cdn.cookielaw.org/scripttemplates/202508.2.0/assets/otFlat.json"
+    ]
+  },
+  {
+    "company_name": "Alma Lasers",
+    "careers_url": "https://www.almalasers.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Eitan Medical",
+    "careers_url": "https://www.eitanmedical.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 6 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://forms-eu1.hsforms.com/embed/v3/form/25160584/54ed797d-cded-4d4b-85d7-538aec60a22a/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://forms-eu1.hsforms.com/embed/v3/form/25160584/2141c3f6-d28e-4767-8777-932273a7f674/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://forms-eu1.hsforms.com/embed/v3/form/25160584/a98fc347-4b45-466c-b6ff-9998eb11b505/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://forms-eu1.hsforms.com/embed/v3/form/25160584/81e0fa45-e157-45c0-91fd-81126280fba4/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://forms-eu1.hsforms.com/embed/v3/form/25160584/0a492e6f-2ae4-4800-9849-b4e4bb2d0de5/json?hs_static_app=forms-embed&hs_static_app_version=1.11336&X-HubSpot-Static-App-Info=forms-embed-1.11336",
+      "https://cdn-cookieyes.com/client_data/a6813dc1ad527d800dddf27d/HYsz5MDi.json"
+    ]
+  },
+  {
+    "company_name": "BIRD Aerosystems",
+    "careers_url": "https://www.birdaero.com/careers/",
+    "detected_ats": "comeet",
+    "evidence": "web search result explicitly cited Comeet board: https://www.comeet.com/jobs/birdaero/97.006",
+    "http_status": 200,
+    "error": null,
+    "method": "web_search_citation",
+    "candidate_endpoints": [
+      "https://www.birdaero.com/wp-json/contact-form-7/v1/contact-forms/1595/feedback/schema",
+      "https://www.birdaero.com/wp-json/contact-form-7/v1/contact-forms/9/feedback/schema"
+    ]
+  },
+  {
+    "company_name": "PLAYSTUDIOS",
+    "careers_url": "https://www.playstudios.com/careers",
+    "detected_ats": "jobvite",
+    "evidence": "page source contains 'jobs.jobvite.com'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Arpeely",
+    "careers_url": "https://www.arpeely.com/about/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 12 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://siteassets.parastorage.com/pages/pages/thunderbolt?appDefinitionIdToSiteRevision=%7B%2214bcded7-0066-7c35-14d7-466cb3f09103%22%3A%221335%22%2C%2214271d6f-ba62-d045-549b-ab972ae1f70e%22%3A%2225%22%2C%22b976560c-3122-4351-878f-453f337b7245%22%3A%221358%22%7D&beckyExperiments=.DatePickerPortal%2C.DisableDocumentScrollWhenLightBoxOpen%2C.EnableCustomCSSVarsForLoginSocialBar%2C.FreemiumBannerOdeditor%2C.LoginBarEnableLoggingInStateInSSR%2C.TextInputAutoFillFix%2C.UseLoginSocialBarCustomMenu%2C.UseNestedLoginSocialBarMenuItems%2C.UseNewLoginBarDropdownMenuAlignment%2C.UseNewLoginSocialBarElementStructure%2C.UseNewLoginSocialBarMemberInitialsAvatar%2C.WixFreeSiteBannerDesktop%2C.WixFreeSiteBannerMobile%2C.a11yContrast%2C.addIdAsClassName%2C.allowWebpAvifTransforms%2C.builderBoxSizingBorderBox%2C.buttonUdp%2C.calculateCollapsibleTextLineHeightByFont%2C.dom_store%2C.dontApplyDacOverridesOnBoBApps%2C.dynamicPageLinkTarget%2C.dynamicSlots%2C.fiveGridLineStudioSkins%2C.fixDocumentLinkInPremiumPreview%2C.fixFirefoxLinkBarIntrinsicSizing%2C.fixRemappedFullNameCompType%2C.imageEncodingAVIF%2C.isClassNameToRootEnabled%2C.logVsmFeaturesModuleDiff%2C.motionTimeAnimationsCSS%2C.resolveManifestInTB%2C.responsiveContainerRoleGroup%2C.sectionA11yProps%2C.shouldUseResponsiveImages%2C.splitSlotSelectors%2C.stopResolvingInnerSelectors_VAG%2C.svgResolver_2%2C.updateRichTextSemanticClassNamesOnCorvid%2C.useClassnameInResponsiveAppWidget%2C.useFragmentHrefForTopBottomAnchor%2C.useImageAvifFormatInNativeProGallery%2C.useResponsiveImgClassicFixed%2C.useSvgLoaderFeature%2C.useSvgLoaderFeatureOnBuilderComps%2C.useWowImageInFastGallery%2C.vsmFeaturesModule&blocksBuilderManifestGeneratorVersion=1.129.0&commonConfig=%7B%22siteRevision%22%3A%224%22%2C%22branchId%22%3A%22268fcb62-d649-4371-8528-6c3234e01ec7%22%7D&contentType=application%2Fjson&deviceType=Desktop&dfCk=6&dfVersion=1.5593.0&disableStaticPagesUrlHierarchy=false&editorName=Unknown&experiments=dm_masterPageVariablesQueryFixer%2Cdm_migrateOldHoverBoxToNewFixer&externalBaseUrl=https%3A%2F%2Fwww.arpeely.com&fileId=54964c4f.bundle.min&formFactor=desktop&hasTPAWorkerOnSite=false&hasUserDomainMedia=false&isBuilderComponentModel=false&isHttps=true&isInSeo=false&isMultilingualEnabled=false&isPremiumDomain=true&isTrackClicksAnalyticsEnabled=true&isUrlMigrated=true&isWixCodeOnPage=false&isWixCodeOnSite=false&language=en&languageResolutionMethod=QueryParam&metaSiteId=4837aefa-6e63-4404-9c25-76cd6f495eb7&module=thunderbolt-features&originalLanguage=en&pageId=e7a5e7_71527b5dd4e83a3062d2e01952f85831_3.json&pilerExperiments=specs.piler.useEditorReactComponents&quickActionsMenuEnabled=false&registryLibrariesTopology=%5B%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22wixui%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%2C%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22dsgnsys%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%5D&remoteWidgetStructureBuilderVersion=1.251.0&siteId=51377d56-7c56-42ad-bf8e-848e2b251e20&siteRevision=4&staticHTMLComponentUrl=https%3A%2F%2Fwww-arpeely-com.filesusr.com%2F&useSandboxInHTMLComp=false&viewMode=desktop",
+      "https://www.arpeely.com/_api/v1/access-tokens",
+      "https://siteassets.parastorage.com/pages/pages/thunderbolt?appDefinitionIdToSiteRevision=%7B%2214bcded7-0066-7c35-14d7-466cb3f09103%22%3A%221335%22%2C%2214271d6f-ba62-d045-549b-ab972ae1f70e%22%3A%2225%22%2C%22b976560c-3122-4351-878f-453f337b7245%22%3A%221358%22%7D&beckyExperiments=.DatePickerPortal%2C.DisableDocumentScrollWhenLightBoxOpen%2C.EnableCustomCSSVarsForLoginSocialBar%2C.FreemiumBannerOdeditor%2C.LoginBarEnableLoggingInStateInSSR%2C.TextInputAutoFillFix%2C.UseLoginSocialBarCustomMenu%2C.UseNestedLoginSocialBarMenuItems%2C.UseNewLoginBarDropdownMenuAlignment%2C.UseNewLoginSocialBarElementStructure%2C.UseNewLoginSocialBarMemberInitialsAvatar%2C.WixFreeSiteBannerDesktop%2C.WixFreeSiteBannerMobile%2C.a11yContrast%2C.addIdAsClassName%2C.allowWebpAvifTransforms%2C.builderBoxSizingBorderBox%2C.buttonUdp%2C.calculateCollapsibleTextLineHeightByFont%2C.dom_store%2C.dontApplyDacOverridesOnBoBApps%2C.dynamicPageLinkTarget%2C.dynamicSlots%2C.fiveGridLineStudioSkins%2C.fixDocumentLinkInPremiumPreview%2C.fixFirefoxLinkBarIntrinsicSizing%2C.fixRemappedFullNameCompType%2C.imageEncodingAVIF%2C.isClassNameToRootEnabled%2C.logVsmFeaturesModuleDiff%2C.motionTimeAnimationsCSS%2C.resolveManifestInTB%2C.responsiveContainerRoleGroup%2C.sectionA11yProps%2C.shouldUseResponsiveImages%2C.splitSlotSelectors%2C.stopResolvingInnerSelectors_VAG%2C.svgResolver_2%2C.updateRichTextSemanticClassNamesOnCorvid%2C.useClassnameInResponsiveAppWidget%2C.useFragmentHrefForTopBottomAnchor%2C.useImageAvifFormatInNativeProGallery%2C.useResponsiveImgClassicFixed%2C.useSvgLoaderFeature%2C.useSvgLoaderFeatureOnBuilderComps%2C.useWowImageInFastGallery%2C.vsmFeaturesModule&blocksBuilderManifestGeneratorVersion=1.129.0&commonConfig=%7B%22siteRevision%22%3A%224%22%2C%22branchId%22%3A%22268fcb62-d649-4371-8528-6c3234e01ec7%22%7D&contentType=application%2Fjson&deviceType=Desktop&dfCk=6&dfVersion=1.5593.0&disableStaticPagesUrlHierarchy=false&editorName=Unknown&experiments=dm_masterPageVariablesQueryFixer%2Cdm_migrateOldHoverBoxToNewFixer&externalBaseUrl=https%3A%2F%2Fwww.arpeely.com&fileId=54964c4f.bundle.min&formFactor=desktop&hasTPAWorkerOnSite=false&hasUserDomainMedia=false&isBuilderComponentModel=false&isHttps=true&isInSeo=false&isMultilingualEnabled=false&isPremiumDomain=true&isTrackClicksAnalyticsEnabled=true&isUrlMigrated=true&isWixCodeOnPage=false&isWixCodeOnSite=false&language=en&languageResolutionMethod=QueryParam&metaSiteId=4837aefa-6e63-4404-9c25-76cd6f495eb7&module=thunderbolt-features&originalLanguage=en&pageId=e7a5e7_d269e9449bb4fd87879bf4dbaa53d3a5_2.json&pilerExperiments=specs.piler.useEditorReactComponents&quickActionsMenuEnabled=false&registryLibrariesTopology=%5B%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22wixui%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%2C%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22dsgnsys%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%5D&remoteWidgetStructureBuilderVersion=1.251.0&siteId=51377d56-7c56-42ad-bf8e-848e2b251e20&siteRevision=4&staticHTMLComponentUrl=https%3A%2F%2Fwww-arpeely-com.filesusr.com%2F&useSandboxInHTMLComp=false&viewMode=desktop",
+      "https://static.parastorage.com/services/editor-elements/1.15483.0/rb_wixui.thunderbolt.manifest.min.json",
+      "https://static.parastorage.com/services/editor-elements/1.15483.0/rb_dsgnsys.thunderbolt.manifest.min.json",
+      "https://static.parastorage.com/services/editor-elements/1.15483.0/rb_wixui.corvid.manifest.min.json",
+      "https://static.parastorage.com/services/editor-elements/1.15483.0/rb_dsgnsys.corvid.manifest.min.json",
+      "https://www.arpeely.com/_api/tag-manager/api/v1/tags/sites/4837aefa-6e63-4404-9c25-76cd6f495eb7?wixSite=false&htmlsiteId=51377d56-7c56-42ad-bf8e-848e2b251e20&language=en",
+      "https://siteassets.parastorage.com/pages/pages/thunderbolt?appDefinitionIdToSiteRevision=%7B%2214bcded7-0066-7c35-14d7-466cb3f09103%22%3A%221335%22%2C%2214271d6f-ba62-d045-549b-ab972ae1f70e%22%3A%2225%22%2C%22b976560c-3122-4351-878f-453f337b7245%22%3A%221358%22%7D&beckyExperiments=.DatePickerPortal%2C.EnableCustomCSSVarsForLoginSocialBar%2C.FreemiumBannerOdeditor%2C.LoginBarEnableLoggingInStateInSSR%2C.TextInputAutoFillFix%2C.UseLoginSocialBarCustomMenu%2C.UseNestedLoginSocialBarMenuItems%2C.UseNewLoginBarDropdownMenuAlignment%2C.UseNewLoginSocialBarElementStructure%2C.UseNewLoginSocialBarMemberInitialsAvatar%2C.WixFreeSiteBannerDesktop%2C.WixFreeSiteBannerMobile%2C.addIdAsClassName%2C.buttonUdp%2C.calculateCollapsibleTextLineHeightByFont%2C.dynamicPageLinkTarget%2C.dynamicSlots%2C.fiveGridLineStudioSkins%2C.fixFirefoxLinkBarIntrinsicSizing%2C.isClassNameToRootEnabled%2C.logVsmPlatformDiff%2C.migrateSdkDataMappers%2C.resolveManifestInTB%2C.splitSlotSelectors%2C.stopResolvingInnerSelectors_VAG%2C.svgResolver_2%2C.updateRichTextSemanticClassNamesOnCorvid%2C.useClassnameInResponsiveAppWidget%2C.useImageAvifFormatInNativeProGallery%2C.useWowImageInFastGallery&blocksBuilderManifestGeneratorVersion=1.129.0&commonConfig=%7B%22siteRevision%22%3A%224%22%2C%22branchId%22%3A%22268fcb62-d649-4371-8528-6c3234e01ec7%22%7D&contentType=application%2Fjson&dfCk=6&dfVersion=1.5593.0&editorName=Unknown&experiments=dm_masterPageVariablesQueryFixer%2Cdm_migrateOldHoverBoxToNewFixer&externalBaseUrl=https%3A%2F%2Fwww.arpeely.com&fileId=1ec37444.bundle.min&formFactor=desktop&hasTPAWorkerOnSite=false&hasUserDomainMedia=false&isBuilderComponentModel=false&isHttps=true&isInSeo=false&isPremiumDomain=true&isUrlMigrated=true&isWixCodeOnPage=false&isWixCodeOnSite=false&language=en&metaSiteId=4837aefa-6e63-4404-9c25-76cd6f495eb7&module=thunderbolt-platform&originalLanguage=en&pageId=e7a5e7_d269e9449bb4fd87879bf4dbaa53d3a5_2.json&pilerExperiments=specs.piler.useEditorReactComponents&quickActionsMenuEnabled=false&registryLibrariesTopology=%5B%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22wixui%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%2C%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22dsgnsys%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%5D&remoteWidgetStructureBuilderVersion=1.251.0&siteId=51377d56-7c56-42ad-bf8e-848e2b251e20&siteRevision=4&staticHTMLComponentUrl=https%3A%2F%2Fwww-arpeely-com.filesusr.com%2F&viewMode=desktop",
+      "https://siteassets.parastorage.com/pages/pages/thunderbolt?appDefinitionIdToSiteRevision=%7B%2214bcded7-0066-7c35-14d7-466cb3f09103%22%3A%221335%22%2C%2214271d6f-ba62-d045-549b-ab972ae1f70e%22%3A%2225%22%2C%22b976560c-3122-4351-878f-453f337b7245%22%3A%221358%22%7D&beckyExperiments=.DatePickerPortal%2C.EnableCustomCSSVarsForLoginSocialBar%2C.FreemiumBannerOdeditor%2C.LoginBarEnableLoggingInStateInSSR%2C.TextInputAutoFillFix%2C.UseLoginSocialBarCustomMenu%2C.UseNestedLoginSocialBarMenuItems%2C.UseNewLoginBarDropdownMenuAlignment%2C.UseNewLoginSocialBarElementStructure%2C.UseNewLoginSocialBarMemberInitialsAvatar%2C.WixFreeSiteBannerDesktop%2C.WixFreeSiteBannerMobile%2C.addIdAsClassName%2C.buttonUdp%2C.calculateCollapsibleTextLineHeightByFont%2C.dynamicPageLinkTarget%2C.dynamicSlots%2C.fiveGridLineStudioSkins%2C.fixFirefoxLinkBarIntrinsicSizing%2C.isClassNameToRootEnabled%2C.logVsmPlatformDiff%2C.migrateSdkDataMappers%2C.resolveManifestInTB%2C.splitSlotSelectors%2C.stopResolvingInnerSelectors_VAG%2C.svgResolver_2%2C.updateRichTextSemanticClassNamesOnCorvid%2C.useClassnameInResponsiveAppWidget%2C.useImageAvifFormatInNativeProGallery%2C.useWowImageInFastGallery&blocksBuilderManifestGeneratorVersion=1.129.0&commonConfig=%7B%22siteRevision%22%3A%224%22%2C%22branchId%22%3A%22268fcb62-d649-4371-8528-6c3234e01ec7%22%7D&contentType=application%2Fjson&dfCk=6&dfVersion=1.5593.0&editorName=Unknown&experiments=dm_masterPageVariablesQueryFixer%2Cdm_migrateOldHoverBoxToNewFixer&externalBaseUrl=https%3A%2F%2Fwww.arpeely.com&fileId=1ec37444.bundle.min&formFactor=desktop&hasTPAWorkerOnSite=false&hasUserDomainMedia=false&isBuilderComponentModel=false&isHttps=true&isInSeo=false&isPremiumDomain=true&isUrlMigrated=true&isWixCodeOnPage=false&isWixCodeOnSite=false&language=en&metaSiteId=4837aefa-6e63-4404-9c25-76cd6f495eb7&module=thunderbolt-platform&originalLanguage=en&pageId=e7a5e7_71527b5dd4e83a3062d2e01952f85831_3.json&pilerExperiments=specs.piler.useEditorReactComponents&quickActionsMenuEnabled=false&registryLibrariesTopology=%5B%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22wixui%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%2C%7B%22artifactId%22%3A%22editor-elements%22%2C%22namespace%22%3A%22dsgnsys%22%2C%22url%22%3A%22https%3A%2F%2Fstatic.parastorage.com%2Fservices%2Feditor-elements%2F1.15483.0%22%7D%5D&remoteWidgetStructureBuilderVersion=1.251.0&siteId=51377d56-7c56-42ad-bf8e-848e2b251e20&siteRevision=4&staticHTMLComponentUrl=https%3A%2F%2Fwww-arpeely-com.filesusr.com%2F&viewMode=desktop",
+      "https://www.arpeely.com/_serverless/cookie-consent-settings-serverless/v1/cookie-banner-settings?languageCode=en",
+      "https://static.parastorage.com/services/auto-frontend-modules/1.6238.0/webworker/manifest-worker.min.json"
+    ]
+  },
+  {
+    "company_name": "Immunai",
+    "careers_url": "https://www.immunai.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 3 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://consentcdn.cookiebot.com/consentconfig/15925e0a-ea23-4fcd-bf40-2dc8f857dbac/settings.json",
+      "https://www.immunai.com/wp-json/contact-form-7/v1/contact-forms/2883/feedback/schema",
+      "https://www.immunai.com/wp-json/contact-form-7/v1/contact-forms/2883/refill"
+    ]
+  },
+  {
+    "company_name": "Navina",
+    "careers_url": "https://www.navina.io",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 1 captured job-like network responses",
+    "http_status": null,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://aftermarketapi.namecheap.com/client/api/landing-page-auctions"
+    ]
+  },
+  {
+    "company_name": "Medison",
+    "careers_url": "https://www.medison.co",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Aman",
+    "careers_url": "https://www.aman.co.il/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 3 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.aman.co.il/wp-json/contact-form-7/v1/contact-forms/24534/feedback/schema",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=314953&time=1788936842782&url=https%3A%2F%2Fwww.aman.co.il%2Fcareers%2F",
+      "https://www.aman.co.il/wp-json/contact-form-7/v1/contact-forms/24534/refill"
+    ]
+  },
+  {
+    "company_name": "Sela",
+    "careers_url": "https://www.sela.co.il",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 10 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+      "https://googleads.g.doubleclick.net/pagead/id?slf_rd=1",
+      "https://www.sela.co.il/_next/data/ZduLXHzTlkPmuQlrRNsl9/courses.json",
+      "https://www.sela.co.il/_next/data/ZduLXHzTlkPmuQlrRNsl9/college.json",
+      "https://www.sela.co.il/_next/data/ZduLXHzTlkPmuQlrRNsl9/contact.json",
+      "https://www.sela.co.il/_next/data/ZduLXHzTlkPmuQlrRNsl9/aboutus.json",
+      "https://www.sela.co.il/_next/data/ZduLXHzTlkPmuQlrRNsl9/index.json",
+      "https://www.sela.co.il/_next/data/ZduLXHzTlkPmuQlrRNsl9/delivery.json",
+      "https://www.sela.co.il/_next/data/ZduLXHzTlkPmuQlrRNsl9/bootcamp.json",
+      "https://www.youtube.com/youtubei/v1/next?prettyPrint=false"
+    ]
+  },
+  {
+    "company_name": "OX Security",
+    "careers_url": "https://www.ox.security/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Logz.io",
+    "careers_url": "https://www.logz.io/careers",
+    "detected_ats": "lever",
+    "evidence": "page source contains 'jobs.lever.co'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Cloudinary",
+    "careers_url": "https://www.cloudinary.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 7 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://cdn.cookielaw.org/consent/01917fa3-7c9e-731b-bec2-206998080a98/01917fa3-7c9e-731b-bec2-206998080a98.json",
+      "https://cloudinary.com/wp-admin/admin-ajax.php",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn.cookielaw.org/consent/01917fa3-7c9e-731b-bec2-206998080a98/01a01578-ff3a-7944-b23b-9b7ab5f863bf/en.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/otFloatingRounded.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/v2/otPcTab.json",
+      "https://cdn.cookielaw.org/scripttemplates/202603.1.0/assets/otCookieSettingsButton.json"
+    ]
+  },
+  {
+    "company_name": "Duda",
+    "careers_url": "https://www.duda.co/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 8 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://my.duda.co/api/public/accounts/current",
+      "https://api.ipgeolocation.io/ipgeo",
+      "https://duda.sjv.io/xur/13628",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=600804&time=1788936860536&url=https%3A%2F%2Fwww.duda.co%2Fcareers%3Fcountrycode%3DIL",
+      "https://scout.salesloft.com/r?tid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0IjoxMDMwMjJ9.ol0arySD16ueIr2mTazX8s668G4B--ApXv5w15-LPRU",
+      "https://aplo-evnt.com/api/v1/intent_pixel/can_track_visitor?x_app_id=66312d0a6c76ae01c7e472d7",
+      "https://script.crazyegg.com/pages/data-scripts/0013/5752/site/www.duda.co.json?t=1",
+      "https://scout.salesloft.com/i"
+    ]
+  },
+  {
+    "company_name": "IONIX",
+    "careers_url": "https://www.ionix.io/careers",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.comeet.co/careers-api/api.js",
+      "https://cdn-cookieyes.com/client_data/aefcfda37580d19d8f452b60a4a36115/HNP_ImmE.json",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=24478423&currentUrl=https%3A%2F%2Fwww.ionix.io%2Fcareers%2F",
+      "https://cdn-cookieyes.com/client_data/aefcfda37580d19d8f452b60a4a36115/config/xJ_InkQW.json",
+      "https://cdn-cookieyes.com/client_data/aefcfda37580d19d8f452b60a4a36115/translations/v7O1bdwh.json",
+      "https://ionix.chilipiper.com/api/sentry-tunnel",
+      "https://cdn-cookieyes.com/client_data/aefcfda37580d19d8f452b60a4a36115/audit-table/pjz7lxt6.json",
+      "https://ionix.chilipiper.com/api/fire-auth/v1/public/guest-tokens",
+      "https://ionix.chilipiper.com/api/feature-flags/v1/guest-external/resolve"
+    ]
+  },
+  {
+    "company_name": "Port",
+    "careers_url": "https://www.getport.io/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet.co/careers-api'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Trullion",
+    "careers_url": "https://www.trullion.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://www.comeet.co/careers-api/api.js"
+    ]
+  },
+  {
+    "company_name": "BigPanda",
+    "careers_url": "https://www.bigpanda.io/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 6 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://cdn.cookielaw.org/consent/8481b183-af22-4e6f-ad52-05415af86bde/8481b183-af22-4e6f-ad52-05415af86bde.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://www.bigpanda.io/wp-admin/admin-ajax.php",
+      "https://cdn.cookielaw.org/consent/8481b183-af22-4e6f-ad52-05415af86bde/019f45bf-a95e-7c8f-ab32-4c807f91bcf4/en.json",
+      "https://cdn.cookielaw.org/scripttemplates/202606.2.0/assets/v2/otPcCenter.json",
+      "https://cdn.cookielaw.org/scripttemplates/202606.2.0/assets/otFloatingRoundedCorner.json"
+    ]
+  },
+  {
+    "company_name": "Pecan AI",
+    "careers_url": "https://www.pecan.ai/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 2 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://api.hubspot.com/meetings-public/v3/book?slug=pecan%2Fdemo-meeting-link&now=1788936883633&includeInactiveLink=true&location=go.pecan.ai&hubspotUtk=null&timezone=Asia%2FJerusalem&hs_static_app=MeetingsPublic&hs_static_app_version=1.61004&clienttimeout=12000",
+      "https://api.hubspot.com/meetings-public/v3/book/availability-page?slug=pecan%2Fdemo-meeting-link&monthOffset=0&timezone=Asia%2FJerusalem&hs_static_app=MeetingsPublic&hs_static_app_version=1.61004&clienttimeout=12000"
+    ]
+  },
+  {
+    "company_name": "Incredibuild",
+    "careers_url": "https://www.incredibuild.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 3 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://vimeo.com/flarepoint/orion/v3/identity/settings",
+      "https://api.userway.org/api/v1/tunings/prbt1ipXqE",
+      "https://pixel-config.reddit.com/pixels/a2_f6odqyczb9qv/config"
+    ]
+  },
+  {
+    "company_name": "Lendbuzz",
+    "careers_url": "https://www.lendbuzz.com/careers",
+    "detected_ats": "lever",
+    "evidence": "network request to https://api.lever.co/v0/postings/lendbuzz?group=department&mode=json",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://consent-eu.cookiehub.net/v3/token",
+      "https://cdn.prod.website-files.com/62ed374a7616c514c0bbad26/634e2b5eaca4b379ec9850f9_lottieflow-menu-nav-06-000000-easey.json",
+      "https://cdn.cookiehub.eu/client/ba53bd30/en.json",
+      "https://api.lever.co/v0/postings/lendbuzz?group=department&mode=json",
+      "https://tcvsapi.contentsquare.com/v2/projects/78992/verify-installation/auto?ct=0",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=4246314&time=1788936893974&url=https%3A%2F%2Fwww.lendbuzz.com%2Fcareers"
+    ]
+  },
+  {
+    "company_name": "GeoEdge",
+    "careers_url": "https://www.geoedge.com/careers",
+    "detected_ats": "comeet",
+    "evidence": "network request to https://www.comeet.co/careers-api/api.js",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://scout.salesloft.com/r?tid=eyJhbGciOiJIUzI1NiJ9.eyJ0IjoxMDUzMTV9.j86w3wPTLg0qIvl47rk9QYTmpcO2ROIsXujZvq_J96o",
+      "https://scout.salesloft.com/r?tid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0IjoxMDUzMTV9.MZ2-9-gbuG7axB0HPQZkw0uPKRf7L_6Idpyzed7q6zg",
+      "https://scout.salesloft.com/i",
+      "https://www.comeet.co/careers-api/api.js",
+      "https://pixel-config.reddit.com/pixels/t2_5lpg23aa/config",
+      "https://cdn.acsbapp.com/config/geoedge.com/config.json"
+    ]
+  },
+  {
+    "company_name": "Minute Media",
+    "careers_url": "https://www.minutemedia.com/company/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet.co/careers-api'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Skai",
+    "careers_url": "https://www.skai.io/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  },
+  {
+    "company_name": "Upstream Security",
+    "careers_url": "https://www.upstream.auto/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 1 captured job-like network responses",
+    "http_status": 200,
+    "error": null,
+    "method": "browser_network_capture",
+    "candidate_endpoints": [
+      "https://consentcdn.cookiebot.com/consentconfig/dd966c6b-f6c4-4639-9ad8-7b172b89f661/settings.json"
+    ]
+  },
+  {
+    "company_name": "Zencity",
+    "careers_url": "https://www.zencity.io/careers",
+    "detected_ats": "comeet",
+    "evidence": "page source contains 'comeet-groups-list'",
+    "http_status": 200,
+    "error": null,
+    "method": "static_html_or_url",
+    "candidate_endpoints": []
+  }
+]
