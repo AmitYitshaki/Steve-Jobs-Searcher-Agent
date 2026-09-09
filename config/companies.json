@@ -2407,5 +2407,55 @@
       "Israel"
     ],
     "notes": "Comeet board URL found directly linked from the company careers page; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "reco",
+    "company_name": "Reco",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/reco/3A.00D",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly linked from the company careers page; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "legit_security",
+    "company_name": "Legit Security",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/legitsecurity.com/37.004",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly linked from the company careers page; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "papaya_global",
+    "company_name": "Papaya Global",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.papayaglobal.com/careers/",
+    "job_selector": ".single-position",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page rendering both mobile and desktop position lists (dedup handles the overlap); verified live (37 clean jobs)."
+  },
+  {
+    "company_id": "guesty",
+    "company_name": "Guesty",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.guesty.com/careers/",
+    "job_selector": ".CareersJobsBlock_card__b5yj1",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; job_selector uses a CSS-module hashed classname (may break on redeploy), verified live (10 clean jobs)."
   }
 ]
