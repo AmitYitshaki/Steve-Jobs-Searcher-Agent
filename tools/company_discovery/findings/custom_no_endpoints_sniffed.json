@@ -1,0 +1,207 @@
+[
+  {
+    "company_name": "WEKA",
+    "careers_url": "https://www.weka.io/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 10 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://script.crazyegg.com/pages/data-scripts/0133/2130/site/www.weka.io.json?t=1",
+      "https://cdn.cookielaw.org/consent/b0418d63-1b8e-476e-abb4-953adaec1730/b0418d63-1b8e-476e-abb4-953adaec1730.json",
+      "https://pixel-config.reddit.com/pixels/a2_hx7znom0b9pq/config",
+      "https://script.crazyegg.com/pages/data-scripts/0133/2130/sampling/www.weka.io.json?t=1",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=4289529&time=1788945349457&url=https%3A%2F%2Fwww.weka.io%2Fcareers%2F",
+      "https://api.company-target.com/api/v3/ip.json?referrer=&page=https%3A%2F%2Fwww.weka.io%2Fcareers%2F&page_title=Careers%20at%20WEKA%20%7C%20Join%20the%20Future%20of%20AI%20Data%20Infrastructure",
+      "https://cdn.cookielaw.org/consent/b0418d63-1b8e-476e-abb4-953adaec1730/bd7dcecf-5dc1-41bb-8955-5a3b0de64f18/en.json",
+      "https://cdn.cookielaw.org/scripttemplates/202604.1.0/assets/otFloatingRoundedCorner.json",
+      "https://cdn.cookielaw.org/scripttemplates/202604.1.0/assets/v2/otPcPanel.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "HiBob",
+    "careers_url": "https://www.hibob.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 23 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://www.hibob.com/wp-admin/admin-ajax.php?action=hibob_get_cta_nonce",
+      "https://new.hibob.com/app/uploads/2026/04/06-solutions-hr.json?v=8cb73b17c9",
+      "https://new.hibob.com/app/uploads/2026/08/Icon_ByVertical_FinancialServices.json?v=9861b73909",
+      "https://new.hibob.com/app/uploads/2026/08/Icon_ByVertical_Professional-Services.json?v=e9eb40f94d",
+      "https://new.hibob.com/app/uploads/2026/04/01-core-suite.json?v=f9dcfd4aa4",
+      "https://new.hibob.com/app/uploads/2026/04/11-solutions-smb.json?v=9a63f5602a",
+      "https://www.hibob.com/wp-admin/admin-ajax.php",
+      "https://new.hibob.com/app/uploads/2026/08/Icon_ByVertical_Technology-Software.json?v=b318b76675",
+      "https://new.hibob.com/app/uploads/2026/04/03-payroll-suite.json?v=9b8abe4c78",
+      "https://new.hibob.com/app/uploads/2026/08/Icon_ByVertical_Manufacturing.json?v=df73b581da",
+      "https://new.hibob.com/app/uploads/2026/04/07-solutions-finance.json?v=72f399c821",
+      "https://new.hibob.com/app/uploads/2026/04/04-planning-suite.json?v=8aed95e347",
+      "https://new.hibob.com/app/uploads/2026/05/PagesWebNavigation_Icon_14.json?v=a5690ed439",
+      "https://new.hibob.com/app/uploads/2026/06/PagesWebNavigation_Icon_16.json?v=d90f247f5a",
+      "https://new.hibob.com/app/uploads/2026/05/PagesWebNavigation_Icon_15-1.json?v=0e7005b480"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Pentera",
+    "careers_url": "https://pentera.io/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Radware",
+    "careers_url": "https://www.radware.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Nayax",
+    "careers_url": "https://www.nayax.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Guesty",
+    "careers_url": "https://www.guesty.com/careers/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 4 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://api.hubapi.com/hs-script-loader-public/v2/config/pixels-and-events/json?portalId=2950575",
+      "https://cta-service-cms2.hubspot.com/web-interactives/public/v1/embed/combinedConfigs?portalId=2950575&currentUrl=https%3A%2F%2Fwww.guesty.com%2Fcareers%2F",
+      "https://api.withmesh.com/init-sdk",
+      "https://grsm.io/pr/grc/pk_bKWDB18MJwVg8XuoGewIzXUYVIwU36Sx?get_pscd=true"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "MyHeritage",
+    "careers_url": "https://careers.myheritage.com/",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Alpha Tau Medical",
+    "careers_url": "https://www.alphatau.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "General Motors",
+    "careers_url": "https://www.gm.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Unity",
+    "careers_url": "https://www.unity.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "UVision",
+    "careers_url": "https://www.uvisionuav.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Nexxen",
+    "careers_url": "https://www.nexxen.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Alice",
+    "careers_url": "https://www.alice.tech/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "PayEm",
+    "careers_url": "https://www.payem.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Medison",
+    "careers_url": "https://www.medison.co",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 10 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://cdn.cookielaw.org/consent/4a50d282-c3cb-41cd-a51d-3d63c9cb87e4/4a50d282-c3cb-41cd-a51d-3d63c9cb87e4.json",
+      "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location",
+      "https://cdn.cookielaw.org/consent/4a50d282-c3cb-41cd-a51d-3d63c9cb87e4/d2f445e1-e1fb-494c-a481-0dd4befed98e/en.json",
+      "https://cdn.nagich.co.il/assets/data/methods.json",
+      "https://cdn.cookielaw.org/scripttemplates/6.27.0/assets/otFlat.json",
+      "https://cdn.cookielaw.org/scripttemplates/6.27.0/assets/v2/otPcCenter.json",
+      "https://cdn.cookielaw.org/scripttemplates/6.27.0/assets/otCookieSettingsButton.json",
+      "https://cdn.nagich.co.il/assets/data/lang.json",
+      "https://cdn.nagich.co.il/assets/locale/en.json",
+      "https://px.ads.linkedin.com/attribution_trigger?pid=9262825&time=1788945423561&url=https%3A%2F%2Fwww.medisonpharma.com%2F"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Skai",
+    "careers_url": "https://www.skai.io/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 1 captured job-like network responses",
+    "candidate_endpoints": [
+      "https://cdn.weglot.com/projects-settings/1b8710089a1a6aa60e1c5a43413108218.json"
+    ],
+    "error": null
+  },
+  {
+    "company_name": "Lightrun",
+    "careers_url": "https://www.lightrun.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Beach Bum",
+    "careers_url": "https://www.beachbum.co/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Adnimation",
+    "careers_url": "https://www.adnimation.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  },
+  {
+    "company_name": "Align Technology",
+    "careers_url": "https://www.aligntech.com/careers",
+    "detected_ats": "custom",
+    "evidence": "no known ATS host in 0 captured job-like network responses",
+    "candidate_endpoints": [],
+    "error": null
+  }
+]

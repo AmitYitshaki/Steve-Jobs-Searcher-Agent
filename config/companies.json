@@ -2208,5 +2208,49 @@
     ],
     "notes": "Comeet integration (direct board, JS widget, or WordPress plugin embed); verified live via the generalized Comeet adapter.",
     "fetch_strategy": "api"
+  },
+  {
+    "company_id": "snyk",
+    "company_name": "Snyk",
+    "is_active": true,
+    "ats_type": "workday",
+    "api_url": "https://snyk.wd103.myworkdayjobs.com/wday/cxs/snyk/External/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Real ATS is Workday, discovered via job URLs embedded in the company's own snyk.io/api/next/jobs mirror; verified live via direct request."
+  },
+  {
+    "company_id": "next_insurance",
+    "company_name": "Next Insurance",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/nextinsurance66/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Greenhouse token discovered via job URLs embedded in the company's own nextjs-api/careers mirror; verified live via direct request."
+  },
+  {
+    "company_id": "honeybook",
+    "company_name": "HoneyBook",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/honeybook",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Ashby token discovered via job URLs embedded in the company's own api.honeybook.com/api/v2/careers mirror; verified live via direct request."
+  },
+  {
+    "company_id": "teva",
+    "company_name": "Teva Pharmaceuticals",
+    "is_active": true,
+    "ats_type": "eightfold",
+    "api_url": "https://www.careers.teva/careers",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Eightfold-hosted careers site on the company's own careers.teva subdomain; verified live via scrape_eightfold."
   }
 ]
