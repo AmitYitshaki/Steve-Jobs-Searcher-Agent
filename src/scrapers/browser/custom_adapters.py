@@ -1093,6 +1093,136 @@ def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
     return jobs
 
 
+_WORKABLE_ACCOUNT_PATTERN = re.compile(r"/accounts/([^/]+)/jobs")
+
+
+def scrape_workable(company: CompanyConfig) -> list[dict[str, str]]:
+    """Fetch and normalize jobs from a Workable job-board API endpoint.
+
+    Workable's public listing API (``apply.workable.com/api/v3/accounts/
+    <token>/jobs``) requires a POST with an empty JSON body -- a plain GET
+    returns 404, which is easy to mistake for "no such account." The
+    account token doubles as the path segment for Workable's public job
+    pages (``apply.workable.com/<token>/j/<shortcode>/``), so it is
+    extracted once from ``api_url`` rather than requiring a second config
+    field.
+    """
+
+    company_id = str(company.get("company_id", "")).strip()
+    api_url = str(company.get("api_url", "")).strip()
+    if not company_id or not api_url:
+        LOGGER.error("Workable adapter requires an api_url")
+        return []
+
+    account_match = _WORKABLE_ACCOUNT_PATTERN.search(api_url)
+    account = account_match.group(1) if account_match else None
+
+    response_text: str | None = None
+    try:
+        response = requests.post(
+            api_url,
+            json={},
+            headers={**IAI_REQUEST_HEADERS, "Content-Type": "application/json"},
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
+        response_text = response.text
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as error:
+        LOGGER.error("Workable request failed for %s: %s", company_id, error)
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=response_text,
+            primary_extension="json",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": f"{type(error).__name__}: {error}",
+                "job_count": 0,
+                "sample_titles": [],
+            },
+        )
+        return []
+
+    results = payload.get("results") if isinstance(payload, Mapping) else None
+    if not isinstance(results, list):
+        LOGGER.error(
+            "Workable response for %s had no results list", company_id
+        )
+        write_company_artifacts(
+            company_id,
+            source="api",
+            primary_content=response_text,
+            primary_extension="json",
+            screenshot_bytes=None,
+            notes={
+                "status": "failed",
+                "message": "Unexpected payload shape: no results list",
+                "job_count": 0,
+                "sample_titles": [],
+            },
+        )
+        return []
+
+    jobs: list[dict[str, str]] = []
+    for item in results:
+        if not isinstance(item, Mapping):
+            continue
+        # shortcode is required, not just preferred: it is the only field
+        # that builds a working public job URL, and a job with no URL is
+        # not useful downstream.
+        raw_shortcode = item.get("shortcode")
+        title = str(item.get("title") or "").strip()
+        if not raw_shortcode or not title:
+            continue
+        job_id = str(raw_shortcode).strip()
+        if not job_id:
+            continue
+
+        location_value = item.get("location")
+        location = (
+            _join_distinct_text(
+                location_value.get("city"),
+                location_value.get("region"),
+                location_value.get("country"),
+            )
+            if isinstance(location_value, Mapping)
+            else ""
+        )
+
+        job_url = (
+            f"https://apply.workable.com/{account}/j/{job_id}/"
+            if account
+            else ""
+        )
+
+        jobs.append(
+            {
+                "id": f"{company_id}_{job_id}",
+                "title": title,
+                "location": location,
+                "url": job_url,
+                "content": "",
+            }
+        )
+
+    write_company_artifacts(
+        company_id,
+        source="api",
+        primary_content=response_text,
+        primary_extension="json",
+        screenshot_bytes=None,
+        notes={
+            "status": "success" if jobs else "no_jobs",
+            "message": "",
+            "job_count": len(jobs),
+            "sample_titles": extract_sample_titles(jobs),
+        },
+    )
+    return jobs
+
+
 ORC_PAGE_SIZE = 25
 ORC_MAX_PAGES = 40
 

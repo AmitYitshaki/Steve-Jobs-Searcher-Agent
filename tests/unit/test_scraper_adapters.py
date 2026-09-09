@@ -2479,5 +2479,112 @@ class ComeetAdapterTests(unittest.TestCase):
         get.assert_not_called()
 
 
+class WorkableAdapterTests(unittest.TestCase):
+    """Verify the Workable job-board API adapter."""
+
+    def test_posts_empty_body_and_normalizes_results(self) -> None:
+        """POST (not GET -- a plain GET 404s) and normalize real fields.
+
+        Confirmed live: Workable's public listing API only responds to a
+        POST with an empty JSON body.
+        """
+
+        response = MagicMock()
+        response.json.return_value = {
+            "total": 1,
+            "results": [
+                {
+                    "id": 6033288,
+                    "shortcode": "514DE2B215",
+                    "title": "AI Researcher - Video Generation",
+                    "location": {
+                        "city": "Tel Aviv-Yafo",
+                        "region": "Tel Aviv District",
+                        "country": "Israel",
+                    },
+                }
+            ],
+        }
+        company = {
+            "company_id": "d_id",
+            "api_url": "https://apply.workable.com/api/v3/accounts/d-id/jobs",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.post",
+            return_value=response,
+        ) as post:
+            jobs = custom_adapters.scrape_workable(company)
+
+        self.assertEqual(post.call_args.args[0], company["api_url"])
+        self.assertEqual(post.call_args.kwargs["json"], {})
+        self.assertEqual(
+            jobs,
+            [
+                {
+                    "id": "d_id_514DE2B215",
+                    "title": "AI Researcher - Video Generation",
+                    "location": "Tel Aviv-Yafo | Tel Aviv District | Israel",
+                    "url": "https://apply.workable.com/d-id/j/514DE2B215/",
+                    "content": "",
+                }
+            ],
+        )
+
+    def test_position_without_shortcode_or_title_is_skipped(self) -> None:
+        """Drop entries with no shortcode: it is the only field that builds
+        a working public job URL, so a job without one is not useful
+        downstream even if it otherwise looks valid."""
+
+        response = MagicMock()
+        response.json.return_value = {
+            "results": [
+                {"id": 1, "shortcode": "AAA", "title": "Valid Role"},
+                {"id": 2, "shortcode": "", "title": "No Shortcode"},
+                {"id": 3, "shortcode": "BBB", "title": ""},
+            ]
+        }
+        company = {
+            "company_id": "example",
+            "api_url": "https://apply.workable.com/api/v3/accounts/example/jobs",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.post",
+            return_value=response,
+        ):
+            jobs = custom_adapters.scrape_workable(company)
+
+        self.assertEqual([job["id"] for job in jobs], ["example_AAA"])
+
+    def test_request_failure_returns_empty_list(self) -> None:
+        """Fail closed instead of raising when the board is unreachable."""
+
+        company = {
+            "company_id": "example",
+            "api_url": "https://apply.workable.com/api/v3/accounts/example/jobs",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.post",
+            side_effect=custom_adapters.requests.RequestException("boom"),
+        ):
+            jobs = custom_adapters.scrape_workable(company)
+
+        self.assertEqual(jobs, [])
+
+    def test_missing_company_id_or_api_url_returns_empty_list(self) -> None:
+        """Refuse to guess when required configuration is absent."""
+
+        with patch("scrapers.browser.custom_adapters.requests.post") as post:
+            self.assertEqual(
+                custom_adapters.scrape_workable({"api_url": "https://x.test"}), []
+            )
+            self.assertEqual(
+                custom_adapters.scrape_workable({"company_id": "x"}), []
+            )
+        post.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

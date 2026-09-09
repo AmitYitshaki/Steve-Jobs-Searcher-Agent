@@ -2860,5 +2860,240 @@
       "Israel"
     ],
     "notes": "Custom careers page; the default universal-extraction heuristic already isolates clean job links with no job_selector needed, verified live (18 real jobs incl. R&D and senior engineering roles)."
+  },
+  {
+    "company_id": "salt_security",
+    "company_name": "Salt Security",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/saltsecurity/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Greenhouse token found by Codex during a follow-up research pass on companies our own review could not resolve; independently re-verified live (12 jobs)."
+  },
+  {
+    "company_id": "controlup",
+    "company_name": "ControlUp",
+    "is_active": true,
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/controlup?mode=json",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Lever token found by Codex; independently re-verified live (11 postings)."
+  },
+  {
+    "company_id": "microchip_technology",
+    "company_name": "Microchip Technology",
+    "is_active": true,
+    "ats_type": "workday",
+    "api_url": "https://microchiphr.wd5.myworkdayjobs.com/wday/cxs/microchiphr/External/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workday tenant found by Codex (tenant is microchiphr, not microchip); independently re-verified live (503 total jobs worldwide)."
+  },
+  {
+    "company_id": "sapiens",
+    "company_name": "Sapiens",
+    "is_active": true,
+    "ats_type": "successfactors",
+    "api_url": "https://careers.sapiens.com/search/?q=&locationsearch=Israel",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "SuccessFactors search page found by Codex; independently re-verified live via scrape_successfactors (2 jobs in Holon)."
+  },
+  {
+    "company_id": "matrix_it",
+    "company_name": "Matrix IT",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.matrix.co.il/jobs/tag/all-jobs/",
+    "job_selector": "h2.job-title a",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "No reliable careers page had been found for this company in any earlier pass; found and verified by Codex (506 Hebrew job listings). Large IT services holding company -- expect very high volume."
+  },
+  {
+    "company_id": "dream_security",
+    "company_name": "Dream Security",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/dreamgroup/99.002",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "No reliable careers page had been found for this company in any earlier pass; Comeet board found by Codex, works via the existing plain-HTTP scrape_comeet (31 jobs)."
+  },
+  {
+    "company_id": "panorays",
+    "company_name": "Panorays",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.panorays.com/careers",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet integration found by Codex; works via the existing scrape_comeet directly on the careers page (3 jobs)."
+  },
+  {
+    "company_id": "noma_security",
+    "company_name": "Noma Security",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.noma.security/careers",
+    "job_selector": "a[href*=\"/positions/\"]",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; job_selector found by Codex isolates individual postings (an earlier selector attempt this session grouped by department instead). Verified live (24 clean jobs)."
+  },
+  {
+    "company_id": "komodor",
+    "company_name": "Komodor",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.komodor.com/careers",
+    "job_selector": ".single-job",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; job_selector found by Codex isolates the real job posting (an earlier text match this session on this same page hit a team-testimonial slider instead -- verified this is a distinct, real /job/ URL)."
+  },
+  {
+    "company_id": "datarails",
+    "company_name": "Datarails",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.datarails.com/careers/",
+    "job_selector": ".dr-open-positions__role",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job class; verified live (1 real job currently)."
+  },
+  {
+    "company_id": "sunbit",
+    "company_name": "Sunbit",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.sunbit.com/careers",
+    "job_selector": "a.departments-section__item",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; job_selector found by Codex, verified live (26 jobs, mostly US-based -- downstream location filter scopes to Israel)."
+  },
+  {
+    "company_id": "bright_data",
+    "company_name": "Bright Data",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.brightdata.com/careers",
+    "job_selector": "a[href^=\"/careers/\"]:not([href=\"/careers/\"])",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; job_selector found by Codex, verified live (38 jobs incl. student positions)."
+  },
+  {
+    "company_id": "adnimation",
+    "company_name": "Adnimation",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.adnimation.com/careers",
+    "job_selector": "a[href^=\"https://www.adnimation.com/careers-\"]",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; job_selector found by Codex, verified live (2 jobs)."
+  },
+  {
+    "company_id": "walkme",
+    "company_name": "WalkMe",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.walkme.com/careers/careers_list/",
+    "job_selector": "a[href*=\"/jobs/\"]",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; Codex found real job links used absolute URLs, so the original starts-with selector matched nothing -- corrected to a contains-match and verified live (29 clean jobs)."
+  },
+  {
+    "company_id": "simply",
+    "company_name": "Simply",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.hellosimply.com/careers",
+    "job_selector": "a.PositionsSection_jobLink__D56G_",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "No reliable careers page had been found for this company in any earlier pass (ambiguous with other same-named companies); Codex confirmed hellosimply.com and verified live (6 jobs). CSS-module hashed classname may break on redeploy."
+  },
+  {
+    "company_id": "valens",
+    "company_name": "Valens",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.valens.com/positions/",
+    "job_selector": ".position-card",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; verified live (4 real jobs), but titles are truncated at an embedded <br> in the source markup (a known limitation in the shared title-extraction helper, not specific to this company) -- e.g. \"Customer Program\" instead of the full \"Customer Program Manager (CPM)\"."
+  },
+  {
+    "company_id": "priority_software",
+    "company_name": "Priority Software",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.priority-software.com/careers",
+    "job_selector": "a[href*=\"/careers/\"][href$=\"/\"]",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page; verified live (10 job-detail URLs incl. real postings), but the selector also catches one language-switcher link (\"Hebrew\") -- harmless since it will not pass the title-relevance filter downstream. Worth tightening the selector later."
+  },
+  {
+    "company_id": "d_id",
+    "company_name": "D-ID",
+    "is_active": true,
+    "ats_type": "workable",
+    "fetch_strategy": "api",
+    "api_url": "https://apply.workable.com/api/v3/accounts/d-id/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workable listing API; endpoint found by Codex, requires a POST with an empty JSON body (a plain GET 404s). New scrape_workable adapter added and verified live (2 jobs incl. an AI Researcher role in Tel Aviv)."
+  },
+  {
+    "company_id": "accessfintech",
+    "company_name": "AccessFintech",
+    "is_active": true,
+    "ats_type": "workable",
+    "fetch_strategy": "api",
+    "api_url": "https://apply.workable.com/api/v3/accounts/accessfintech/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Workable listing API; verified live via scrape_workable (3 jobs incl. a Tel Aviv student position)."
   }
 ]

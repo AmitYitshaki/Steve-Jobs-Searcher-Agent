@@ -27,6 +27,7 @@ from scrapers.browser.custom_adapters import (
     scrape_successfactors,
     scrape_thales_phenom,
     scrape_universal_playwright,
+    scrape_workable,
 )
 from scrapers.health import CompanyHealthTracker
 from paths import CONFIG_DIR, DATA_DIR
@@ -71,6 +72,7 @@ CUSTOM_BROWSER_ADAPTERS: dict[str, CustomApiAdapter] = {
 CUSTOM_API_ADAPTERS_BY_ATS_TYPE: dict[str, CustomApiAdapter] = {
     "oracle_recruiting_cloud": scrape_oracle_rc,
     "comeet": scrape_comeet,
+    "workable": scrape_workable,
 }
 
 
