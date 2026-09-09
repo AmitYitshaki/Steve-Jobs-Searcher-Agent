@@ -2581,5 +2581,80 @@
       "Israel"
     ],
     "notes": "Workday tenant/site found via web search; verified live (860 jobs worldwide, 0 in Israel currently -- a genuine result, not a wrong endpoint)."
+  },
+  {
+    "company_id": "quantum_machines",
+    "company_name": "Quantum Machines",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/quantummachines/D6.000",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found directly on the company careers page; verified live via scrape_comeet (50 jobs)."
+  },
+  {
+    "company_id": "one_zero",
+    "company_name": "ONE ZERO",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/onezerobank/36.00A",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found via web search; verified live via scrape_comeet."
+  },
+  {
+    "company_id": "eitan_medical",
+    "company_name": "Eitan Medical",
+    "is_active": true,
+    "ats_type": "comeet",
+    "fetch_strategy": "api",
+    "api_url": "https://www.comeet.com/jobs/eitanmedical/C6.00F",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Comeet board URL found via web search; verified live via scrape_comeet, incl. a student role."
+  },
+  {
+    "company_id": "sqream",
+    "company_name": "SQream",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.sqream.com/careers",
+    "job_selector": ".position-card",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job-card class; verified live (1 job currently -- small company, low volume is expected, not a selector failure)."
+  },
+  {
+    "company_id": "mesh_payments",
+    "company_name": "Mesh Payments",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.meshpayments.com/careers",
+    "job_selector": ".career-item",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job class; verified live (4 clean jobs incl. Tel Aviv roles)."
+  },
+  {
+    "company_id": "qodo",
+    "company_name": "Qodo",
+    "is_active": true,
+    "ats_type": "custom",
+    "fetch_strategy": "browser",
+    "api_url": "https://www.qodo.ai/careers",
+    "job_selector": ".ds-block-job-offers__card",
+    "location_filters": [
+      "Israel"
+    ],
+    "notes": "Custom careers page with a purpose-built job-offers-card class; verified live (9 clean jobs)."
   }
 ]
