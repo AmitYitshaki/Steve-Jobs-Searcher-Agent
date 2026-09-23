@@ -904,6 +904,17 @@ class CompanyConfigurationTests(unittest.TestCase):
             ),
         )
 
+    def test_dealhub_uses_current_job_rows(self) -> None:
+        """Select DealHub rows containing the title, location, and job link."""
+
+        company = self.companies["dealhub"]
+        self.assertEqual(company["ats_type"], "custom")
+        self.assertEqual(company["fetch_strategy"], "browser")
+        self.assertEqual(
+            company["job_selector"],
+            ".careers-comeet-jobs__job-row",
+        )
+
     def test_phenom_companies_use_strict_job_listing_selectors(self) -> None:
         """Route browser Phenom sites to real job cards only."""
 
