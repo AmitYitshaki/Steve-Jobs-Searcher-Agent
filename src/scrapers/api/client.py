@@ -73,7 +73,22 @@ def _request_jobs_response(
     while True:
         try:
             if method == "GET":
-                response = requests.get(api_url, **request_kwargs)
+                pagination = mapping.pagination
+                if pagination is None:
+                    response = requests.get(api_url, **request_kwargs)
+                else:
+                    query_params: dict[str, int] = {
+                        pagination.offset_key: page_offset,
+                    }
+                    if pagination.limit_key is not None:
+                        query_params[pagination.limit_key] = (
+                            pagination.page_size
+                        )
+                    response = requests.get(
+                        api_url,
+                        params=query_params,
+                        **request_kwargs,
+                    )
             else:
                 payload = dict(
                     mapping.payload_fn(company)
@@ -250,7 +265,7 @@ def fetch_ats_jobs(
             if payload_overrides is None:
                 LOGGER.warning(
                     "⚠️ %s exposed no Israel location facet; falling back "
-                    "to paginated Workday searchText.",
+                    "to an unscoped paginated Workday scan.",
                     company_id,
                 )
 
@@ -262,6 +277,7 @@ def fetch_ats_jobs(
         jobs: list[JobRecord] = []
         page_offset = 0
         pages_fetched = 0
+        known_total: int | None = None
 
         while True:
             response = _request_jobs_response(
@@ -320,14 +336,19 @@ def fetch_ats_jobs(
                 break
 
             next_offset = page_offset + len(items)
-            total = (
+            reported_total = (
                 _pagination_total(payload, mapping)
                 if isinstance(payload, Mapping)
                 else None
             )
+            if reported_total is not None and reported_total > 0:
+                known_total = max(known_total or 0, reported_total)
             if (
                 len(items) < pagination.page_size
-                or (total is not None and next_offset >= total)
+                or (
+                    known_total is not None
+                    and next_offset >= known_total
+                )
             ):
                 break
             if pages_fetched >= pagination.max_pages:

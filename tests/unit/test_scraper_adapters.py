@@ -201,12 +201,99 @@ class FetchAtsJobsTests(unittest.TestCase):
 
                 self.assertEqual(result.status, ScrapeStatus.SUCCESS)
                 self.assertEqual(result.jobs, [expected_job])
+                expected_kwargs = {
+                    "headers": api_client.DEFAULT_REQUEST_HEADERS,
+                    "timeout": 15,
+                }
+                pagination = scraper.ATS_FIELD_MAP[ats_type].pagination
+                if pagination is not None:
+                    expected_kwargs["params"] = {
+                        pagination.offset_key: 0,
+                        pagination.limit_key: pagination.page_size,
+                    }
                 get.assert_called_once_with(
                     "https://example.test/api",
-                    headers=api_client.DEFAULT_REQUEST_HEADERS,
-                    timeout=15,
+                    **expected_kwargs,
                 )
                 response.raise_for_status.assert_called_once_with()
+
+    def test_paginated_get_mappings_fetch_every_offset(self) -> None:
+        """Follow public GET pagination until every advertised job is read."""
+
+        cases = (
+            ("smartrecruiters", "content", "totalFound", "limit"),
+            ("amazon_jobs", "jobs", "hits", "result_limit"),
+        )
+        for ats_type, envelope_key, total_key, limit_key in cases:
+            with self.subTest(ats_type=ats_type):
+                if ats_type == "smartrecruiters":
+                    first_jobs = [
+                        {
+                            "id": f"SR-{index}",
+                            "name": f"Role {index}",
+                            "location": {"city": "City"},
+                            "ref": f"https://jobs.test/SR-{index}",
+                        }
+                        for index in range(100)
+                    ]
+                    last_job = {
+                        "id": "SR-100",
+                        "name": "Role 100",
+                        "location": {"city": "City"},
+                        "ref": "https://jobs.test/SR-100",
+                    }
+                else:
+                    first_jobs = [
+                        {
+                            "id_ic": f"A-{index}",
+                            "title": f"Role {index}",
+                            "city": "City",
+                            "job_path": f"/en/jobs/A-{index}",
+                        }
+                        for index in range(100)
+                    ]
+                    last_job = {
+                        "id_ic": "A-100",
+                        "title": "Role 100",
+                        "city": "City",
+                        "job_path": "/en/jobs/A-100",
+                    }
+
+                first_response = MagicMock()
+                first_response.json.return_value = {
+                    envelope_key: first_jobs,
+                    total_key: 101,
+                }
+                second_response = MagicMock()
+                second_response.json.return_value = {
+                    envelope_key: [last_job],
+                    total_key: 101,
+                }
+                with patch(
+                    "scrapers.api.client.requests.get",
+                    side_effect=[first_response, second_response],
+                ) as get:
+                    result = scraper.fetch_ats_jobs(
+                        self._company(ats_type),
+                        scraper.ATS_FIELD_MAP[ats_type],
+                    )
+
+                self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+                self.assertEqual(len(result.jobs), 101)
+                self.assertEqual(get.call_count, 2)
+                self.assertEqual(
+                    [
+                        call.kwargs["params"]["offset"]
+                        for call in get.call_args_list
+                    ],
+                    [0, 100],
+                )
+                self.assertTrue(
+                    all(
+                        call.kwargs["params"][limit_key] == 100
+                        for call in get.call_args_list
+                    )
+                )
 
     def test_workday_mapping_posts_payload_and_builds_job_url(self) -> None:
         """Use Workday's POST configuration and derived career base URL."""
@@ -281,7 +368,7 @@ class FetchAtsJobsTests(unittest.TestCase):
                     "limit": 20,
                     "offset": 0,
                     "appliedFacets": {},
-                    "searchText": "Israel",
+                    "searchText": "",
                 },
                 "headers": {
                     "Accept": "application/json",
@@ -296,8 +383,8 @@ class FetchAtsJobsTests(unittest.TestCase):
             },
         )
 
-    def test_workday_mapping_fetches_every_israel_page(self) -> None:
-        """Request successive Workday offsets until all matches are read."""
+    def test_workday_mapping_fetches_every_unscoped_page(self) -> None:
+        """Request every Workday page when no Israel facet is available."""
 
         first_page_jobs = [
             {
@@ -368,9 +455,93 @@ class FetchAtsJobsTests(unittest.TestCase):
         )
         self.assertTrue(
             all(
-                call.kwargs["json"]["searchText"] == "Israel"
+                call.kwargs["json"]["searchText"] == ""
                 for call in post.call_args_list[1:]
             )
+        )
+
+    def test_workday_without_israel_facet_uses_unfiltered_search(self) -> None:
+        """Keep city-only Israeli postings visible to downstream filtering."""
+
+        discovery_response = MagicMock()
+        discovery_response.json.return_value = {
+            "total": 1,
+            "jobPostings": [],
+            "facets": [],
+        }
+        jobs_response = MagicMock()
+        jobs_response.json.return_value = {
+            "total": 1,
+            "jobPostings": [
+                {
+                    "bulletinId": "IL-CITY-1",
+                    "title": "Software Engineer",
+                    "locationsText": "Hod Hasharon",
+                    "externalPath": "/job/IL-CITY-1",
+                }
+            ],
+        }
+        with patch(
+            "scrapers.api.client.requests.post",
+            side_effect=[discovery_response, jobs_response],
+        ) as post:
+            result = scraper.fetch_ats_jobs(
+                self._company("workday"),
+                scraper.ATS_FIELD_MAP["workday"],
+            )
+
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs[0]["location"], "Hod Hasharon")
+        self.assertEqual(
+            post.call_args_list[1].kwargs["json"]["searchText"],
+            "",
+        )
+
+    def test_pagination_keeps_prior_total_when_later_pages_report_zero(
+        self,
+    ) -> None:
+        """Do not truncate Workday tenants that omit totals after page one."""
+
+        pages = []
+        page_specs = ((0, 20, 41), (20, 20, 0), (40, 1, 0))
+        for start, size, total in page_specs:
+            response = MagicMock()
+            response.json.return_value = {
+                "total": total,
+                "jobPostings": [
+                    {
+                        "bulletinId": f"WD-{index}",
+                        "title": f"Role {index}",
+                        "locationsText": "City",
+                        "externalPath": f"/job/WD-{index}",
+                    }
+                    for index in range(start, start + size)
+                ],
+            }
+            pages.append(response)
+        discovery = MagicMock()
+        discovery.json.return_value = {
+            "total": 41,
+            "jobPostings": [],
+            "facets": [],
+        }
+        with patch(
+            "scrapers.api.client.requests.post",
+            side_effect=[discovery, *pages],
+        ) as post:
+            result = scraper.fetch_ats_jobs(
+                self._company("workday"),
+                scraper.ATS_FIELD_MAP["workday"],
+            )
+
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(len(result.jobs), 41)
+        self.assertEqual(
+            [
+                call.kwargs["json"]["offset"]
+                for call in post.call_args_list[1:]
+            ],
+            [0, 20, 40],
         )
 
     def test_workday_discovers_and_applies_israel_location_facet(self) -> None:
@@ -886,6 +1057,27 @@ class CompanyConfigurationTests(unittest.TestCase):
         cls.companies = {
             company["company_id"]: company for company in companies
         }
+
+    def test_no_facet_workday_companies_include_israeli_office_cities(
+        self,
+    ) -> None:
+        """Allow city-only fallback results through location filtering."""
+
+        expected_cities = {
+            "bmc_software": {"Tel Aviv", "Tel Hai", "Tel-Hai"},
+            "microchip_technology": {
+                "Hod Hasharon",
+                "Raanana",
+                "Ra'anana",
+            },
+        }
+        for company_id, city_names in expected_cities.items():
+            with self.subTest(company_id=company_id):
+                location_filters = set(
+                    self.companies[company_id]["location_filters"]
+                )
+                self.assertIn("Israel", location_filters)
+                self.assertTrue(city_names.issubset(location_filters))
 
     def test_iai_uses_hidden_json_api(self) -> None:
         """Route IAI through its current first-party JSON feed."""

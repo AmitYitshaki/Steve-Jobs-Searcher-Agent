@@ -13,6 +13,7 @@ class AtsPagination:
     page_size: int
     total_fn: Callable[[Mapping[str, Any]], Any]
     offset_key: str = "offset"
+    limit_key: str | None = None
     max_pages: int = 100
 
 
@@ -178,6 +179,11 @@ ATS_FIELD_MAP: dict[str, AtsMapping] = {
             job.get("preferred_qualifications"),
         ),
         base_url_fn=lambda _company: "https://www.amazon.jobs",
+        pagination=AtsPagination(
+            page_size=100,
+            total_fn=lambda payload: payload.get("hits"),
+            limit_key="result_limit",
+        ),
     ),
     "smartrecruiters": AtsMapping(
         envelope_key="content",
@@ -190,6 +196,11 @@ ATS_FIELD_MAP: dict[str, AtsMapping] = {
         content_fields_fn=lambda job: (
             job.get("jobAd"),
             job.get("description"),
+        ),
+        pagination=AtsPagination(
+            page_size=100,
+            total_fn=lambda payload: payload.get("totalFound"),
+            limit_key="limit",
         ),
     ),
     "ashby": AtsMapping(
@@ -240,7 +251,7 @@ ATS_FIELD_MAP: dict[str, AtsMapping] = {
         payload_fn=lambda _company: {
             "limit": 20,
             "appliedFacets": {},
-            "searchText": "Israel",
+            "searchText": "",
         },
         base_url_fn=lambda company: str(
             company.get("api_url", "")

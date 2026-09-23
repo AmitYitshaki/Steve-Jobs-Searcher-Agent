@@ -23,7 +23,7 @@
     "tier": "A",
     "is_active": true,
     "ats_type": "amazon_jobs",
-    "api_url": "https://www.amazon.jobs/en/search.json?country=ISR&result_limit=100",
+    "api_url": "https://www.amazon.jobs/en/search.json?country=ISR",
     "location_filters": [
       "Israel",
       "Tel Aviv",
@@ -2578,7 +2578,10 @@
     "ats_type": "workday",
     "api_url": "https://bmc.wd1.myworkdayjobs.com/wday/cxs/bmc/BMC/jobs",
     "location_filters": [
-      "Israel"
+      "Israel",
+      "Tel Aviv",
+      "Tel Hai",
+      "Tel-Hai"
     ],
     "notes": "Workday tenant/site found via web search; verified live (860 jobs worldwide, 0 in Israel currently -- a genuine result, not a wrong endpoint)."
   },
@@ -2890,7 +2893,10 @@
     "ats_type": "workday",
     "api_url": "https://microchiphr.wd5.myworkdayjobs.com/wday/cxs/microchiphr/External/jobs",
     "location_filters": [
-      "Israel"
+      "Israel",
+      "Hod Hasharon",
+      "Raanana",
+      "Ra'anana"
     ],
     "notes": "Workday tenant found by Codex (tenant is microchiphr, not microchip); independently re-verified live (503 total jobs worldwide)."
   },
