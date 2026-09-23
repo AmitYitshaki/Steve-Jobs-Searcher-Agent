@@ -30,15 +30,13 @@ from scrapers.browser.custom_adapters import (
     scrape_workable,
 )
 from scrapers.health import CompanyHealthTracker
+from logging_config import configure_logging
 from paths import CONFIG_DIR, DATA_DIR
 from storage.health import ScraperHealthStore
 from storage.history import JobHistoryStore
 from storage.queue import PendingAlert, PendingAlertQueue
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+configure_logging()
 LOGGER = logging.getLogger(__name__)
 
 # טעינת משתני הסביבה

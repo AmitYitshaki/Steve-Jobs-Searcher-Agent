@@ -4,20 +4,41 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Sequence
 
-from paths import DATA_DIR, PROJECT_ROOT
+from logging_config import configure_logging
+from paths import DATA_DIR, LOGS_DIR, PROJECT_ROOT
 from storage.drivers.atomic_json import AtomicJsonListStore
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
 LOGGER = logging.getLogger(__name__)
+
+
+def _ensure_pipeline_log_file() -> None:
+    """Assign a fresh timestamped log path and configure logging for real runs.
+
+    Deliberately called only from the ``__main__`` guard below, never at
+    module import time or from :func:`main`/:class:`E2ERunner` directly.
+    Both are also reached when ``pytest`` collects or exercises this module
+    (``test_pipeline.py`` imports it and calls ``pipeline.main`` under a
+    mocked command runner); doing file I/O and a process-wide
+    ``force=True`` logging reconfiguration there would create stray log
+    files and leak into unrelated tests' log output for the rest of the
+    pytest process.
+    """
+
+    if "PIPELINE_LOG_FILE" not in os.environ:
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        os.environ["PIPELINE_LOG_FILE"] = str(
+            LOGS_DIR / f"pipeline_run_{timestamp}.log"
+        )
+    configure_logging()
 
 CommandRunner = Callable[..., subprocess.CompletedProcess[bytes]]
 InputFunction = Callable[[str], str]
@@ -66,6 +87,10 @@ class E2ERunner:
         """Execute the workflow and always attempt to restore WARP."""
 
         LOGGER.info("🚀 Starting the end-to-end job pipeline.")
+        LOGGER.info(
+            "📝 Full run log (producer + consumer): %s",
+            os.environ.get("PIPELINE_LOG_FILE"),
+        )
         if reset_state:
             self._reset_state()
         else:
@@ -302,4 +327,5 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    _ensure_pipeline_log_file()
     raise SystemExit(main())

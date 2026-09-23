@@ -8,14 +8,12 @@ from typing import Protocol
 
 from dotenv import load_dotenv
 
+from logging_config import configure_logging
 from notifications.telegram.bot import NotificationResult, TelegramNotifier
 from storage.history import JobHistoryStore
 from storage.queue import PendingAlertQueue
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+configure_logging()
 LOGGER = logging.getLogger(__name__)
 
 
