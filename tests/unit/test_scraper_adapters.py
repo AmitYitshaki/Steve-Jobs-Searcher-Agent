@@ -53,14 +53,15 @@ class FetchAtsJobsTests(unittest.TestCase):
             "scrapers.api.client.requests.get",
             return_value=response,
         ) as get:
-            jobs = scraper.fetch_ats_jobs(
+            result = scraper.fetch_ats_jobs(
                 company,
                 scraper.ATS_FIELD_MAP["lever"],
             )
 
         self.assertIsNone(scraper.ATS_FIELD_MAP["lever"].envelope_key)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "mobileye_lever-123",
@@ -193,12 +194,13 @@ class FetchAtsJobsTests(unittest.TestCase):
                     "scrapers.api.client.requests.get",
                     return_value=response,
                 ) as get:
-                    jobs = scraper.fetch_ats_jobs(
+                    result = scraper.fetch_ats_jobs(
                         company,
                         scraper.ATS_FIELD_MAP[ats_type],
                     )
 
-                self.assertEqual(jobs, [expected_job])
+                self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+                self.assertEqual(result.jobs, [expected_job])
                 get.assert_called_once_with(
                     "https://example.test/api",
                     headers=api_client.DEFAULT_REQUEST_HEADERS,
@@ -237,13 +239,14 @@ class FetchAtsJobsTests(unittest.TestCase):
             ) as post,
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_ats_jobs(
+            result = scraper.fetch_ats_jobs(
                 company,
                 scraper.ATS_FIELD_MAP["workday"],
             )
 
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "example_WD-105",
@@ -343,13 +346,14 @@ class FetchAtsJobsTests(unittest.TestCase):
             ) as post,
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_ats_jobs(
+            result = scraper.fetch_ats_jobs(
                 company,
                 scraper.ATS_FIELD_MAP["workday"],
             )
 
-        self.assertEqual(len(jobs), 21)
-        self.assertEqual(jobs[-1]["id"], "example_WD-20")
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(len(result.jobs), 21)
+        self.assertEqual(result.jobs[-1]["id"], "example_WD-20")
         self.assertEqual(post.call_count, 3)
         self.assertEqual(
             post.call_args_list[0].kwargs["json"]["searchText"],
@@ -428,13 +432,17 @@ class FetchAtsJobsTests(unittest.TestCase):
             "scrapers.api.client.requests.post",
             side_effect=[discovery_response, scoped_response],
         ) as post:
-            jobs = scraper.fetch_ats_jobs(
+            result = scraper.fetch_ats_jobs(
                 company,
                 scraper.ATS_FIELD_MAP["workday"],
             )
 
-        self.assertEqual([job["id"] for job in jobs], ["example_IL-1"])
-        self.assertEqual(jobs[0]["location"], "Israel\n2 Locations")
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(
+            [job["id"] for job in result.jobs],
+            ["example_IL-1"],
+        )
+        self.assertEqual(result.jobs[0]["location"], "Israel\n2 Locations")
         self.assertEqual(post.call_count, 2)
         discovery_payload = post.call_args_list[0].kwargs["json"]
         self.assertEqual(discovery_payload["searchText"], "")
@@ -551,12 +559,13 @@ class FetchAtsJobsTests(unittest.TestCase):
                     patch("scrapers.api.client.time.sleep") as sleep,
                     patch("builtins.print"),
                 ):
-                    jobs = scraper.fetch_ats_jobs(
+                    result = scraper.fetch_ats_jobs(
                         self._company("greenhouse"),
                         scraper.ATS_FIELD_MAP["greenhouse"],
                     )
 
-                self.assertEqual(jobs, [])
+                self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+                self.assertEqual(result.jobs, [])
                 self.assertEqual(get.call_count, 2)
                 sleep.assert_called_once_with(
                     api_client.RETRY_DELAY_SECONDS
@@ -583,12 +592,13 @@ class FetchAtsJobsTests(unittest.TestCase):
                     patch("scrapers.api.client.time.sleep") as sleep,
                     patch("builtins.print"),
                 ):
-                    jobs = scraper.fetch_ats_jobs(
+                    result = scraper.fetch_ats_jobs(
                         self._company("greenhouse"),
                         scraper.ATS_FIELD_MAP["greenhouse"],
                     )
 
-                self.assertEqual(jobs, [])
+                self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+                self.assertEqual(result.jobs, [])
                 self.assertEqual(get.call_count, 2)
                 sleep.assert_called_once_with(
                     api_client.RETRY_DELAY_SECONDS
@@ -616,12 +626,13 @@ class FetchAtsJobsTests(unittest.TestCase):
             patch("scrapers.api.client.time.sleep") as sleep,
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_ats_jobs(
+            result = scraper.fetch_ats_jobs(
                 self._company("greenhouse"),
                 scraper.ATS_FIELD_MAP["greenhouse"],
             )
 
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+        self.assertEqual(result.jobs, [])
         sleep.assert_called_once_with(2.0)
 
     def test_retry_after_header_is_capped(self) -> None:
@@ -646,16 +657,17 @@ class FetchAtsJobsTests(unittest.TestCase):
             patch("scrapers.api.client.time.sleep") as sleep,
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_ats_jobs(
+            result = scraper.fetch_ats_jobs(
                 self._company("greenhouse"),
                 scraper.ATS_FIELD_MAP["greenhouse"],
             )
 
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+        self.assertEqual(result.jobs, [])
         sleep.assert_called_once_with(5.0)
 
     def test_workday_mapping_handles_configured_http_status(self) -> None:
-        """Return no jobs for Workday's configured auth error statuses."""
+        """Classify Workday's configured auth error as an HTTP block."""
 
         response = MagicMock()
         response.status_code = 403
@@ -669,13 +681,97 @@ class FetchAtsJobsTests(unittest.TestCase):
             ),
             patch("scrapers.api.client.LOGGER.warning") as warning,
         ):
-            jobs = scraper.fetch_ats_jobs(
+            result = scraper.fetch_ats_jobs(
                 self._company("workday"),
                 scraper.ATS_FIELD_MAP["workday"],
             )
 
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.WAF_BLOCKED)
+        self.assertEqual(result.jobs, [])
         self.assertIn("403", str(warning.call_args))
+
+    def test_all_blocking_http_statuses_are_waf_blocked(self) -> None:
+        """Classify 401, 403, and 429 independently of mapping metadata."""
+
+        for status_code in (401, 403, 429):
+            with self.subTest(status_code=status_code):
+                response = MagicMock()
+                response.status_code = status_code
+                response.headers = {}
+                response.raise_for_status.side_effect = (
+                    api_client.requests.exceptions.HTTPError(
+                        response=response,
+                    )
+                )
+                with (
+                    patch(
+                        "scrapers.api.client.requests.get",
+                        return_value=response,
+                    ),
+                    patch("scrapers.api.client.time.sleep"),
+                ):
+                    result = scraper.fetch_ats_jobs(
+                        self._company("greenhouse"),
+                        scraper.ATS_FIELD_MAP["greenhouse"],
+                    )
+
+                self.assertEqual(result.status, ScrapeStatus.WAF_BLOCKED)
+                self.assertEqual(result.jobs, [])
+                self.assertIn(str(status_code), result.message)
+
+    def test_other_http_and_parsing_errors_are_failed(self) -> None:
+        """Keep non-blocking HTTP and response parsing failures explicit."""
+
+        http_response = MagicMock()
+        http_response.status_code = 500
+        http_response.raise_for_status.side_effect = (
+            api_client.requests.exceptions.HTTPError(
+                response=http_response,
+            )
+        )
+        with patch(
+            "scrapers.api.client.requests.get",
+            return_value=http_response,
+        ):
+            http_result = scraper.fetch_ats_jobs(
+                self._company("greenhouse"),
+                scraper.ATS_FIELD_MAP["greenhouse"],
+            )
+
+        parsing_response = MagicMock()
+        parsing_response.json.side_effect = ValueError("invalid JSON")
+        with patch(
+            "scrapers.api.client.requests.get",
+            return_value=parsing_response,
+        ):
+            parsing_result = scraper.fetch_ats_jobs(
+                self._company("greenhouse"),
+                scraper.ATS_FIELD_MAP["greenhouse"],
+            )
+
+        self.assertEqual(http_result.status, ScrapeStatus.FAILED)
+        self.assertEqual(http_result.jobs, [])
+        self.assertEqual(parsing_result.status, ScrapeStatus.FAILED)
+        self.assertEqual(parsing_result.jobs, [])
+
+    def test_empty_or_malformed_envelope_is_no_jobs(self) -> None:
+        """Distinguish a readable empty envelope from a request failure."""
+
+        for payload in ({"jobs": []}, {"jobs": {}}, []):
+            with self.subTest(payload=payload):
+                response = MagicMock()
+                response.json.return_value = payload
+                with patch(
+                    "scrapers.api.client.requests.get",
+                    return_value=response,
+                ):
+                    result = scraper.fetch_ats_jobs(
+                        self._company("greenhouse"),
+                        scraper.ATS_FIELD_MAP["greenhouse"],
+                    )
+
+                self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+                self.assertEqual(result.jobs, [])
 
     def test_greenhouse_eu_reuses_greenhouse_mapping(self) -> None:
         """Keep the EU ATS name as a true alias of Greenhouse rules."""
@@ -1140,9 +1236,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ),
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         adapter.assert_called_once_with(company)
 
     def test_google_text_reads_second_list_item_only(self) -> None:
@@ -1393,9 +1490,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ),
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         adapter.assert_called_once_with(company)
 
     def test_greenhouse_extracts_actual_content_with_timeout(self) -> None:
@@ -1425,7 +1523,7 @@ class ScraperAdapterTests(unittest.TestCase):
             ) as get,
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(
+            result = scraper.fetch_jobs_from_company(
                 self._company("greenhouse")
             )
 
@@ -1434,14 +1532,15 @@ class ScraperAdapterTests(unittest.TestCase):
             headers=api_client.DEFAULT_REQUEST_HEADERS,
             timeout=15,
         )
-        self.assertEqual(jobs[0]["url"], (
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs[0]["url"], (
             "https://example.test/jobs/israel/123"
         ))
-        self.assertIn("Build Python services.", jobs[0]["content"])
-        self.assertNotIn("description", jobs[0])
+        self.assertIn("Build Python services.", result.jobs[0]["content"])
+        self.assertNotIn("description", result.jobs[0])
         self.assertNotIn(
             "Full job description available at:",
-            jobs[0]["content"],
+            result.jobs[0]["content"],
         )
 
     def test_every_requests_ats_uses_fifteen_second_timeout(self) -> None:
@@ -1557,9 +1656,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ),
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         adapter.assert_called_once_with(company)
 
     def test_elbit_normalizes_first_party_json_feed(self) -> None:
@@ -1674,9 +1774,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ),
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         adapter.assert_called_once_with(company)
 
     def test_amdocs_paginates_via_start_offset_and_builds_urls(self) -> None:
@@ -1769,9 +1870,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ),
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         adapter.assert_called_once_with(company)
 
     def test_oracle_rc_paginates_by_offset_and_joins_locations(self) -> None:
@@ -1935,9 +2037,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ),
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         adapter.assert_called_once_with(company)
 
     def test_thales_adapter_scopes_israel_and_paginates(self) -> None:
@@ -2168,9 +2271,10 @@ class ScraperAdapterTests(unittest.TestCase):
             ) as eightfold,
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, [{"id": "example_123"}])
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, [{"id": "example_123"}])
         eightfold.assert_called_once_with(
             "example",
             "https://example.test/api",
@@ -2191,20 +2295,60 @@ class ScraperAdapterTests(unittest.TestCase):
             ) as universal_playwright,
             patch("builtins.print"),
         ):
-            jobs = scraper.fetch_jobs_from_company(company)
+            result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         universal_playwright.assert_called_once_with(company)
+
+    def test_dispatch_seam_preserves_typed_adapter_failures(self) -> None:
+        """Return a migrated adapter's status and context unchanged."""
+
+        company = {
+            **self._company("comeet"),
+            "fetch_strategy": "api",
+        }
+        expected = ScrapeResult(
+            status=ScrapeStatus.WAF_BLOCKED,
+            jobs=[],
+            message="HTTP 403",
+        )
+        adapter = MagicMock(return_value=expected)
+        with patch.dict(
+            scraper.CUSTOM_API_ADAPTERS_BY_ATS_TYPE,
+            {"comeet": adapter},
+        ):
+            result = scraper.fetch_jobs_from_company(company)
+
+        self.assertIs(result, expected)
+        adapter.assert_called_once_with(company)
+
+    def test_dispatch_seam_normalizes_empty_legacy_adapter(self) -> None:
+        """Expose legacy empty lists as a typed no-jobs outcome."""
+
+        company = {
+            **self._company("microsoft_custom"),
+            "fetch_strategy": "browser",
+        }
+        with patch(
+            "scrapers.orchestrator.scrape_universal_playwright",
+            return_value=[],
+        ):
+            result = scraper.fetch_jobs_from_company(company)
+
+        self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+        self.assertEqual(result.jobs, [])
 
     def test_unknown_ats_emits_logging_warning(self) -> None:
         """Make unsupported ATS types visible through standard logging."""
 
         with patch("scrapers.orchestrator.LOGGER.warning") as warning:
-            jobs = scraper.fetch_jobs_from_company(
+            result = scraper.fetch_jobs_from_company(
                 self._company("unsupported")
             )
 
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertEqual(result.jobs, [])
         warning.assert_called_once()
         self.assertIn(
             "No adapter available",
@@ -2252,12 +2396,13 @@ class ComeetAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=html_response,
         ) as get:
-            jobs = custom_adapters.scrape_comeet(company)
+            result = custom_adapters.scrape_comeet(company)
 
         self.assertEqual(get.call_count, 1)
         self.assertEqual(get.call_args.args[0], company["api_url"])
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "wsc_sports_34.C6F",
@@ -2293,15 +2438,16 @@ class ComeetAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             side_effect=[widget_response, board_response],
         ) as get:
-            jobs = custom_adapters.scrape_comeet(company)
+            result = custom_adapters.scrape_comeet(company)
 
         self.assertEqual(get.call_count, 2)
         self.assertEqual(
             get.call_args_list[1].args[0],
             "https://www.comeet.com/jobs/checkmarx/C0.008",
         )
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "checkmarx_78.66E",
@@ -2346,7 +2492,7 @@ class ComeetAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             side_effect=[widget_response, wrong_slug_response, right_slug_response],
         ) as get:
-            jobs = custom_adapters.scrape_comeet(company)
+            result = custom_adapters.scrape_comeet(company)
 
         self.assertEqual(get.call_count, 3)
         self.assertEqual(
@@ -2357,7 +2503,8 @@ class ComeetAdapterTests(unittest.TestCase):
             get.call_args_list[2].args[0],
             "https://www.comeet.com/jobs/moonactive/A2.00C",
         )
-        self.assertEqual(jobs[0]["id"], "moon_active_11.111")
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs[0]["id"], "moon_active_11.111")
 
     def test_wordpress_plugin_dom_fallback_when_no_widget_or_data(self) -> None:
         """DOM-scrape server-rendered positions from Comeet's WP plugin.
@@ -2385,10 +2532,11 @@ class ComeetAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=html_response,
         ):
-            jobs = custom_adapters.scrape_comeet(company)
+            result = custom_adapters.scrape_comeet(company)
 
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "chargeafter_41.B6E",
@@ -2427,10 +2575,11 @@ class ComeetAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=html_response,
         ):
-            jobs = custom_adapters.scrape_comeet(company)
+            result = custom_adapters.scrape_comeet(company)
 
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "nuvoton_3B.969",
@@ -2460,12 +2609,16 @@ class ComeetAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=html_response,
         ):
-            jobs = custom_adapters.scrape_comeet(company)
+            result = custom_adapters.scrape_comeet(company)
 
-        self.assertEqual([job["id"] for job in jobs], ["example_11.111"])
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(
+            [job["id"] for job in result.jobs],
+            ["example_11.111"],
+        )
 
-    def test_request_failure_returns_empty_list(self) -> None:
-        """Fail closed instead of raising when the board is unreachable."""
+    def test_request_failure_is_failed(self) -> None:
+        """Return a typed failure when the board is unreachable."""
 
         company = {"company_id": "example", "api_url": "https://www.comeet.com/jobs/example/1"}
 
@@ -2473,20 +2626,68 @@ class ComeetAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             side_effect=custom_adapters.requests.RequestException("boom"),
         ):
-            jobs = custom_adapters.scrape_comeet(company)
+            result = custom_adapters.scrape_comeet(company)
 
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertEqual(result.jobs, [])
 
-    def test_missing_company_id_or_api_url_returns_empty_list(self) -> None:
-        """Refuse to guess when required configuration is absent."""
+    def test_blocking_http_statuses_are_waf_blocked(self) -> None:
+        """Classify Comeet 401, 403, and 429 responses as blocked."""
+
+        company = {
+            "company_id": "example",
+            "api_url": "https://www.comeet.com/jobs/example/1",
+        }
+        for status_code in (401, 403, 429):
+            with self.subTest(status_code=status_code):
+                response = MagicMock()
+                response.status_code = status_code
+                error = custom_adapters.requests.HTTPError(
+                    f"HTTP {status_code}",
+                    response=response,
+                )
+                with patch(
+                    "scrapers.browser.custom_adapters.requests.get",
+                    side_effect=error,
+                ):
+                    result = custom_adapters.scrape_comeet(company)
+
+                self.assertEqual(result.status, ScrapeStatus.WAF_BLOCKED)
+                self.assertEqual(result.jobs, [])
+                self.assertIn(str(status_code), result.message)
+
+    def test_empty_positions_are_no_jobs(self) -> None:
+        """Keep a readable empty Comeet board distinct from failures."""
+
+        response = MagicMock()
+        response.text = "window.COMPANY_POSITIONS_DATA = [];"
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=response,
+        ):
+            result = custom_adapters.scrape_comeet({
+                "company_id": "example",
+                "api_url": "https://www.comeet.com/jobs/example/1",
+            })
+
+        self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
+        self.assertEqual(result.jobs, [])
+
+    def test_missing_company_id_or_api_url_is_failed(self) -> None:
+        """Return a typed failure when required configuration is absent."""
 
         with patch("scrapers.browser.custom_adapters.requests.get") as get:
-            self.assertEqual(
-                custom_adapters.scrape_comeet({"api_url": "https://x.test"}), []
+            missing_id = custom_adapters.scrape_comeet(
+                {"api_url": "https://x.test"}
             )
-            self.assertEqual(
-                custom_adapters.scrape_comeet({"company_id": "x"}), []
+            missing_url = custom_adapters.scrape_comeet(
+                {"company_id": "x"}
             )
+
+        self.assertEqual(missing_id.status, ScrapeStatus.FAILED)
+        self.assertEqual(missing_id.jobs, [])
+        self.assertEqual(missing_url.status, ScrapeStatus.FAILED)
+        self.assertEqual(missing_url.jobs, [])
         get.assert_not_called()
 
 

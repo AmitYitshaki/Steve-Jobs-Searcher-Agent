@@ -8,7 +8,7 @@ from typing import Any, Mapping
 from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
-from models.results import ScrapeStatus
+from models.results import ScrapeResult, ScrapeStatus
 from scrapers.api.client import normalize_job_content
 from scrapers.artifacts import extract_sample_titles, write_company_artifacts
 from scrapers.browser.playwright_driver import (
@@ -51,6 +51,7 @@ COMEET_REQUEST_HEADERS = {
     **IAI_REQUEST_HEADERS,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
+COMEET_BLOCKING_HTTP_STATUS_CODES = frozenset({401, 403, 429})
 
 
 def _meta_text(value: Any) -> str:
@@ -977,7 +978,17 @@ def _comeet_jobs_from_dom(
     return jobs
 
 
-def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
+def _comeet_failure_status(error: requests.RequestException) -> ScrapeStatus:
+    """Classify an HTTP block separately from other Comeet failures."""
+
+    response = getattr(error, "response", None)
+    status_code = response.status_code if response is not None else None
+    if status_code in COMEET_BLOCKING_HTTP_STATUS_CODES:
+        return ScrapeStatus.WAF_BLOCKED
+    return ScrapeStatus.FAILED
+
+
+def scrape_comeet(company: CompanyConfig) -> ScrapeResult:
     """Fetch and normalize jobs from any of Comeet's three embed shapes.
 
     Comeet integrations found across the catalogue take one of three
@@ -1004,11 +1015,17 @@ def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
     company_id = str(company.get("company_id", "")).strip()
     api_url = str(company.get("api_url", "")).strip()
     if not company_id or not api_url:
-        LOGGER.error("Comeet adapter requires an api_url")
-        return []
+        message = "Comeet adapter requires company_id and api_url."
+        LOGGER.error(message)
+        return ScrapeResult(
+            status=ScrapeStatus.FAILED,
+            jobs=[],
+            message=message,
+        )
 
     response_text: str | None = None
     fetch_error = ""
+    fetch_error_status: ScrapeStatus | None = None
     try:
         response = requests.get(
             api_url,
@@ -1018,6 +1035,7 @@ def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
         response_text = response.text
         response.raise_for_status()
     except requests.RequestException as error:
+        status = _comeet_failure_status(error)
         LOGGER.error("Comeet request failed for %s: %s", company_id, error)
         write_company_artifacts(
             company_id,
@@ -1026,13 +1044,17 @@ def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
             primary_extension="html",
             screenshot_bytes=None,
             notes={
-                "status": "failed",
+                "status": status.value,
                 "message": f"{type(error).__name__}: {error}",
                 "job_count": 0,
                 "sample_titles": [],
             },
         )
-        return []
+        return ScrapeResult(
+            status=status,
+            jobs=[],
+            message=f"{type(error).__name__}: {error}",
+        )
 
     positions = _comeet_positions_from_html(response_text)
 
@@ -1055,6 +1077,9 @@ def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
                     error,
                 )
                 fetch_error = f"derived board request failed: {error}"
+                candidate_status = _comeet_failure_status(error)
+                if fetch_error_status is not ScrapeStatus.WAF_BLOCKED:
+                    fetch_error_status = candidate_status
                 continue
             # A wrong slug 302s to Comeet's own homepage rather than a 4xx,
             # so only a response that actually contains position data counts
@@ -1075,6 +1100,13 @@ def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
     else:
         jobs = _comeet_jobs_from_dom(response_text, api_url, company_id)
 
+    if jobs:
+        status = ScrapeStatus.SUCCESS
+    elif fetch_error_status is not None:
+        status = fetch_error_status
+    else:
+        status = ScrapeStatus.NO_JOBS
+
     write_company_artifacts(
         company_id,
         source="api",
@@ -1082,15 +1114,17 @@ def scrape_comeet(company: CompanyConfig) -> list[dict[str, str]]:
         primary_extension="html",
         screenshot_bytes=None,
         notes={
-            "status": "failed" if (fetch_error and not jobs) else (
-                "success" if jobs else "no_jobs"
-            ),
+            "status": status.value,
             "message": fetch_error,
             "job_count": len(jobs),
             "sample_titles": extract_sample_titles(jobs),
         },
     )
-    return jobs
+    return ScrapeResult(
+        status=status,
+        jobs=jobs,
+        message=fetch_error,
+    )
 
 
 _WORKABLE_ACCOUNT_PATTERN = re.compile(r"/accounts/([^/]+)/jobs")

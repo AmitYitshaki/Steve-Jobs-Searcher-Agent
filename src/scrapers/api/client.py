@@ -9,6 +9,8 @@ from typing import Any, Mapping
 import requests
 from bs4 import BeautifulSoup
 
+from models.job import JobRecord
+from models.results import ScrapeResult, ScrapeStatus
 from scrapers.api.mappings import AtsMapping
 from scrapers.artifacts import extract_sample_titles, write_company_artifacts
 
@@ -19,6 +21,7 @@ RETRY_DELAY_SECONDS = 0.5
 MAX_RETRY_DELAY_SECONDS = 5.0
 MAX_REQUEST_ATTEMPTS = 2
 RETRYABLE_HTTP_STATUS_CODES = frozenset({429, 520, 521, 522, 523, 524})
+BLOCKING_HTTP_STATUS_CODES = frozenset({401, 403, 429})
 DEFAULT_REQUEST_HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "User-Agent": (
@@ -178,8 +181,8 @@ def _normalize_job_location(
 def fetch_ats_jobs(
     company: dict[str, Any],
     mapping: AtsMapping,
-) -> list[dict]:
-    """Fetch and normalize jobs for one mapping-driven JSON ATS."""
+) -> ScrapeResult:
+    """Fetch jobs and return an explicit mapping-driven ATS outcome."""
 
     api_url = str(company.get("api_url", ""))
     company_id = str(company.get("company_id", ""))
@@ -196,7 +199,7 @@ def fetch_ats_jobs(
     def _write_artifacts(
         status: str,
         message: str,
-        jobs_for_notes: list[dict],
+        jobs_for_notes: list[JobRecord],
     ) -> None:
         write_company_artifacts(
             company_id,
@@ -211,6 +214,16 @@ def fetch_ats_jobs(
                 "sample_titles": extract_sample_titles(jobs_for_notes),
             },
         )
+
+    def _result(
+        status: ScrapeStatus,
+        jobs: list[JobRecord],
+        message: str = "",
+    ) -> ScrapeResult:
+        """Persist diagnostics and build the public typed outcome."""
+
+        _write_artifacts(status.value, message, jobs)
+        return ScrapeResult(status=status, jobs=jobs, message=message)
 
     try:
         payload_overrides: Mapping[str, Any] | None = None
@@ -246,7 +259,7 @@ def fetch_ats_jobs(
             if mapping.base_url_fn is not None
             else ""
         )
-        jobs: list[dict] = []
+        jobs: list[JobRecord] = []
         page_offset = 0
         pages_fetched = 0
 
@@ -268,15 +281,15 @@ def fetch_ats_jobs(
             elif isinstance(payload, Mapping):
                 items = payload.get(mapping.envelope_key, [])
             else:
-                _write_artifacts(
-                    "success" if jobs else "no_jobs", "", jobs
+                return _result(
+                    ScrapeStatus.SUCCESS if jobs else ScrapeStatus.NO_JOBS,
+                    jobs,
                 )
-                return jobs
             if not isinstance(items, list):
-                _write_artifacts(
-                    "success" if jobs else "no_jobs", "", jobs
+                return _result(
+                    ScrapeStatus.SUCCESS if jobs else ScrapeStatus.NO_JOBS,
+                    jobs,
                 )
-                return jobs
 
             for item in items:
                 if not isinstance(item, Mapping):
@@ -326,34 +339,43 @@ def fetch_ats_jobs(
                 break
             page_offset = next_offset
 
-        _write_artifacts("success" if jobs else "no_jobs", "", jobs)
-        return jobs
+        return _result(
+            ScrapeStatus.SUCCESS if jobs else ScrapeStatus.NO_JOBS,
+            jobs,
+        )
     except requests.exceptions.HTTPError as error:
         response = error.response
         status_code = (
             response.status_code if response is not None else None
         )
-        if status_code in mapping.http_error_status_map:
+        if status_code in BLOCKING_HTTP_STATUS_CODES:
+            status = ScrapeStatus.WAF_BLOCKED
+            message = f"API request blocked with HTTP {status_code}."
+            LOGGER.warning("⚠️ %s %s", company_id, message)
+        elif status_code in mapping.http_error_status_map:
+            status = ScrapeStatus.FAILED
             message = (
                 f"API returned {status_code} "
                 "(Requires specific payload or auth)."
             )
             LOGGER.warning("⚠️ %s %s", company_id, message)
         elif status_code is not None:
-            message = f"Network error: {status_code}"
+            status = ScrapeStatus.FAILED
+            message = f"API returned HTTP {status_code}."
             LOGGER.error("❌ Network error on %s: %s", company_id, status_code)
         else:
+            status = ScrapeStatus.FAILED
             message = f"{type(error).__name__}: {error}"
             LOGGER.error(
                 "❌ Error scanning %s %s: %s", ats_type, company_id, error
             )
-        _write_artifacts("failed", message, [])
-        return []
+        return _result(status, [], message)
     except Exception as error:
         LOGGER.error(
             "❌ Error scanning %s %s: %s", ats_type, company_id, error
         )
-        _write_artifacts(
-            "failed", f"{type(error).__name__}: {error}", []
+        return _result(
+            ScrapeStatus.FAILED,
+            [],
+            f"{type(error).__name__}: {error}",
         )
-        return []

@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
+from models.results import ScrapeResult, ScrapeStatus  # noqa: E402
 from scrapers import orchestrator as scraper  # noqa: E402
 from storage.health import ScraperHealthStore  # noqa: E402
 from storage.history import JobHistoryStore  # noqa: E402
@@ -57,6 +58,15 @@ class ScraperProducerTests(unittest.TestCase):
         ),
         "content": "Build Python services.",
     }
+
+    @staticmethod
+    def _successful_result(*jobs: dict[str, str]) -> ScrapeResult:
+        """Return one typed successful adapter outcome for producer tests."""
+
+        return ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=list(jobs),
+        )
 
     def test_title_decision_rejects_non_rd_entry_level_roles(self) -> None:
         """Reject explicit business functions despite internship signals."""
@@ -232,7 +242,7 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[sales_job],
+                    return_value=self._successful_result(sales_job),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job"
@@ -275,7 +285,7 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[self.JOB],
+                    return_value=self._successful_result(self.JOB),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job",
@@ -329,7 +339,9 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[self.HTML_TITLE_JOB],
+                    return_value=self._successful_result(
+                        self.HTML_TITLE_JOB
+                    ),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job",
@@ -390,7 +402,7 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[self.JOB],
+                    return_value=self._successful_result(self.JOB),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job"
@@ -443,11 +455,11 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[
+                    return_value=self._successful_result(
                         self.JOB,
                         sales_job,
                         self.FOREIGN_JOB,
-                    ],
+                    ),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job"
@@ -476,6 +488,52 @@ class ScraperProducerTests(unittest.TestCase):
             )
         )
 
+    def test_waf_block_is_recorded_as_failure_not_zero_job_run(self) -> None:
+        """Keep typed hard failures out of silent-zero anomaly counters."""
+
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "consecutive_failures": 1,
+                    "consecutive_zero_job_runs": 2,
+                    "job_count_history": [4, 3],
+                }
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.WAF_BLOCKED,
+                        jobs=[],
+                        message="HTTP 403",
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job") as analyze_job,
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                )
+
+        analyze_job.assert_not_called()
+        saved_state = health_store.save.call_args.args[0]["example"]
+        self.assertEqual(saved_state["last_status"], "failed")
+        self.assertEqual(saved_state["consecutive_failures"], 2)
+        self.assertEqual(saved_state["consecutive_zero_job_runs"], 2)
+        self.assertEqual(saved_state["job_count_history"], [4, 3])
+        self.assertEqual(saved_state["last_error_type"], "WAF_BLOCKED")
+
     def test_foreign_similar_job_is_rejected_before_analysis(self) -> None:
         """Drop a geographic leak even when its adapter says Israel."""
 
@@ -493,7 +551,9 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[self.FOREIGN_JOB],
+                    return_value=self._successful_result(
+                        self.FOREIGN_JOB
+                    ),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job"
@@ -543,7 +603,9 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[self.UNKNOWN_FOREIGN_JOB],
+                    return_value=self._successful_result(
+                        self.UNKNOWN_FOREIGN_JOB
+                    ),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job",
@@ -588,7 +650,10 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[],
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.NO_JOBS,
+                        jobs=[],
+                    ),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job"
@@ -627,7 +692,7 @@ class ScraperProducerTests(unittest.TestCase):
                 ),
                 patch(
                     "scrapers.orchestrator.fetch_jobs_from_company",
-                    return_value=[self.JOB],
+                    return_value=self._successful_result(self.JOB),
                 ),
                 patch(
                     "scrapers.orchestrator.analyze_job",
