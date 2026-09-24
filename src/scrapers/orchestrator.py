@@ -50,6 +50,7 @@ HEALTH_FILE = DATA_DIR / "scraper_health.json"
 # Operational heartbeat: proves the scheduler is alive when a scan legitimately
 # finds nothing, distinguishing "ran fine, no new jobs" from a silent failure.
 HEARTBEAT_MESSAGE = "Scraping cycle completed. 0 new jobs found."
+ANOMALY_HEALTH_STATUSES = frozenset({"failed", "degraded"})
 
 Adapter = Callable[[Mapping[str, Any]], ScrapeResult]
 
@@ -73,11 +74,11 @@ CUSTOM_API_ADAPTERS_BY_ATS_TYPE: dict[str, Adapter] = {
 }
 
 
-class HeartbeatSender(Protocol):
-    """Minimal transport contract used to deliver the zero-result heartbeat."""
+class OperationalMessageSender(Protocol):
+    """Minimal transport contract for producer operational messages."""
 
     def send(self, message: str) -> Any:
-        """Send one operational heartbeat message."""
+        """Send one operational message."""
 
 # חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
 EXCLUDE_KEYWORDS = [
@@ -383,21 +384,102 @@ def extract_job_url(job: Mapping[str, Any]) -> str:
     return match.group(0).rstrip(".,);]")
 
 
-def _send_heartbeat(notifier: HeartbeatSender | None) -> None:
-    """Notify operators that the cycle succeeded with zero new jobs."""
+def _send_operational_message(
+    notifier: OperationalMessageSender | None,
+    message: str,
+    message_kind: str,
+) -> None:
+    """Deliver an operational message without failing the producer run."""
 
     if notifier is None:
         return
     try:
-        result = notifier.send(HEARTBEAT_MESSAGE)
+        result = notifier.send(message)
     except Exception as error:
         LOGGER.warning(
-            "Heartbeat delivery raised %s; the cycle still succeeded.",
+            "%s delivery raised %s; the cycle still succeeded.",
+            message_kind,
             type(error).__name__,
         )
         return
     if not getattr(result, "success", True):
-        LOGGER.warning("Heartbeat delivery did not succeed.")
+        LOGGER.warning("%s delivery did not succeed.", message_kind)
+
+
+def _send_heartbeat(
+    notifier: OperationalMessageSender | None,
+) -> None:
+    """Notify operators that the cycle succeeded with zero new jobs."""
+
+    _send_operational_message(notifier, HEARTBEAT_MESSAGE, "Heartbeat")
+
+
+def _health_digest_message(
+    previous_state: Mapping[str, Mapping[str, Any]],
+    current_state: Mapping[str, Mapping[str, Any]],
+) -> str | None:
+    """Build one digest for meaningful scraper-health transitions."""
+
+    lines: list[str] = []
+    for company_id, current in current_state.items():
+        previous = previous_state.get(company_id)
+        if previous is None:
+            continue
+
+        old_status = str(previous.get("last_status", ""))
+        new_status = str(current.get("last_status", ""))
+        if old_status == new_status:
+            continue
+        company_name = str(
+            current.get("company_name") or company_id
+        )
+        if new_status in ANOMALY_HEALTH_STATUSES:
+            details = [f"{old_status} -> {new_status}"]
+            error_type = current.get("last_error_type")
+            if error_type:
+                details.append(f"error={error_type}")
+            if new_status == "failed":
+                details.append(
+                    "consecutive failures="
+                    f"{current.get('consecutive_failures', 0)}"
+                )
+            else:
+                details.append(
+                    "consecutive zero-job runs="
+                    f"{current.get('consecutive_zero_job_runs', 0)}"
+                )
+            lines.append(
+                f"🚨 {company_name}: " + " | ".join(details)
+            )
+        elif (
+            old_status in ANOMALY_HEALTH_STATUSES
+            and new_status == "healthy"
+        ):
+            lines.append(
+                f"✅ {company_name}: recovered "
+                f"({old_status} -> healthy)"
+            )
+
+    if not lines:
+        return None
+    return "Scraper health changes:\n" + "\n".join(lines)
+
+
+def _send_health_digest(
+    notifier: OperationalMessageSender | None,
+    previous_state: Mapping[str, Mapping[str, Any]],
+    current_state: Mapping[str, Mapping[str, Any]],
+) -> None:
+    """Send one operational digest when anomaly state changed."""
+
+    message = _health_digest_message(previous_state, current_state)
+    if message is None:
+        return
+    _send_operational_message(
+        notifier,
+        message,
+        "Scraper-health digest",
+    )
 
 
 def run_scraper(
@@ -405,13 +487,13 @@ def run_scraper(
     location_filter: LocationFilter | None = None,
     history_store: JobHistoryStore | None = None,
     health_store: ScraperHealthStore | None = None,
-    heartbeat_notifier: HeartbeatSender | None = None,
+    heartbeat_notifier: OperationalMessageSender | None = None,
 ) -> None:
     """Scan, analyze, and enqueue new jobs without contacting Telegram.
 
-    A successful scan that finds zero new jobs sends an operational heartbeat
-    through ``heartbeat_notifier`` (when provided) so an alive but quiet
-    scheduler is never mistaken for a silent failure.
+    ``heartbeat_notifier`` carries producer operational messages: a heartbeat
+    for a successful zero-job cycle and one health digest when anomaly state
+    changes. Health delivery never affects candidate-job processing.
     """
 
     LOGGER.info("🚀 מתחיל סריקת משרות...")
@@ -560,6 +642,11 @@ def run_scraper(
             LOGGER.info("%s", tracker.summary_line())
 
     active_health_store.save(new_health_state)
+    _send_health_digest(
+        heartbeat_notifier,
+        health_state,
+        new_health_state,
+    )
 
     scraping_end_time = time.time()  # סיום שלב הסריקה
 
@@ -635,7 +722,7 @@ if __name__ == "__main__":
     try:
         heartbeat_notifier = TelegramNotifier.from_environment()
     except ValueError as error:
-        LOGGER.warning("Heartbeat disabled: %s", error)
+        LOGGER.warning("Operational notifications disabled: %s", error)
 
     try:
         run_scraper(heartbeat_notifier=heartbeat_notifier)

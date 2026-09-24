@@ -632,6 +632,344 @@ class ScraperProducerTests(unittest.TestCase):
         self.assertEqual(alerts[0].job_id, "example_789")
 
 
+    def test_health_digest_sent_when_company_enters_anomaly(self) -> None:
+        """Report one company crossing from healthy into failed."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "company_name": "Example",
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "last_status": "healthy",
+                    "consecutive_failures": 2,
+                    "consecutive_zero_job_runs": 0,
+                    "job_count_history": [3],
+                }
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.WAF_BLOCKED,
+                        jobs=[],
+                        message="HTTP 403",
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job"),
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_any_call(
+            "Scraper health changes:\n"
+            "🚨 Example: healthy -> failed | error=WAF_BLOCKED | "
+            "consecutive failures=3"
+        )
+
+    def test_health_digest_explains_degraded_zero_job_anomaly(self) -> None:
+        """Include the silent-breakage counter for a degraded company."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "company_name": "Example",
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "last_status": "healthy",
+                    "consecutive_failures": 0,
+                    "consecutive_zero_job_runs": 2,
+                    "job_count_history": [3, 0, 0],
+                }
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.NO_JOBS,
+                        jobs=[],
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job"),
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_any_call(
+            "Scraper health changes:\n"
+            "🚨 Example: healthy -> degraded | "
+            "consecutive zero-job runs=3"
+        )
+
+    def test_health_digest_sent_when_company_recovers(self) -> None:
+        """Report a company returning from failed to healthy."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "company_name": "Example",
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "last_status": "failed",
+                    "consecutive_failures": 3,
+                    "consecutive_zero_job_runs": 0,
+                    "job_count_history": [3],
+                    "last_error_type": "WAF_BLOCKED",
+                }
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.NO_JOBS,
+                        jobs=[],
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job"),
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_any_call(
+            "Scraper health changes:\n"
+            "✅ Example: recovered (failed -> healthy)"
+        )
+
+    def test_health_digest_not_sent_when_status_is_unchanged(self) -> None:
+        """Keep a stable healthy company out of the operational digest."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "company_name": "Example",
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "last_status": "healthy",
+                    "consecutive_failures": 0,
+                    "consecutive_zero_job_runs": 0,
+                    "job_count_history": [3],
+                }
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.NO_JOBS,
+                        jobs=[],
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job"),
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_called_once_with(scraper.HEARTBEAT_MESSAGE)
+
+    def test_health_digest_does_not_repeat_standing_anomaly(self) -> None:
+        """Do not repeat a failed company on consecutive producer runs."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "company_name": "Example",
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "last_status": "failed",
+                    "consecutive_failures": 3,
+                    "consecutive_zero_job_runs": 0,
+                    "job_count_history": [3],
+                    "last_error_type": "WAF_BLOCKED",
+                }
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY], [self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.WAF_BLOCKED,
+                        jobs=[],
+                        message="HTTP 403",
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job"),
+            ):
+                for _ in range(2):
+                    scraper.run_scraper(
+                        queue=PendingAlertQueue(
+                            Path(directory) / "pending_alerts.json"
+                        ),
+                        history_store=JobHistoryStore(
+                            Path(directory) / "jobs_history.json"
+                        ),
+                        health_store=health_store,
+                        heartbeat_notifier=notifier,
+                    )
+
+        sent_messages = [entry.args[0] for entry in notifier.send.call_args_list]
+        self.assertEqual(
+            sent_messages,
+            [scraper.HEARTBEAT_MESSAGE, scraper.HEARTBEAT_MESSAGE],
+        )
+
+    def test_health_digest_suppresses_first_run_without_baseline(self) -> None:
+        """Avoid catalog-expansion noise when no prior state exists."""
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {}
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.WAF_BLOCKED,
+                        jobs=[],
+                        message="HTTP 403",
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job"),
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_called_once_with(scraper.HEARTBEAT_MESSAGE)
+
+    def test_health_digest_combines_all_transitions_in_one_message(self) -> None:
+        """Send one digest even when multiple companies change state."""
+
+        recovered_company = {
+            **self.COMPANY,
+            "company_id": "recovered",
+            "company_name": "Recovered Co",
+        }
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "company_name": "Example",
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "last_status": "healthy",
+                    "consecutive_failures": 2,
+                    "consecutive_zero_job_runs": 0,
+                    "job_count_history": [3],
+                },
+                "recovered": {
+                    "company_name": "Recovered Co",
+                    "last_success_at": "2026-09-20T10:00:00+00:00",
+                    "last_status": "degraded",
+                    "consecutive_failures": 0,
+                    "consecutive_zero_job_runs": 3,
+                    "job_count_history": [3, 0, 0, 0],
+                },
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY, recovered_company]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    side_effect=[
+                        ScrapeResult(
+                            status=ScrapeStatus.WAF_BLOCKED,
+                            jobs=[],
+                            message="HTTP 403",
+                        ),
+                        self._successful_result(self.JOB),
+                    ],
+                ),
+                patch(
+                    "scrapers.orchestrator.analyze_job",
+                    return_value="LLM analysis",
+                ),
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_called_once_with(
+            "Scraper health changes:\n"
+            "🚨 Example: healthy -> failed | error=WAF_BLOCKED | "
+            "consecutive failures=3\n"
+            "✅ Recovered Co: recovered (degraded -> healthy)"
+        )
+
     def test_heartbeat_sent_when_no_new_jobs(self) -> None:
         """Emit the heartbeat so a quiet, successful run is never silent."""
 
