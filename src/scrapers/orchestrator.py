@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 
 from analysis.ai.analyzer import analyze_job
 from analysis.filters.location import LocationFilter
-from models.job import JobRecord
 from models.results import ScrapeResult, ScrapeStatus
 from notifications.telegram.bot import TelegramNotifier
 from scrapers.api.client import fetch_ats_jobs
@@ -52,19 +51,15 @@ HEALTH_FILE = DATA_DIR / "scraper_health.json"
 # finds nothing, distinguishing "ran fine, no new jobs" from a silent failure.
 HEARTBEAT_MESSAGE = "Scraping cycle completed. 0 new jobs found."
 
-LegacyAdapter = Callable[
-    [Mapping[str, Any]],
-    list[JobRecord],
-]
-Adapter = Callable[[Mapping[str, Any]], list[JobRecord] | ScrapeResult]
+Adapter = Callable[[Mapping[str, Any]], ScrapeResult]
 
-CUSTOM_API_ADAPTERS: dict[str, LegacyAdapter] = {
+CUSTOM_API_ADAPTERS: dict[str, Adapter] = {
     "amdocs": scrape_amdocs,
     "elbit_systems": scrape_elbit,
     "iai": scrape_iai,
     "imperva_thales": scrape_thales_phenom,
 }
-CUSTOM_BROWSER_ADAPTERS: dict[str, LegacyAdapter] = {
+CUSTOM_BROWSER_ADAPTERS: dict[str, Adapter] = {
     "google_custom": scrape_google,
     "meta_custom": scrape_meta,
 }
@@ -308,19 +303,6 @@ def validate_company_routing(companies: list[dict]) -> list[str]:
     return unroutable_company_ids
 
 
-def _as_scrape_result(
-    outcome: list[JobRecord] | ScrapeResult,
-) -> ScrapeResult:
-    """Normalize migrated and legacy adapters at the dispatch seam."""
-
-    if isinstance(outcome, ScrapeResult):
-        return outcome
-    return ScrapeResult(
-        status=ScrapeStatus.SUCCESS if outcome else ScrapeStatus.NO_JOBS,
-        jobs=outcome,
-    )
-
-
 def fetch_jobs_from_company(company: Mapping[str, Any]) -> ScrapeResult:
     """Dispatch one company and always expose a typed scrape outcome."""
 
@@ -338,7 +320,7 @@ def fetch_jobs_from_company(company: Mapping[str, Any]) -> ScrapeResult:
         and company.get("fetch_strategy") == "api"
         and custom_api_adapter is not None
     ):
-        return _as_scrape_result(custom_api_adapter(company))
+        return custom_api_adapter(company)
 
     custom_api_adapter_by_ats_type = CUSTOM_API_ADAPTERS_BY_ATS_TYPE.get(
         str(ats_type)
@@ -347,31 +329,29 @@ def fetch_jobs_from_company(company: Mapping[str, Any]) -> ScrapeResult:
         company.get("fetch_strategy") == "api"
         and custom_api_adapter_by_ats_type is not None
     ):
-        return _as_scrape_result(custom_api_adapter_by_ats_type(company))
+        return custom_api_adapter_by_ats_type(company)
 
     custom_browser_adapter = CUSTOM_BROWSER_ADAPTERS.get(str(ats_type))
     if (
         company.get("fetch_strategy") == "browser"
         and custom_browser_adapter is not None
     ):
-        return _as_scrape_result(custom_browser_adapter(company))
+        return custom_browser_adapter(company)
 
     if ats_type in ATS_FIELD_MAP:
         return fetch_ats_jobs(company, ATS_FIELD_MAP[ats_type])
 
     # 1. SuccessFactors (HTML)
     elif ats_type == "successfactors":
-        return _as_scrape_result(scrape_successfactors(company))
+        return scrape_successfactors(company)
 
     # 2. Eightfold API with Universal Playwright fallback
     elif ats_type == "eightfold":
-        return _as_scrape_result(
-            scrape_eightfold(str(company_id), str(api_url))
-        )
+        return scrape_eightfold(str(company_id), str(api_url))
 
     # 3. Browser-configured career sites (Universal Playwright)
     elif company.get("fetch_strategy") == "browser":
-        return _as_scrape_result(scrape_universal_playwright(company))
+        return scrape_universal_playwright(company)
 
     # 4. אם מסיבה כלשהי משהו נפל בין הכיסאות
     else:

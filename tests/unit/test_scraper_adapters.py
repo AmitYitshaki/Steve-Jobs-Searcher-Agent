@@ -1402,9 +1402,10 @@ class ScraperAdapterTests(unittest.TestCase):
                 jobs=expected_jobs,
             )
 
-            jobs = custom_adapters.scrape_meta(company)
+            result = custom_adapters.scrape_meta(company)
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, expected_jobs)
         scraper_class.return_value.scrape.assert_called_once_with(
             company=company,
             target_url_pattern="/graphql",
@@ -1420,7 +1421,11 @@ class ScraperAdapterTests(unittest.TestCase):
             "fetch_strategy": "browser",
         }
         expected_jobs = [{"id": "meta_123"}]
-        adapter = MagicMock(return_value=expected_jobs)
+        expected = ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=expected_jobs,
+        )
+        adapter = MagicMock(return_value=expected)
         with (
             patch.dict(
                 scraper.CUSTOM_BROWSER_ADAPTERS,
@@ -1430,8 +1435,7 @@ class ScraperAdapterTests(unittest.TestCase):
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
-        self.assertEqual(result.jobs, expected_jobs)
+        self.assertIs(result, expected)
         adapter.assert_called_once_with(company)
 
     def test_google_text_reads_second_list_item_only(self) -> None:
@@ -1558,10 +1562,11 @@ class ScraperAdapterTests(unittest.TestCase):
                 ScrapeResult(status=ScrapeStatus.SUCCESS, jobs=[]),
             ]
 
-            jobs = custom_adapters.scrape_google(company)
+            result = custom_adapters.scrape_google(company)
 
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [early_job, shared_early_job, intern_job],
         )
         scraper_class.assert_called_once_with()
@@ -1652,9 +1657,10 @@ class ScraperAdapterTests(unittest.TestCase):
                 jobs=[repeated_job],
             )
 
-            jobs = custom_adapters.scrape_google(company)
+            result = custom_adapters.scrape_google(company)
 
-        self.assertEqual(jobs, [repeated_job])
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs, [repeated_job])
         self.assertEqual(
             scraper_class.return_value.scrape.call_count,
             4,
@@ -1666,6 +1672,26 @@ class ScraperAdapterTests(unittest.TestCase):
         ]
         self.assertFalse(any("page=3" in url for url in called_urls))
 
+    def test_google_adapter_preserves_waf_blocked_status(self) -> None:
+        """Do not collapse a typed browser block into an empty result."""
+
+        blocked = ScrapeResult(
+            status=ScrapeStatus.WAF_BLOCKED,
+            jobs=[],
+            message="challenge page",
+        )
+        with patch(
+            "scrapers.browser.custom_adapters.EmbeddedJsonScraper"
+        ) as scraper_class:
+            scraper_class.return_value.scrape.return_value = blocked
+            result = custom_adapters.scrape_google(
+                self._company("google_custom")
+            )
+
+        self.assertEqual(result.status, ScrapeStatus.WAF_BLOCKED)
+        self.assertEqual(result.jobs, [])
+        self.assertEqual(result.message, "challenge page")
+
     def test_google_custom_routes_to_registered_adapter(self) -> None:
         """Dispatch Google through embedded extraction instead of DOM rules."""
 
@@ -1674,7 +1700,11 @@ class ScraperAdapterTests(unittest.TestCase):
             "fetch_strategy": "browser",
         }
         expected_jobs = [{"id": "google_123"}]
-        adapter = MagicMock(return_value=expected_jobs)
+        expected = ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=expected_jobs,
+        )
+        adapter = MagicMock(return_value=expected)
         with (
             patch.dict(
                 scraper.CUSTOM_BROWSER_ADAPTERS,
@@ -1684,8 +1714,7 @@ class ScraperAdapterTests(unittest.TestCase):
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
-        self.assertEqual(result.jobs, expected_jobs)
+        self.assertIs(result, expected)
         adapter.assert_called_once_with(company)
 
     def test_greenhouse_extracts_actual_content_with_timeout(self) -> None:
@@ -1780,6 +1809,95 @@ class ScraperAdapterTests(unittest.TestCase):
 
         self.assertEqual(get.call_args.kwargs["timeout"], 15)
 
+    def test_http_adapters_classify_blocking_statuses(self) -> None:
+        """Map 401, 403, and 429 consistently across HTTP adapters."""
+
+        adapters = (
+            (
+                "iai",
+                custom_adapters.scrape_iai,
+                {"company_id": "iai", "api_url": "https://x.test/jobs"},
+                "get",
+            ),
+            (
+                "elbit",
+                custom_adapters.scrape_elbit,
+                {"company_id": "elbit", "api_url": "https://x.test/jobs"},
+                "get",
+            ),
+            (
+                "amdocs",
+                custom_adapters.scrape_amdocs,
+                {"company_id": "amdocs", "api_url": "https://x.test/jobs"},
+                "get",
+            ),
+            (
+                "oracle_rc",
+                custom_adapters.scrape_oracle_rc,
+                {
+                    "company_id": "oracle",
+                    "api_url": "https://x.test/jobs",
+                    "oracle_site_number": "CX_1",
+                },
+                "get",
+            ),
+            (
+                "thales_phenom",
+                custom_adapters.scrape_thales_phenom,
+                {"company_id": "thales", "api_url": "https://x.test/jobs"},
+                "post",
+            ),
+            (
+                "successfactors",
+                custom_adapters.scrape_successfactors,
+                {"company_id": "sap", "api_url": "https://x.test/jobs"},
+                "get",
+            ),
+            (
+                "workable",
+                custom_adapters.scrape_workable,
+                {
+                    "company_id": "example",
+                    "api_url": (
+                        "https://apply.workable.com/api/v3/accounts/"
+                        "example/jobs"
+                    ),
+                },
+                "post",
+            ),
+        )
+
+        for adapter_name, adapter, company, method in adapters:
+            for status_code in (401, 403, 429):
+                with self.subTest(
+                    adapter=adapter_name,
+                    status_code=status_code,
+                ):
+                    response = MagicMock(status_code=status_code)
+                    error = custom_adapters.requests.HTTPError(
+                        f"HTTP {status_code}",
+                        response=response,
+                    )
+                    request_path = (
+                        "scrapers.browser.custom_adapters.requests."
+                        f"{method}"
+                    )
+                    with (
+                        patch(request_path, side_effect=error),
+                        patch(
+                            "scrapers.browser.custom_adapters."
+                            "write_company_artifacts"
+                        ),
+                    ):
+                        result = adapter(company)
+
+                    self.assertEqual(
+                        result.status,
+                        ScrapeStatus.WAF_BLOCKED,
+                    )
+                    self.assertEqual(result.jobs, [])
+                    self.assertIn(str(status_code), result.message)
+
     def test_iai_normalizes_hidden_json_feed(self) -> None:
         """Extract IAI's compact array fields into the shared job schema."""
 
@@ -1809,14 +1927,15 @@ class ScraperAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=response,
         ) as get:
-            jobs = custom_adapters.scrape_iai(company)
+            result = custom_adapters.scrape_iai(company)
 
         response.raise_for_status.assert_called_once_with()
         self.assertEqual(get.call_args.args[0], company["api_url"])
         self.assertEqual(get.call_args.kwargs["timeout"], 15)
         self.assertIn("User-Agent", get.call_args.kwargs["headers"])
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "iai_76049533",
@@ -1839,7 +1958,11 @@ class ScraperAdapterTests(unittest.TestCase):
             "api_url": "https://jobs.iai.co.il/jobs.json",
         }
         expected_jobs = [{"id": "iai_76049533"}]
-        adapter = MagicMock(return_value=expected_jobs)
+        expected = ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=expected_jobs,
+        )
+        adapter = MagicMock(return_value=expected)
 
         with (
             patch.dict(
@@ -1850,8 +1973,7 @@ class ScraperAdapterTests(unittest.TestCase):
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
-        self.assertEqual(result.jobs, expected_jobs)
+        self.assertIs(result, expected)
         adapter.assert_called_once_with(company)
 
     def test_elbit_normalizes_first_party_json_feed(self) -> None:
@@ -1885,14 +2007,15 @@ class ScraperAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=response,
         ) as get:
-            jobs = custom_adapters.scrape_elbit(company)
+            result = custom_adapters.scrape_elbit(company)
 
         response.raise_for_status.assert_called_once_with()
         self.assertEqual(get.call_args.args[0], company["api_url"])
         self.assertEqual(get.call_args.kwargs["timeout"], 15)
         self.assertIn("User-Agent", get.call_args.kwargs["headers"])
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "elbit_systems_20839",
@@ -1923,10 +2046,13 @@ class ScraperAdapterTests(unittest.TestCase):
         with patch(
             "scrapers.browser.custom_adapters.requests.get",
         ) as get:
-            jobs = custom_adapters.scrape_elbit({"company_id": "elbit_systems"})
+            result = custom_adapters.scrape_elbit(
+                {"company_id": "elbit_systems"}
+            )
 
         get.assert_not_called()
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertEqual(result.jobs, [])
 
     def test_elbit_rejects_non_list_payload(self) -> None:
         """Tolerate an unexpected feed shape without raising."""
@@ -1942,9 +2068,10 @@ class ScraperAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=response,
         ):
-            jobs = custom_adapters.scrape_elbit(company)
+            result = custom_adapters.scrape_elbit(company)
 
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertEqual(result.jobs, [])
 
     def test_elbit_custom_api_routes_to_registered_adapter(self) -> None:
         """Dispatch Elbit's custom API instead of the browser fallback."""
@@ -1957,7 +2084,11 @@ class ScraperAdapterTests(unittest.TestCase):
             "api_url": "https://elbitsystemscareer.com/cron/jobs.json",
         }
         expected_jobs = [{"id": "elbit_systems_20839"}]
-        adapter = MagicMock(return_value=expected_jobs)
+        expected = ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=expected_jobs,
+        )
+        adapter = MagicMock(return_value=expected)
 
         with (
             patch.dict(
@@ -1968,8 +2099,7 @@ class ScraperAdapterTests(unittest.TestCase):
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
-        self.assertEqual(result.jobs, expected_jobs)
+        self.assertIs(result, expected)
         adapter.assert_called_once_with(company)
 
     def test_amdocs_paginates_via_start_offset_and_builds_urls(self) -> None:
@@ -2014,11 +2144,13 @@ class ScraperAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             side_effect=[first_response, second_response],
         ) as get:
-            jobs = custom_adapters.scrape_amdocs(company)
+            result = custom_adapters.scrape_amdocs(company)
 
         self.assertEqual(get.call_count, 2)
         self.assertEqual(get.call_args_list[0].kwargs["params"]["start"], 0)
         self.assertEqual(get.call_args_list[1].kwargs["params"]["start"], 10)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        jobs = result.jobs
         self.assertEqual(len(jobs), 2)  # deduped by id, 5x repeats collapse
         self.assertEqual(
             jobs[0],
@@ -2038,10 +2170,13 @@ class ScraperAdapterTests(unittest.TestCase):
         with patch(
             "scrapers.browser.custom_adapters.requests.get",
         ) as get:
-            jobs = custom_adapters.scrape_amdocs({"company_id": "amdocs"})
+            result = custom_adapters.scrape_amdocs(
+                {"company_id": "amdocs"}
+            )
 
         get.assert_not_called()
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertEqual(result.jobs, [])
 
     def test_amdocs_custom_api_routes_to_registered_adapter(self) -> None:
         """Dispatch Amdocs' custom API instead of the browser fallback."""
@@ -2053,7 +2188,11 @@ class ScraperAdapterTests(unittest.TestCase):
             "api_url": "https://jobs.amdocs.com/api/pcsx/search",
         }
         expected_jobs = [{"id": "amdocs_1"}]
-        adapter = MagicMock(return_value=expected_jobs)
+        expected = ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=expected_jobs,
+        )
+        adapter = MagicMock(return_value=expected)
 
         with (
             patch.dict(
@@ -2064,8 +2203,7 @@ class ScraperAdapterTests(unittest.TestCase):
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
-        self.assertEqual(result.jobs, expected_jobs)
+        self.assertIs(result, expected)
         adapter.assert_called_once_with(company)
 
     def test_oracle_rc_paginates_by_offset_and_joins_locations(self) -> None:
@@ -2137,7 +2275,7 @@ class ScraperAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             side_effect=[first_response, second_response],
         ) as get:
-            jobs = custom_adapters.scrape_oracle_rc(company)
+            result = custom_adapters.scrape_oracle_rc(company)
 
         self.assertEqual(get.call_count, 2)
         self.assertIn(
@@ -2153,9 +2291,11 @@ class ScraperAdapterTests(unittest.TestCase):
             get.call_args_list[1].kwargs["params"]["finder"],
         )
         self.assertEqual(
-            len(jobs),
+            len(result.jobs),
             custom_adapters.ORC_PAGE_SIZE + 1,
         )
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        jobs = result.jobs
         self.assertEqual(jobs[-1]["id"], "oracle_340882")
         self.assertEqual(
             jobs[0]["location"],
@@ -2174,13 +2314,14 @@ class ScraperAdapterTests(unittest.TestCase):
         with patch(
             "scrapers.browser.custom_adapters.requests.get",
         ) as get:
-            jobs = custom_adapters.scrape_oracle_rc({
+            result = custom_adapters.scrape_oracle_rc({
                 "company_id": "akamai",
                 "api_url": "https://fa-extu-saasfaprod1.fa.ocs.oraclecloud.com/x",
             })
 
         get.assert_not_called()
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertEqual(result.jobs, [])
 
     def test_oracle_rc_defaults_keyword_to_israel_without_location_filters(
         self,
@@ -2220,7 +2361,11 @@ class ScraperAdapterTests(unittest.TestCase):
             "oracle_site_number": "CX_1",
         }
         expected_jobs = [{"id": "akamai_1"}]
-        adapter = MagicMock(return_value=expected_jobs)
+        expected = ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=expected_jobs,
+        )
+        adapter = MagicMock(return_value=expected)
 
         with (
             patch.dict(
@@ -2231,8 +2376,7 @@ class ScraperAdapterTests(unittest.TestCase):
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
-        self.assertEqual(result.jobs, expected_jobs)
+        self.assertIs(result, expected)
         adapter.assert_called_once_with(company)
 
     def test_thales_adapter_scopes_israel_and_paginates(self) -> None:
@@ -2307,8 +2451,10 @@ class ScraperAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.post",
             side_effect=[first_response, second_response],
         ) as post:
-            jobs = custom_adapters.scrape_thales_phenom(company)
+            result = custom_adapters.scrape_thales_phenom(company)
 
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        jobs = result.jobs
         self.assertEqual(
             [job["id"] for job in jobs],
             ["imperva_thales_R100", "imperva_thales_R300"],
@@ -2357,12 +2503,33 @@ class ScraperAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.get",
             return_value=response,
         ):
-            jobs = custom_adapters.scrape_successfactors(
+            result = custom_adapters.scrape_successfactors(
                 self._company("successfactors")
             )
 
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0]["location"], "")
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(len(result.jobs), 1)
+        self.assertEqual(result.jobs[0]["location"], "")
+
+    def test_universal_playwright_preserves_typed_result(self) -> None:
+        """Do not discard a typed browser failure at the wrapper seam."""
+
+        expected = ScrapeResult(
+            status=ScrapeStatus.WAF_BLOCKED,
+            jobs=[],
+            message="Cloudflare challenge",
+        )
+        playwright_scraper = MagicMock()
+        playwright_scraper.scrape.return_value = expected
+        with patch(
+            "scrapers.browser.custom_adapters.PlaywrightJobScraper",
+            return_value=playwright_scraper,
+        ):
+            result = custom_adapters.scrape_universal_playwright(
+                self._company("custom")
+            )
+
+        self.assertIs(result, expected)
 
     def test_eightfold_extracts_native_jobs_with_timeout(self) -> None:
         """Normalize a native Eightfold response without using Playwright."""
@@ -2399,7 +2566,7 @@ class ScraperAdapterTests(unittest.TestCase):
                 "scrape_universal_playwright"
             ) as fallback,
         ):
-            jobs = custom_adapters.scrape_eightfold(
+            result = custom_adapters.scrape_eightfold(
                 "palo_alto_networks",
                 career_url,
             )
@@ -2410,21 +2577,26 @@ class ScraperAdapterTests(unittest.TestCase):
         )
         self.assertEqual(get.call_args.kwargs["timeout"], 15)
         fallback.assert_not_called()
-        self.assertEqual(jobs[0]["id"], "palo_alto_networks_123")
-        self.assertEqual(jobs[0]["location"], "Tel Aviv, Israel")
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs[0]["id"], "palo_alto_networks_123")
+        self.assertEqual(result.jobs[0]["location"], "Tel Aviv, Israel")
         self.assertEqual(
-            jobs[0]["url"],
+            result.jobs[0]["url"],
             "https://example.eightfold.ai/careers/job/123",
         )
         self.assertEqual(
-            jobs[0]["content"],
+            result.jobs[0]["content"],
             "Build cloud security services.",
         )
 
     def test_eightfold_falls_back_to_universal_playwright(self) -> None:
         """Use the original career page when the native API is unavailable."""
 
-        expected_jobs = [{"id": "palo_alto_networks_123"}]
+        expected = ScrapeResult(
+            status=ScrapeStatus.WAF_BLOCKED,
+            jobs=[],
+            message="Cloudflare challenge",
+        )
         career_url = "https://jobs.paloaltonetworks.com/en/search-jobs"
         with (
             patch(
@@ -2436,15 +2608,15 @@ class ScraperAdapterTests(unittest.TestCase):
             patch(
                 "scrapers.browser.custom_adapters."
                 "scrape_universal_playwright",
-                return_value=expected_jobs,
+                return_value=expected,
             ) as fallback,
         ):
-            jobs = custom_adapters.scrape_eightfold(
+            result = custom_adapters.scrape_eightfold(
                 "palo_alto_networks",
                 career_url,
             )
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertIs(result, expected)
         fallback.assert_called_once_with(
             {
                 "company_id": "palo_alto_networks",
@@ -2459,7 +2631,10 @@ class ScraperAdapterTests(unittest.TestCase):
         with (
             patch(
                 "scrapers.orchestrator.scrape_eightfold",
-                return_value=[{"id": "example_123"}],
+                return_value=ScrapeResult(
+                    status=ScrapeStatus.SUCCESS,
+                    jobs=[{"id": "example_123"}],
+                ),
             ) as eightfold,
             patch("builtins.print"),
         ):
@@ -2479,18 +2654,20 @@ class ScraperAdapterTests(unittest.TestCase):
             **self._company("microsoft_custom"),
             "fetch_strategy": "browser",
         }
-        expected_jobs = [{"id": "example_123"}]
+        expected = ScrapeResult(
+            status=ScrapeStatus.SUCCESS,
+            jobs=[{"id": "example_123"}],
+        )
         with (
             patch(
                 "scrapers.orchestrator.scrape_universal_playwright",
-                return_value=expected_jobs,
+                return_value=expected,
             ) as universal_playwright,
             patch("builtins.print"),
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
-        self.assertEqual(result.jobs, expected_jobs)
+        self.assertIs(result, expected)
         universal_playwright.assert_called_once_with(company)
 
     def test_dispatch_seam_preserves_typed_adapter_failures(self) -> None:
@@ -2515,21 +2692,21 @@ class ScraperAdapterTests(unittest.TestCase):
         self.assertIs(result, expected)
         adapter.assert_called_once_with(company)
 
-    def test_dispatch_seam_normalizes_empty_legacy_adapter(self) -> None:
-        """Expose legacy empty lists as a typed no-jobs outcome."""
+    def test_dispatch_seam_preserves_typed_no_jobs_result(self) -> None:
+        """Return a native no-jobs outcome without rebuilding it."""
 
         company = {
             **self._company("microsoft_custom"),
             "fetch_strategy": "browser",
         }
+        expected = ScrapeResult(status=ScrapeStatus.NO_JOBS, jobs=[])
         with patch(
             "scrapers.orchestrator.scrape_universal_playwright",
-            return_value=[],
+            return_value=expected,
         ):
             result = scraper.fetch_jobs_from_company(company)
 
-        self.assertEqual(result.status, ScrapeStatus.NO_JOBS)
-        self.assertEqual(result.jobs, [])
+        self.assertIs(result, expected)
 
     def test_unknown_ats_emits_logging_warning(self) -> None:
         """Make unsupported ATS types visible through standard logging."""
@@ -2918,12 +3095,13 @@ class WorkableAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.post",
             return_value=response,
         ) as post:
-            jobs = custom_adapters.scrape_workable(company)
+            result = custom_adapters.scrape_workable(company)
 
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
         self.assertEqual(post.call_args.args[0], company["api_url"])
         self.assertEqual(post.call_args.kwargs["json"], {})
         self.assertEqual(
-            jobs,
+            result.jobs,
             [
                 {
                     "id": "d_id_514DE2B215",
@@ -2957,12 +3135,16 @@ class WorkableAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.post",
             return_value=response,
         ):
-            jobs = custom_adapters.scrape_workable(company)
+            result = custom_adapters.scrape_workable(company)
 
-        self.assertEqual([job["id"] for job in jobs], ["example_AAA"])
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(
+            [job["id"] for job in result.jobs],
+            ["example_AAA"],
+        )
 
-    def test_request_failure_returns_empty_list(self) -> None:
-        """Fail closed instead of raising when the board is unreachable."""
+    def test_request_failure_returns_failed_result(self) -> None:
+        """Expose a typed failure when the board is unreachable."""
 
         company = {
             "company_id": "example",
@@ -2973,20 +3155,26 @@ class WorkableAdapterTests(unittest.TestCase):
             "scrapers.browser.custom_adapters.requests.post",
             side_effect=custom_adapters.requests.RequestException("boom"),
         ):
-            jobs = custom_adapters.scrape_workable(company)
+            result = custom_adapters.scrape_workable(company)
 
-        self.assertEqual(jobs, [])
+        self.assertEqual(result.status, ScrapeStatus.FAILED)
+        self.assertEqual(result.jobs, [])
+        self.assertIn("boom", result.message)
 
-    def test_missing_company_id_or_api_url_returns_empty_list(self) -> None:
+    def test_missing_company_id_or_api_url_returns_failed_result(self) -> None:
         """Refuse to guess when required configuration is absent."""
 
         with patch("scrapers.browser.custom_adapters.requests.post") as post:
-            self.assertEqual(
-                custom_adapters.scrape_workable({"api_url": "https://x.test"}), []
+            missing_id = custom_adapters.scrape_workable(
+                {"api_url": "https://x.test"}
             )
-            self.assertEqual(
-                custom_adapters.scrape_workable({"company_id": "x"}), []
+            missing_url = custom_adapters.scrape_workable(
+                {"company_id": "x"}
             )
+        self.assertEqual(missing_id.status, ScrapeStatus.FAILED)
+        self.assertEqual(missing_url.status, ScrapeStatus.FAILED)
+        self.assertEqual(missing_id.jobs, [])
+        self.assertEqual(missing_url.jobs, [])
         post.assert_not_called()
 
 

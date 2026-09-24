@@ -1342,16 +1342,16 @@ class EmbeddedJsonScraperTests(unittest.TestCase):
 
 
 class UniversalWrapperTests(unittest.TestCase):
-    """Verify the legacy function returns only the discovered jobs."""
+    """Verify the wrapper preserves the driver's typed result."""
 
     @patch(
         "scrapers.browser.custom_adapters.PlaywrightJobScraper"
     )
-    def test_wrapper_preserves_list_return_type(
+    def test_wrapper_preserves_typed_result(
         self,
         scraper_class: MagicMock,
     ) -> None:
-        """Keep callers compatible with the prior list-based function."""
+        """Keep the driver's status, jobs, and message intact."""
 
         expected_jobs = [
             {
@@ -1362,20 +1362,22 @@ class UniversalWrapperTests(unittest.TestCase):
                 "content": "",
             }
         ]
-        scraper_class.return_value.scrape.return_value = ScrapeResult(
+        expected = ScrapeResult(
             status=ScrapeStatus.SUCCESS,
             jobs=expected_jobs,
+            message="browser completed",
         )
+        scraper_class.return_value.scrape.return_value = expected
 
         with patch("builtins.print"):
-            jobs = scrape_universal_playwright(
+            result = scrape_universal_playwright(
                 {
                     "company_id": "example",
                     "api_url": "https://example.test/careers",
                 }
             )
 
-        self.assertEqual(jobs, expected_jobs)
+        self.assertIs(result, expected)
 
 
 if __name__ == "__main__":
