@@ -3,10 +3,16 @@ import html
 import json
 import logging
 import re
-import requests
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Mapping
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
+import requests
+from analysis.filters.location import (
+    ALLOWED_LOCATIONS,
+    BLOCKED_LOCATIONS,
+    LocationFilter,
+)
 from bs4 import BeautifulSoup
 from models.results import ScrapeResult, ScrapeStatus
 from scrapers.api.client import normalize_job_content
@@ -20,6 +26,12 @@ from scrapers.browser.playwright_driver import (
 
 LOGGER = logging.getLogger(__name__)
 HTTP_TIMEOUT_SECONDS = 15
+COMEET_DETAIL_MAX_WORKERS = 4
+COMEET_LOCATION_ACRONYMS = frozenset(
+    location
+    for location in ALLOWED_LOCATIONS | BLOCKED_LOCATIONS
+    if len(location) == 2 and location.isupper()
+)
 THALES_PHENOM_PAGE_SIZE = 10
 THALES_PHENOM_MAX_PAGES = 100
 META_JOBS_URL = "https://www.metacareers.com/jobs?q=Israel"
@@ -999,18 +1011,22 @@ def _comeet_jobs_from_dom(
     html_text: str,
     base_url: str,
     company_id: str,
-) -> list[dict[str, str]]:
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     """Extract jobs from Comeet's WordPress-plugin embed as a last resort.
 
     This shape server-renders ``.comeet-position`` elements directly into
     the page instead of exposing ``COMPANY_POSITIONS_DATA``. Listing meta is
     site-configurable and is not a reliable location field, so this parser
     uses an explicit location element or the Comeet category URL until the
-    caller can enrich it from the job-detail page.
+    caller can enrich it from the job-detail page. The second returned list
+    contains only jobs whose listing did not expose a plausible explicit
+    location, avoiding redundant detail requests when the listing is enough.
     """
 
     soup = BeautifulSoup(html_text, "lxml")
+    group_locations = _comeet_dom_group_locations(soup)
     jobs: list[dict[str, str]] = []
+    jobs_needing_enrichment: list[dict[str, str]] = []
     seen_urls: set[str] = set()
 
     for element in soup.select(".comeet-position"):
@@ -1032,9 +1048,19 @@ def _comeet_jobs_from_dom(
         seen_urls.add(full_url)
 
         location_element = element.select_one(".comeet-position-location")
-        location = (
+        explicit_location = (
             location_element.get_text(" ", strip=True)
-            if location_element
+            if location_element is not None
+            else ""
+        )
+        if not explicit_location:
+            explicit_location = group_locations.get(id(element), "")
+        has_explicit_location = bool(explicit_location) and (
+            urlsplit(explicit_location).scheme.casefold() not in {"http", "https"}
+        )
+        location = (
+            explicit_location
+            if has_explicit_location
             else _comeet_location_from_url(full_url)
         )
         uid_match = _COMEET_JOB_UID_IN_URL_PATTERN.search(full_url)
@@ -1043,17 +1069,68 @@ def _comeet_jobs_from_dom(
             if uid_match is not None
             else hashlib.sha256(full_url.encode("utf-8")).hexdigest()[:16]
         )
-        jobs.append(
-            {
-                "id": f"{company_id}_{job_id}",
-                "title": title,
-                "location": location,
-                "url": full_url,
-                "content": "",
-            }
-        )
+        job = {
+            "id": f"{company_id}_{job_id}",
+            "title": title,
+            "location": location,
+            "url": full_url,
+            "content": "",
+        }
+        jobs.append(job)
+        if not has_explicit_location:
+            jobs_needing_enrichment.append(job)
 
-    return jobs
+    return jobs, jobs_needing_enrichment
+
+
+def _comeet_dom_group_locations(soup: BeautifulSoup) -> dict[int, str]:
+    """Map positions to group labels when the board groups by geography.
+
+    Comeet's WordPress plugin can group the same markup by location or by
+    department. Treat the dimension as geographic only when more than half of
+    its non-empty labels match the project's established location vocabulary.
+    This lets location-grouped boards avoid all detail requests without
+    mistaking labels such as ``Engineering`` or ``Marketing`` for locations.
+    """
+
+    groups: list[tuple[str, list[Any]]] = []
+    location_filter = LocationFilter(strict_mode=True)
+    recognized_labels = 0
+    for group in soup.select(".comeet-g-r"):
+        label_element = group.select_one(".comeet-group-name")
+        label = (
+            label_element.get_text(" ", strip=True)
+            if label_element is not None
+            else ""
+        )
+        positions = group.select(".comeet-position")
+        if not label or not positions:
+            continue
+        groups.append((label, positions))
+        if _comeet_group_label_is_geographic(label, location_filter):
+            recognized_labels += 1
+
+    if not groups or recognized_labels * 2 <= len(groups):
+        return {}
+
+    return {
+        id(position): label
+        for label, positions in groups
+        for position in positions
+    }
+
+
+def _comeet_group_label_is_geographic(
+    label: str,
+    location_filter: LocationFilter,
+) -> bool:
+    """Recognize long locations and standalone uppercase country codes."""
+
+    decision = location_filter.evaluate("", "", label)
+    if decision.source == "location":
+        return True
+    short_codes = set(re.findall(r"(?<![A-Za-z])[A-Z]{2}(?![A-Za-z])", label))
+    return bool(short_codes & COMEET_LOCATION_ACRONYMS)
 
 
 def _comeet_location_from_url(job_url: str) -> str:
@@ -1199,9 +1276,11 @@ def _enrich_comeet_dom_locations(
     jobs: list[dict[str, str]],
     company_id: str,
 ) -> None:
-    """Replace DOM fallbacks with locations from Comeet detail pages."""
+    """Replace DOM fallbacks using a small pool of independent requests."""
 
-    for job in jobs:
+    def fetch_location(job: dict[str, str]) -> tuple[dict[str, str], str]:
+        """Fetch one detail location without failing the remaining batch."""
+
         try:
             response = requests.get(
                 job["url"],
@@ -1216,8 +1295,19 @@ def _enrich_comeet_dom_locations(
                 job["url"],
                 error,
             )
-            continue
-        location = _comeet_location_from_detail(response.text)
+            return job, ""
+        return job, _comeet_location_from_detail(response.text)
+
+    if not jobs:
+        return
+
+    worker_count = min(COMEET_DETAIL_MAX_WORKERS, len(jobs))
+    with ThreadPoolExecutor(
+        max_workers=worker_count,
+        thread_name_prefix="comeet-detail",
+    ) as executor:
+        results = executor.map(fetch_location, jobs)
+    for job, location in results:
         if location:
             job["location"] = location
 
@@ -1236,11 +1326,9 @@ def scrape_comeet(company: CompanyConfig) -> ScrapeResult:
        (``COMEET.init({...})``). That config names the exact board from
        shape 1, so it is derived and fetched next.
     3. A company's own careers page uses Comeet's WordPress plugin, which
-       server-renders ``.comeet-position`` elements with no separate data
-       call; those are DOM-scraped as a last resort (job description is
-       not available without a per-job follow-up this adapter does not
-       perform, same limitation as other DOM-only extraction in this
-       module).
+       server-renders ``.comeet-position`` elements. Those are DOM-scraped
+       as a last resort, with a small bounded pool enriching only listings
+       that do not already expose an explicit location.
 
     A single ``ats_type: comeet`` adapter serves every company regardless
     of which shape it uses -- ``api_url`` is the only per-company input.
@@ -1332,8 +1420,12 @@ def scrape_comeet(company: CompanyConfig) -> ScrapeResult:
             is not None
         ]
     else:
-        jobs = _comeet_jobs_from_dom(response_text, api_url, company_id)
-        _enrich_comeet_dom_locations(jobs, company_id)
+        jobs, jobs_needing_enrichment = _comeet_jobs_from_dom(
+            response_text,
+            api_url,
+            company_id,
+        )
+        _enrich_comeet_dom_locations(jobs_needing_enrichment, company_id)
 
     if jobs:
         status = ScrapeStatus.SUCCESS

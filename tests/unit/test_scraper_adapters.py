@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 import unittest
 from unittest.mock import MagicMock, call, patch
 
@@ -3011,7 +3012,10 @@ class ComeetAdapterTests(unittest.TestCase):
             "Nuvoton-Herzliya"
             "</span>"
         )
-        company = {"company_id": "nuvoton", "api_url": "https://nuvoton.co.il/careers/"}
+        company = {
+            "company_id": "nuvoton",
+            "api_url": "https://nuvoton.co.il/careers/",
+        }
 
         with patch(
             "scrapers.browser.custom_adapters.requests.get",
@@ -3032,6 +3036,151 @@ class ComeetAdapterTests(unittest.TestCase):
                 }
             ],
         )
+
+    def test_wordpress_detail_enrichment_is_bounded_concurrent(self) -> None:
+        """Fetch slow independent detail pages with a small bounded pool."""
+
+        listing_response = MagicMock()
+        listing_response.text = "".join(
+            f"""
+            <a class="comeet-position" href="/careers/co/team/{index}.ABC/job">
+                <div class="comeet-position-name">Role {index}</div>
+            </a>
+            """
+            for index in range(8)
+        )
+        detail_response = MagicMock()
+        detail_response.text = (
+            '<span class="comeet-position-location">Tel Aviv</span>'
+        )
+        lock = threading.Lock()
+        release_requests = threading.Event()
+        active_requests = 0
+        maximum_active_requests = 0
+
+        def get(url: str, **_kwargs: object) -> MagicMock:
+            nonlocal active_requests, maximum_active_requests
+            if url == "https://example.test/careers/":
+                return listing_response
+            with lock:
+                active_requests += 1
+                maximum_active_requests = max(
+                    maximum_active_requests,
+                    active_requests,
+                )
+                if active_requests >= 2:
+                    release_requests.set()
+            release_requests.wait(timeout=0.1)
+            with lock:
+                active_requests -= 1
+            return detail_response
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=get,
+        ):
+            result = custom_adapters.scrape_comeet({
+                "company_id": "example",
+                "api_url": "https://example.test/careers/",
+            })
+
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertGreaterEqual(maximum_active_requests, 2)
+        self.assertLessEqual(maximum_active_requests, 4)
+        self.assertEqual(
+            {job["location"] for job in result.jobs},
+            {"Tel Aviv"},
+        )
+
+    def test_wordpress_explicit_location_skips_detail_enrichment(self) -> None:
+        """Do not fetch a detail page when listing location is authoritative."""
+
+        listing_response = MagicMock()
+        listing_response.text = """
+        <a class="comeet-position" href="/careers/co/team/11.ABC/job">
+            <div class="comeet-position-name">Data Engineer</div>
+            <div class="comeet-position-location">Ramat Gan, Israel</div>
+        </a>
+        """
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=listing_response,
+        ) as get:
+            result = custom_adapters.scrape_comeet({
+                "company_id": "example",
+                "api_url": "https://example.test/careers/",
+            })
+
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(result.jobs[0]["location"], "Ramat Gan, Israel")
+
+    def test_wordpress_geographic_groups_skip_detail_enrichment(self) -> None:
+        """Use authoritative location groups without per-job requests."""
+
+        listing_response = MagicMock()
+        listing_response.text = """
+        <div class="comeet-g-r">
+            <div class="comeet-group-name">Israel - Tel Aviv</div>
+            <a class="comeet-position" href="/careers/co/israel/11.ABC/job">
+                <div class="comeet-position-name">Data Engineer</div>
+            </a>
+        </div>
+        <div class="comeet-g-r">
+            <div class="comeet-group-name">US Remote</div>
+            <a class="comeet-position" href="/careers/co/us/22.ABC/job">
+                <div class="comeet-position-name">Sales Engineer</div>
+            </a>
+        </div>
+        <div class="comeet-g-r">
+            <div class="comeet-group-name">Korea</div>
+            <a class="comeet-position" href="/careers/co/korea/33.ABC/job">
+                <div class="comeet-position-name">Support Engineer</div>
+            </a>
+        </div>
+        """
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            return_value=listing_response,
+        ) as get:
+            result = custom_adapters.scrape_comeet({
+                "company_id": "example",
+                "api_url": "https://example.test/careers/",
+            })
+
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(
+            [job["location"] for job in result.jobs],
+            ["Israel - Tel Aviv", "US Remote", "Korea"],
+        )
+
+    def test_wordpress_department_groups_still_use_detail_location(self) -> None:
+        """Do not mistake a department-grouped board for geography."""
+
+        listing_response = MagicMock()
+        listing_response.text = """
+        <div class="comeet-g-r">
+            <div class="comeet-group-name">Engineering</div>
+            <a class="comeet-position" href="/careers/co/engineering/11.ABC/job">
+                <div class="comeet-position-name">Data Engineer</div>
+            </a>
+        </div>
+        """
+        detail_response = MagicMock()
+        detail_response.text = (
+            '<span class="comeet-position-location">Tel Aviv, Israel</span>'
+        )
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[listing_response, detail_response],
+        ) as get:
+            result = custom_adapters.scrape_comeet({
+                "company_id": "example",
+                "api_url": "https://example.test/careers/",
+            })
+
+        self.assertEqual(get.call_count, 2)
+        self.assertEqual(result.jobs[0]["location"], "Tel Aviv, Israel")
 
     def test_position_missing_uid_or_title_is_skipped(self) -> None:
         """Drop malformed entries instead of producing an empty-id record."""
