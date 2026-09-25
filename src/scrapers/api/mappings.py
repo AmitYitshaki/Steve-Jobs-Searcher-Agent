@@ -37,6 +37,11 @@ class AtsMapping:
         dict[str, Any] | None,
     ] | None = None
     scoped_location_label: str | None = None
+    detail_url_fn: Callable[
+        [Mapping[str, Any], Mapping[str, Any]],
+        str,
+    ] | None = None
+    detail_location_fn: Callable[[Mapping[str, Any]], Any] | None = None
     http_error_status_map: frozenset[int] = field(
         default_factory=frozenset
     )
@@ -151,6 +156,48 @@ def _workday_israel_scope_payload(
     }
 
 
+def _workday_detail_url(
+    job: Mapping[str, Any],
+    company: Mapping[str, Any],
+) -> str:
+    """Build the Workday CXS detail endpoint for one search result."""
+
+    api_url = str(company.get("api_url") or "").rstrip("/")
+    external_path = str(job.get("externalPath") or "").strip()
+    if not api_url.endswith("/jobs") or not external_path:
+        return ""
+    return f"{api_url[:-len('/jobs')]}{external_path}"
+
+
+def _workday_detail_location(payload: Mapping[str, Any]) -> Any:
+    """Read the best location from a Workday job-detail payload."""
+
+    posting_info = payload.get("jobPostingInfo")
+    if not isinstance(posting_info, Mapping):
+        return ""
+    location = posting_info.get("location")
+    if location:
+        return location
+    requisition_location = posting_info.get("jobRequisitionLocation")
+    if not isinstance(requisition_location, Mapping):
+        return ""
+    return requisition_location.get("descriptor", "")
+
+
+def _workday_job_id(job: Mapping[str, Any]) -> Any:
+    """Read a stable requisition ID across Workday tenant shapes."""
+
+    direct_id = job.get("bulletinId") or job.get("id")
+    if direct_id:
+        return direct_id
+    bullet_fields = job.get("bulletFields")
+    if isinstance(bullet_fields, list):
+        for value in bullet_fields:
+            if str(value or "").strip():
+                return value
+    return job.get("externalPath", "")
+
+
 ATS_FIELD_MAP: dict[str, AtsMapping] = {
     "greenhouse": AtsMapping(
         envelope_key="jobs",
@@ -233,7 +280,7 @@ ATS_FIELD_MAP: dict[str, AtsMapping] = {
     ),
     "workday": AtsMapping(
         envelope_key="jobPostings",
-        id_fn=lambda job: job.get("bulletinId", job.get("id", "")),
+        id_fn=_workday_job_id,
         title_fn=lambda job: job.get("title", ""),
         location_fn=lambda job: job.get("locationsText", ""),
         url_fn=lambda job, base_url: (
@@ -262,6 +309,8 @@ ATS_FIELD_MAP: dict[str, AtsMapping] = {
         ),
         scope_payload_fn=_workday_israel_scope_payload,
         scoped_location_label="Israel",
+        detail_url_fn=_workday_detail_url,
+        detail_location_fn=_workday_detail_location,
         http_error_status_map=frozenset({401, 403, 422}),
     ),
 }

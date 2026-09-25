@@ -1,4 +1,4 @@
-"""Location validation for scraped job titles and URLs."""
+"""Location validation for scraped job metadata and URLs."""
 
 from __future__ import annotations
 
@@ -80,12 +80,14 @@ ALLOWED_LOCATIONS = frozenset({
     "Herzliya",
     "Hod Hasharon",
     "IL",
+    "ISR",
     "Israel",
     "Jerusalem",
     "Kfar Saba",
     "Lod",
     "Modiin",
     "Netanya",
+    "Ness Ziona",
     "Petah Tikva",
     "Ra'anana",
     "Raanana",
@@ -94,6 +96,7 @@ ALLOWED_LOCATIONS = frozenset({
     "Rehovot",
     "Tel Aviv",
     "Tel-Aviv",
+    "TLV",
     "Yavne",
     "Yokneam",
 })
@@ -110,7 +113,7 @@ class LocationDecision:
 
 
 class LocationFilter:
-    """Reject foreign jobs using safe title and URL location matching."""
+    """Validate jobs using raw location, title, and URL location signals."""
 
     LOCATION_QUERY_KEYWORDS = (
         "country",
@@ -138,10 +141,19 @@ class LocationFilter:
             self._compile_locations(allowed_locations)
         )
 
-    def evaluate(self, job_title: str, job_url: str) -> LocationDecision:
-        """Validate title and URL, returning a rejection reason when blocked."""
+    def evaluate(
+        self,
+        job_title: str,
+        job_url: str,
+        job_location: str = "",
+    ) -> LocationDecision:
+        """Validate all job location signals and explain the decision."""
 
-        sources = (("title", job_title), ("url", job_url))
+        sources = (
+            ("title", job_title),
+            ("url", job_url),
+            ("location", job_location),
+        )
         for source, value in sources:
             matched_location = self._find_match(
                 value=value,
@@ -157,10 +169,12 @@ class LocationFilter:
                     source=source,
                 )
 
-        if not self.strict_mode:
-            return LocationDecision(allowed=True)
-
-        for source, value in sources:
+        allowed_sources = (
+            ("location", job_location),
+            ("title", job_title),
+            ("url", job_url),
+        )
+        for source, value in allowed_sources:
             matched_location = self._find_match(
                 value=value,
                 source=source,
@@ -173,6 +187,9 @@ class LocationFilter:
                     matched_location=matched_location,
                     source=source,
                 )
+
+        if not self.strict_mode:
+            return LocationDecision(allowed=True)
 
         return LocationDecision(
             allowed=False,

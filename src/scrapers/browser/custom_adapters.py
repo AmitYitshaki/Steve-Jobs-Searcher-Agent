@@ -5,7 +5,7 @@ import logging
 import re
 import requests
 from typing import Any, Mapping
-from urllib.parse import quote, urljoin, urlsplit, urlunsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from models.results import ScrapeResult, ScrapeStatus
@@ -1003,10 +1003,10 @@ def _comeet_jobs_from_dom(
     """Extract jobs from Comeet's WordPress-plugin embed as a last resort.
 
     This shape server-renders ``.comeet-position`` elements directly into
-    the page instead of exposing ``COMPANY_POSITIONS_DATA``, so there is no
-    structured location or description field to read -- only what is
-    visible in the listing itself, matching the DOM-fallback shape used
-    elsewhere in this module when no richer API response is available.
+    the page instead of exposing ``COMPANY_POSITIONS_DATA``. Listing meta is
+    site-configurable and is not a reliable location field, so this parser
+    uses an explicit location element or the Comeet category URL until the
+    caller can enrich it from the job-detail page.
     """
 
     soup = BeautifulSoup(html_text, "lxml")
@@ -1031,9 +1031,11 @@ def _comeet_jobs_from_dom(
             continue
         seen_urls.add(full_url)
 
-        meta_element = element.select_one(".comeet-position-meta")
+        location_element = element.select_one(".comeet-position-location")
         location = (
-            meta_element.get_text(" ", strip=True) if meta_element else ""
+            location_element.get_text(" ", strip=True)
+            if location_element
+            else _comeet_location_from_url(full_url)
         )
         uid_match = _COMEET_JOB_UID_IN_URL_PATTERN.search(full_url)
         job_id = (
@@ -1052,6 +1054,172 @@ def _comeet_jobs_from_dom(
         )
 
     return jobs
+
+
+def _comeet_location_from_url(job_url: str) -> str:
+    """Read the Comeet category segment used as a location fallback."""
+
+    segments = [
+        unquote(segment).strip()
+        for segment in urlsplit(job_url).path.split("/")
+        if segment.strip()
+    ]
+    try:
+        category = segments[segments.index("co") + 1]
+    except (ValueError, IndexError):
+        return ""
+
+    category_parts = re.split(r"[-_]+", category)
+    invalid_parts = {"http", "https", "www", "com", "career", "careers"}
+    if any(part.casefold() in invalid_parts for part in category_parts):
+        return ""
+    return " ".join(category_parts)
+
+
+def _comeet_json_ld_location(value: Any) -> str:
+    """Extract one readable location from a JSON-LD value recursively."""
+
+    if isinstance(value, list):
+        locations = [
+            _comeet_json_ld_location(item)
+            for item in value
+        ]
+        return _join_distinct_text(*locations)
+    if not isinstance(value, Mapping):
+        return ""
+
+    job_location = value.get("jobLocation")
+    if job_location is not None:
+        return _comeet_json_ld_location(job_location)
+
+    applicant_location = value.get("applicantLocationRequirements")
+    if isinstance(applicant_location, list):
+        return _join_distinct_text(
+            *(
+                item.get("name")
+                for item in applicant_location
+                if isinstance(item, Mapping)
+            )
+        )
+    if isinstance(applicant_location, Mapping):
+        return str(applicant_location.get("name") or "").strip()
+
+    address = value.get("address")
+    if isinstance(address, Mapping):
+        country = address.get("addressCountry")
+        country_name = (
+            country.get("name")
+            if isinstance(country, Mapping)
+            else country
+        )
+        return _join_distinct_text(
+            address.get("addressLocality"),
+            address.get("addressRegion"),
+            country_name,
+        )
+
+    for nested in value.values():
+        location = _comeet_json_ld_location(nested)
+        if location:
+            return location
+    return ""
+
+
+def _json_ld_string_value(text: str, key: str) -> str:
+    """Decode one JSON string field without parsing its outer document."""
+
+    match = re.search(
+        rf'"{re.escape(key)}"\s*:\s*"((?:\\.|[^"\\])*)"',
+        text,
+    )
+    if match is None:
+        return ""
+    try:
+        return str(json.loads(f'"{match.group(1)}"')).strip()
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return match.group(1).strip()
+
+
+def _comeet_invalid_json_ld_location(text: str) -> str:
+    """Read jobLocation fields from malformed third-party JSON-LD."""
+
+    location_start = text.find('"jobLocation"')
+    if location_start < 0:
+        applicant_start = text.find('"applicantLocationRequirements"')
+        if applicant_start < 0:
+            return ""
+        return _json_ld_string_value(text[applicant_start:], "name")
+    description_start = text.find('"description"', location_start)
+    location_text = text[
+        location_start:
+        description_start if description_start >= 0 else location_start + 4000
+    ]
+    country = _json_ld_string_value(location_text, "addressCountry")
+    if not country:
+        country_start = location_text.find('"addressCountry"')
+        if country_start >= 0:
+            country = _json_ld_string_value(
+                location_text[country_start:],
+                "name",
+            )
+    return _join_distinct_text(
+        _json_ld_string_value(location_text, "addressLocality"),
+        _json_ld_string_value(location_text, "addressRegion"),
+        country,
+    )
+
+
+def _comeet_location_from_detail(html_text: str) -> str:
+    """Extract the authoritative location from a Comeet detail page."""
+
+    soup = BeautifulSoup(html_text, "lxml")
+    for script in soup.select('script[type="application/ld+json"]'):
+        script_text = script.get_text(strip=True).lstrip("\ufeff")
+        try:
+            payload = json.loads(script_text)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            location = _comeet_invalid_json_ld_location(script_text)
+            if location:
+                return location
+            continue
+        location = _comeet_json_ld_location(payload)
+        if location:
+            return location
+
+    location_element = soup.select_one(".comeet-position-location")
+    if location_element is None:
+        return ""
+    location = location_element.get_text(" ", strip=True)
+    if urlsplit(location).scheme.casefold() in {"http", "https"}:
+        return ""
+    return location
+
+
+def _enrich_comeet_dom_locations(
+    jobs: list[dict[str, str]],
+    company_id: str,
+) -> None:
+    """Replace DOM fallbacks with locations from Comeet detail pages."""
+
+    for job in jobs:
+        try:
+            response = requests.get(
+                job["url"],
+                headers=COMEET_REQUEST_HEADERS,
+                timeout=HTTP_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+        except requests.RequestException as error:
+            LOGGER.warning(
+                "Comeet detail request failed for %s (%s): %s",
+                company_id,
+                job["url"],
+                error,
+            )
+            continue
+        location = _comeet_location_from_detail(response.text)
+        if location:
+            job["location"] = location
 
 
 def scrape_comeet(company: CompanyConfig) -> ScrapeResult:
@@ -1165,6 +1333,7 @@ def scrape_comeet(company: CompanyConfig) -> ScrapeResult:
         ]
     else:
         jobs = _comeet_jobs_from_dom(response_text, api_url, company_id)
+        _enrich_comeet_dom_locations(jobs, company_id)
 
     if jobs:
         status = ScrapeStatus.SUCCESS

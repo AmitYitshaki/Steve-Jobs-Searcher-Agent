@@ -130,6 +130,61 @@ class LocationFilterTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.matched_location, "London")
 
+    def test_raw_location_recognizes_tlv_code(self) -> None:
+        """Treat standalone TLV as an explicit Israeli location signal."""
+
+        decision = self.location_filter.evaluate(
+            job_title="Student Software Engineer",
+            job_url="https://example.test/jobs/123",
+            job_location="TLV",
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.matched_location, "TLV")
+        self.assertEqual(decision.source, "location")
+
+    def test_raw_location_recognizes_isr_country_code(self) -> None:
+        """Treat standalone ISR as an explicit Israeli country signal."""
+
+        decision = self.location_filter.evaluate(
+            job_title="QA Engineer I",
+            job_url="https://example.test/jobs/456",
+            job_location="Center District | ISR",
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.matched_location, "ISR")
+        self.assertEqual(decision.source, "location")
+
+    def test_raw_location_recognizes_ness_ziona(self) -> None:
+        """Accept the audited bare Israeli city without a country suffix."""
+
+        decision = self.location_filter.evaluate(
+            job_title="Junior QA Engineer",
+            job_url="https://example.test/jobs/789",
+            job_location="Ness Ziona | Center District",
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.matched_location, "Ness Ziona")
+        self.assertEqual(decision.source, "location")
+
+    def test_raw_foreign_location_wins_over_israel_url(self) -> None:
+        """Reject a foreign posting even when its parent URL says Israel."""
+
+        decision = self.location_filter.evaluate(
+            job_title="Software Engineer Intern",
+            job_url="https://example.test/careers/israel/123",
+            job_location="San Francisco, California, United States",
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertIn(
+            decision.matched_location,
+            {"San Francisco", "United States"},
+        )
+        self.assertEqual(decision.source, "location")
+
     def test_strict_mode_accepts_known_israeli_location(self) -> None:
         """Allow an Israeli location when whitelist mode is enabled."""
 

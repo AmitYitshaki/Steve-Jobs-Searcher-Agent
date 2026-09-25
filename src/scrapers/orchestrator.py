@@ -102,6 +102,7 @@ WEAK_ENTRY_LEVEL_KEYWORDS = [
     "college graduate", "recent graduate", "graduate", "graduate position",
     "graduate program", "early career", "early careers",
     "early in profession", "trainee",
+    "engineer i",
     # "grad" is not a prefix of "graduate" under whole-phrase matching, so
     # "Software Engineer, University Grad" matched nothing before these.
     # Safe as weak signals: they still require a target-role match to pass.
@@ -582,6 +583,7 @@ def run_scraper(
                 location_decision = active_location_filter.evaluate(
                     job_title=job["title"],
                     job_url=job_url,
+                    job_location=job["location"],
                 )
                 if not location_decision.allowed:
                     tracker.record_location_rejection()
@@ -603,7 +605,11 @@ def run_scraper(
                     job["location"],
                     location_filters,
                 )
-                if not location_match:
+                recognized_israeli_location = (
+                    location_decision.source == "location"
+                    and location_decision.matched_location is not None
+                )
+                if not location_match and not recognized_israeli_location:
                     tracker.record_location_rejection()
                     LOGGER.debug(
                         "Rejecting %s: adapter location %r does not match "

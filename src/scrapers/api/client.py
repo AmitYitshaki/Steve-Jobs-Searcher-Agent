@@ -193,6 +193,40 @@ def _normalize_job_location(
     return f"{scope_label}\n{location}" if location else scope_label
 
 
+def _enrich_empty_job_location(
+    item: Mapping[str, Any],
+    company: Mapping[str, Any],
+    mapping: AtsMapping,
+    request_headers: Mapping[str, str],
+) -> Any:
+    """Fetch an optional ATS detail record for an omitted location."""
+
+    if mapping.detail_url_fn is None or mapping.detail_location_fn is None:
+        return ""
+    detail_url = mapping.detail_url_fn(item, company)
+    if not detail_url:
+        return ""
+    try:
+        response = requests.get(
+            detail_url,
+            headers=dict(request_headers),
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, TypeError, ValueError) as error:
+        LOGGER.warning(
+            "Optional ATS detail request failed for %s (%s): %s",
+            company.get("company_id", ""),
+            detail_url,
+            error,
+        )
+        return ""
+    if not isinstance(payload, Mapping):
+        return ""
+    return mapping.detail_location_fn(payload)
+
+
 def fetch_ats_jobs(
     company: dict[str, Any],
     mapping: AtsMapping,
@@ -312,12 +346,23 @@ def fetch_ats_jobs(
                     continue
                 raw_id = mapping.id_fn(item)
                 title = mapping.title_fn(item)
+                normalized_id = str(raw_id or "").strip()
+                normalized_title = str(title or "").strip()
+                if not normalized_id or not normalized_title:
+                    continue
                 location = mapping.location_fn(item)
+                if not str(location or "").strip():
+                    location = _enrich_empty_job_location(
+                        item=item,
+                        company=company,
+                        mapping=mapping,
+                        request_headers=request_headers,
+                    )
                 job_url = mapping.url_fn(item, base_url)
                 jobs.append(
                     {
-                        "id": f"{company_id}_{raw_id}",
-                        "title": str(title or ""),
+                        "id": f"{company_id}_{normalized_id}",
+                        "title": normalized_title,
                         "location": _normalize_job_location(
                             location,
                             mapping,

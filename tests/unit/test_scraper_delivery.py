@@ -121,6 +121,29 @@ class ScraperProducerTests(unittest.TestCase):
         )
         self.assertEqual(decision.matched_keyword, "graduate")
 
+    def test_engineer_one_is_entry_level_but_senior_still_wins(self) -> None:
+        """Recognize Engineer I only after higher seniority is excluded."""
+
+        for title in (
+            "QA Engineer I",
+            "Engineer I-Software Development",
+        ):
+            with self.subTest(title=title):
+                decision = scraper.is_relevant_job(title)
+                self.assertTrue(decision.allowed)
+                self.assertEqual(
+                    decision.reason,
+                    "weak entry-level and target-role signals",
+                )
+                self.assertEqual(decision.matched_keyword, "engineer i")
+
+        senior_decision = scraper.is_relevant_job(
+            "Senior Engineer I - Software Development"
+        )
+        self.assertFalse(senior_decision.allowed)
+        self.assertEqual(senior_decision.reason, "excluded title keyword")
+        self.assertEqual(senior_decision.matched_keyword, "senior")
+
     def test_graduate_keyword_has_negative_controls(self) -> None:
         """Avoid substring, seniority, and unrelated-program matches."""
 
@@ -220,6 +243,44 @@ class ScraperProducerTests(unittest.TestCase):
         self.assertTrue(
             scraper.is_in_location("Tel Aviv, Israel", ["Israel"])
         )
+
+    def test_israeli_city_location_reaches_candidate_pipeline(self) -> None:
+        """Accept a bare Israeli city when the company filter is Israel."""
+
+        tel_aviv_job = {**self.JOB, "location": "Tel Aviv"}
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PendingAlertQueue(
+                Path(directory) / "pending_alerts.json"
+            )
+            history_store = JobHistoryStore(
+                Path(directory) / "jobs_history.json"
+            )
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=self._successful_result(tel_aviv_job),
+                ),
+                patch(
+                    "scrapers.orchestrator.analyze_job",
+                    return_value="LLM analysis",
+                ) as analyze_job,
+            ):
+                scraper.run_scraper(
+                    queue=queue,
+                    history_store=history_store,
+                    health_store=ScraperHealthStore(
+                        Path(directory) / "scraper_health.json"
+                    ),
+                )
+
+            alerts = queue.load()
+
+        analyze_job.assert_called_once()
+        self.assertEqual([alert.job_id for alert in alerts], ["example_123"])
 
     def test_title_rejection_is_debug_logged_before_analysis(self) -> None:
         """Keep deterministic title rejection detail out of INFO output."""

@@ -478,7 +478,7 @@ class FetchAtsJobsTests(unittest.TestCase):
                     "title": "Software Engineer",
                     "locationsText": "Hod Hasharon",
                     "externalPath": "/job/IL-CITY-1",
-                }
+                },
             ],
         }
         with patch(
@@ -1794,6 +1794,69 @@ class ScraperAdapterTests(unittest.TestCase):
                     )
                 self.assertEqual(get.call_args.kwargs["timeout"], 15)
 
+    def test_workday_enriches_empty_location_from_job_detail(self) -> None:
+        """Recover a requisition location omitted from the search listing."""
+
+        discovery_response = MagicMock()
+        discovery_response.json.return_value = {"facets": []}
+        listing_response = MagicMock()
+        listing_response.json.return_value = {
+            "total": 2,
+            "jobPostings": [
+                {
+                    "title": "Marketing Communication Manager",
+                    "locationsText": "",
+                    "externalPath": "/job/example_R20033",
+                    "bulletFields": ["R20033"],
+                },
+                {},
+            ],
+        }
+        detail_response = MagicMock()
+        detail_response.json.return_value = {
+            "jobPostingInfo": {
+                "location": "",
+                "jobRequisitionLocation": {
+                    "descriptor": "Italy Remote",
+                },
+            }
+        }
+        company = {
+            "company_id": "example",
+            "ats_type": "workday",
+            "api_url": (
+                "https://example.wd1.myworkdayjobs.com/wday/cxs/"
+                "example/External/jobs"
+            ),
+            "location_filters": ["Israel"],
+        }
+
+        with (
+            patch(
+                "scrapers.api.client.requests.post",
+                side_effect=[discovery_response, listing_response],
+            ),
+            patch(
+                "scrapers.api.client.requests.get",
+                return_value=detail_response,
+            ) as get,
+        ):
+            result = api_client.fetch_ats_jobs(
+                company,
+                scraper.ATS_FIELD_MAP["workday"],
+            )
+
+        get.assert_called_once()
+        self.assertEqual(
+            get.call_args.args[0],
+            "https://example.wd1.myworkdayjobs.com/wday/cxs/"
+            "example/External/job/example_R20033",
+        )
+        self.assertEqual(get.call_args.kwargs["timeout"], 15)
+        self.assertEqual(len(result.jobs), 1)
+        self.assertEqual(result.jobs[0]["id"], "example_R20033")
+        self.assertEqual(result.jobs[0]["location"], "Italy Remote")
+
     def test_successfactors_request_uses_timeout(self) -> None:
         """Bound the HTML adapter request."""
 
@@ -2895,11 +2958,15 @@ class ComeetAdapterTests(unittest.TestCase):
         </div>
         </body></html>
         """
+        detail_response = MagicMock()
+        detail_response.text = (
+            '<span class="comeet-position-location">Remote</span>'
+        )
         company = {"company_id": "chargeafter", "api_url": "https://chargeafter.com/careers/"}
 
         with patch(
             "scrapers.browser.custom_adapters.requests.get",
-            return_value=html_response,
+            side_effect=[html_response, detail_response],
         ):
             result = custom_adapters.scrape_comeet(company)
 
@@ -2910,7 +2977,7 @@ class ComeetAdapterTests(unittest.TestCase):
                 {
                     "id": "chargeafter_41.B6E",
                     "title": "Customer Success Manager",
-                    "location": "Remote | Full-time",
+                    "location": "Remote",
                     "url": "https://chargeafter.com/careers/co/remote/41.B6E/customer-success",
                     "content": "",
                 }
@@ -2938,11 +3005,17 @@ class ComeetAdapterTests(unittest.TestCase):
         </a>
         </body></html>
         """
+        detail_response = MagicMock()
+        detail_response.text = (
+            '<span class="comeet-position-location">'
+            "Nuvoton-Herzliya"
+            "</span>"
+        )
         company = {"company_id": "nuvoton", "api_url": "https://nuvoton.co.il/careers/"}
 
         with patch(
             "scrapers.browser.custom_adapters.requests.get",
-            return_value=html_response,
+            side_effect=[html_response, detail_response],
         ):
             result = custom_adapters.scrape_comeet(company)
 
@@ -2953,7 +3026,7 @@ class ComeetAdapterTests(unittest.TestCase):
                 {
                     "id": "nuvoton_3B.969",
                     "title": "Lead AI Engineer",
-                    "location": "Nuvoton-Herzliya | Full-time",
+                    "location": "Nuvoton-Herzliya",
                     "url": "https://nuvoton.co.il/careers/co/ai-npu/3B.969/lead",
                     "content": "",
                 }
@@ -2985,6 +3058,132 @@ class ComeetAdapterTests(unittest.TestCase):
             [job["id"] for job in result.jobs],
             ["example_11.111"],
         )
+
+    def test_wordpress_dom_uses_detail_json_ld_location(self) -> None:
+        """Replace listing badges with the detail page's real location."""
+
+        listing_response = MagicMock()
+        listing_response.text = """
+        <a class="comeet-position"
+           href="/career/co/https-www-example-com-careers/11.111/data-engineer/all">
+            <div class="comeet-position-name">Data Engineer</div>
+            <div class="comeet-position-meta">Marketing · Full-time · Intermediate</div>
+        </a>
+        """
+        detail_response = MagicMock()
+        detail_response.text = """
+        <script type="application/ld+json">
+        {
+          "@type": "JobPosting",
+          "jobLocation": {
+            "@type": "Place",
+            "address": {
+              "addressLocality": "Tel Aviv-Yafo",
+              "addressRegion": "Tel Aviv District",
+              "addressCountry": {"name": "IL"}
+            }
+          }
+        }
+        </script>
+        """
+        company = {
+            "company_id": "example",
+            "api_url": "https://example.com/careers/",
+        }
+
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[listing_response, detail_response],
+        ) as get:
+            result = custom_adapters.scrape_comeet(company)
+
+        self.assertEqual(get.call_count, 2)
+        self.assertEqual(result.status, ScrapeStatus.SUCCESS)
+        self.assertEqual(
+            result.jobs[0]["location"],
+            "Tel Aviv-Yafo | Tel Aviv District | IL",
+        )
+
+    def test_wordpress_dom_tolerates_invalid_json_ld_wrapper(self) -> None:
+        """Read location fields when unrelated JSON-LD has a trailing comma."""
+
+        listing_response = MagicMock()
+        listing_response.text = """
+        <a class="comeet-position"
+           href="/career/co/broken-category/22.222/data-engineer/all">
+            <div class="comeet-position-name">Data Engineer</div>
+            <div class="comeet-position-meta">Full-time</div>
+        </a>
+        """
+        detail_response = MagicMock()
+        detail_response.text = """
+        <script type="application/ld+json">
+        {
+          "@type": "JobPosting",
+          "hiringOrganization": {"name": "Example",},
+          "jobLocation": {
+            "address": {
+              "addressLocality": "Tel Aviv-Yafo",
+              "addressRegion": "Tel Aviv District",
+              "addressCountry": {"name": "IL"}
+            }
+          }
+        }
+        </script>
+        """
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[listing_response, detail_response],
+        ):
+            result = custom_adapters.scrape_comeet(
+                {
+                    "company_id": "example",
+                    "api_url": "https://example.com/careers/",
+                }
+            )
+
+        self.assertEqual(
+            result.jobs[0]["location"],
+            "Tel Aviv-Yafo | Tel Aviv District | IL",
+        )
+
+    def test_wordpress_dom_reads_remote_country_requirement(self) -> None:
+        """Use applicantLocationRequirements for remote Comeet roles."""
+
+        listing_response = MagicMock()
+        listing_response.text = """
+        <a class="comeet-position"
+           href="/career/co/broken-category/33.333/full-stack-engineer/all">
+            <div class="comeet-position-name">Full Stack Engineer</div>
+            <div class="comeet-position-meta">Full-time</div>
+        </a>
+        """
+        detail_response = MagicMock()
+        detail_response.text = """
+        <script type="application/ld+json">
+        {
+          "@type": "JobPosting",
+          "hiringOrganization": {"name": "Example",},
+          "applicantLocationRequirements": {
+            "@type": "Country",
+            "name": "IL"
+          },
+          "jobLocationType": "TELECOMMUTE"
+        }
+        </script>
+        """
+        with patch(
+            "scrapers.browser.custom_adapters.requests.get",
+            side_effect=[listing_response, detail_response],
+        ):
+            result = custom_adapters.scrape_comeet(
+                {
+                    "company_id": "example",
+                    "api_url": "https://example.com/careers/",
+                }
+            )
+
+        self.assertEqual(result.jobs[0]["location"], "IL")
 
     def test_request_failure_is_failed(self) -> None:
         """Return a typed failure when the board is unreachable."""
