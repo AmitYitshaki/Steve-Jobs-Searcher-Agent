@@ -1059,6 +1059,157 @@ class CompanyConfigurationTests(unittest.TestCase):
             company["company_id"]: company for company in companies
         }
 
+    def _assert_step8_routes(
+        self,
+        ats_type: str,
+        expected_routes: dict[str, str],
+    ) -> None:
+        """Assert exact routing fields for one small step-8 company group."""
+
+        for company_id, api_url in expected_routes.items():
+            with self.subTest(company_id=company_id):
+                company = self.companies[company_id]
+                self.assertTrue(company["is_active"])
+                self.assertEqual(company["ats_type"], ats_type)
+                self.assertEqual(company["fetch_strategy"], "api")
+                self.assertEqual(company["api_url"], api_url)
+                self.assertIn("Israel", company["location_filters"])
+
+    def test_step8_batch1_comeet_routes_group_one(self) -> None:
+        """Pin the first ten independently verified Comeet routes."""
+
+        self._assert_step8_routes("comeet", {
+            "port": "https://www.comeet.com/jobs/port/59.004",
+            "drivenets": "https://www.comeet.com/jobs/drivenets/72.006",
+            "rounds": "https://www.comeet.com/jobs/rounds/59.005",
+            "elsight": "https://www.comeet.com/jobs/elsight/B9.006",
+            "commit": "https://www.comeet.com/jobs/comm-it/76.008",
+            "gett": "https://www.comeet.com/jobs/gett/A0.002",
+            "aitech": "https://www.comeet.com/jobs/aitechsystems/88.004",
+            "airobotics": "https://www.comeet.com/jobs/airobotics/AA.005",
+            "newphotonics": "https://www.comeet.com/jobs/newphotonics/89.000",
+            "pango": "https://www.comeet.com/jobs/pango/59.002",
+        })
+
+    def test_step8_batch1_comeet_routes_group_two(self) -> None:
+        """Pin the second ten independently verified Comeet routes."""
+
+        self._assert_step8_routes("comeet", {
+            "abra_rnd": "https://www.comeet.com/jobs/abra_rnd/15.007",
+            "biocatch": "https://www.comeet.com/jobs/biocatch/03.00E",
+            "classiq": "https://www.comeet.com/jobs/classiq/F7.008",
+            "aqua_security": "https://www.comeet.com/jobs/aquasec/91.001",
+            "atera": "https://www.comeet.com/jobs/atera/63.00B",
+            "akeyless": "https://www.comeet.com/jobs/akeyless/27.006",
+            "cross_river": "https://www.comeet.com/jobs/crossriver/C7.00F",
+            "remedio": "https://www.comeet.com/jobs/remedio/CA.000",
+            "kayhut": "https://www.comeet.com/jobs/Kayhut/F0.00B",
+            "backslash_security": (
+                "https://www.comeet.com/jobs/backslash/98.004"
+            ),
+        })
+
+    def test_step8_batch1_comeet_routes_group_three(self) -> None:
+        """Pin the remaining verified Comeet board and embed routes."""
+
+        self._assert_step8_routes("comeet", {
+            "oligo_security": (
+                "https://www.comeet.com/jobs/oligosecurity/5A.00B"
+            ),
+            "pentera": "https://www.comeet.com/jobs/pentera/C5.00D",
+            "zero_networks": (
+                "https://www.comeet.com/jobs/zeronetworks/39.00F"
+            ),
+            "superplay": "https://www.comeet.com/jobs/superplay/28.003",
+            "fetcherr": "https://www.fetcherr.io/careers",
+            "navina": "https://www.navina.ai/careers",
+            "nym_health": "https://nym.health/careers/",
+            "windward": "https://windward.ai/careers/",
+            "clover_security": (
+                "https://www.comeet.com/jobs/clover_security/7A.00A"
+            ),
+        })
+
+    def test_step8_batch1_greenhouse_routes_group_one(self) -> None:
+        """Pin six verified Greenhouse board tokens."""
+
+        self._assert_step8_routes("greenhouse", {
+            "apiiro": (
+                "https://boards-api.greenhouse.io/v1/boards/apiiro/"
+                "jobs?content=true"
+            ),
+            "axonius": (
+                "https://boards-api.greenhouse.io/v1/boards/axonius/"
+                "jobs?content=true"
+            ),
+            "eleos_health": (
+                "https://boards-api.greenhouse.io/v1/boards/eleoshealth/"
+                "jobs?content=true"
+            ),
+            "hello_heart": (
+                "https://boards-api.greenhouse.io/v1/boards/helloheart/"
+                "jobs?content=true"
+            ),
+            "mongodb": (
+                "https://boards-api.greenhouse.io/v1/boards/mongodb/"
+                "jobs?content=true"
+            ),
+            "nanit": (
+                "https://boards-api.greenhouse.io/v1/boards/nanit/"
+                "jobs?content=true"
+            ),
+        })
+
+    def test_step8_batch1_greenhouse_routes_group_two(self) -> None:
+        """Pin the other five verified Greenhouse board tokens."""
+
+        self._assert_step8_routes("greenhouse", {
+            "pendo": (
+                "https://boards-api.greenhouse.io/v1/boards/pendo/"
+                "jobs?content=true"
+            ),
+            "token_security": (
+                "https://boards-api.greenhouse.io/v1/boards/tokensecurity/"
+                "jobs?content=true"
+            ),
+            "torii": (
+                "https://boards-api.greenhouse.io/v1/boards/toriihq/"
+                "jobs?content=true"
+            ),
+            "wedev": (
+                "https://boards-api.greenhouse.io/v1/boards/wedev/"
+                "jobs?content=true"
+            ),
+            "wolt_israel": (
+                "https://boards-api.greenhouse.io/v1/boards/woltisrael/"
+                "jobs?content=true"
+            ),
+        })
+
+    def test_step8_batch1_ashby_routes(self) -> None:
+        """Pin the two verified Ashby board tokens."""
+
+        self._assert_step8_routes("ashby", {
+            "moon_active": (
+                "https://api.ashbyhq.com/posting-api/job-board/moonactive"
+            ),
+            "finout": "https://api.ashbyhq.com/posting-api/job-board/finout",
+        })
+
+    def test_step8_batch1_workday_routes(self) -> None:
+        """Pin the two verified Workday tenants and sites."""
+
+        self._assert_step8_routes("workday", {
+            "crowdstrike": (
+                "https://crowdstrike.wd5.myworkdayjobs.com/wday/cxs/"
+                "crowdstrike/crowdstrikecareers/jobs"
+            ),
+            "mastercard": (
+                "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/"
+                "mastercard/CorporateCareers/jobs"
+            ),
+        })
+
     def test_no_facet_workday_companies_include_israeli_office_cities(
         self,
     ) -> None:
