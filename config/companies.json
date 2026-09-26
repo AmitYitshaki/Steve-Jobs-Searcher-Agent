@@ -1418,13 +1418,13 @@
   {
     "company_id": "dynamic_yield",
     "company_name": "Dynamic Yield",
-    "is_active": true,
+    "is_active": false,
     "ats_type": "workday",
     "api_url": "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
     "location_filters": [
       "Israel"
     ],
-    "notes": "Workday CXS endpoint derived from the tenant/site in the company's own careers URL; verified live via direct request."
+    "notes": "Deactivated: this tenant is Mastercard's own Workday instance (Dynamic Yield was acquired by Mastercard and is now hired through it) -- identical api_url to the 'mastercard' entry added in step 8 batch 1. Kept inactive rather than removed so the collision and reasoning stay visible; see the 'mastercard' entry for this tenant's live coverage."
   },
   {
     "company_id": "elementor",
@@ -3629,5 +3629,605 @@
     ],
     "fetch_strategy": "api",
     "notes": "Comeet board or embedded integration; ATS signature and live jobs verified during step 8 batch 1."
+  },
+  {
+    "company_id": "buildots",
+    "company_name": "Buildots",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/buildots/36.004",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "vi_labs",
+    "company_name": "Vi",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/vi/B1.002",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "automat_it",
+    "company_name": "Automat-it",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/automatit/26.003",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "sentra",
+    "company_name": "Sentra",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/sentra/87.00B",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "tastewise",
+    "company_name": "Tastewise",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/tastewise/F8.000",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "shopic",
+    "company_name": "Shopic",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/shopic/E6.002",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "cheq",
+    "company_name": "CHEQ",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/cheq/65.005",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "guardio",
+    "company_name": "Guardio",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/guardio/57.000",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "zenity",
+    "company_name": "Zenity",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/zenity/19.000",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "upstream_security",
+    "company_name": "Upstream Security",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/upstream/E4.003",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "orchid_security",
+    "company_name": "Orchid Security",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/orchid_security/4A.001",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "onyx_security",
+    "company_name": "Onyx Security",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/onyxsecurity/BA.005",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "surecomp",
+    "company_name": "Surecomp",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/Surecomp/24.00E",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "rapid_medical",
+    "company_name": "Rapid Medical",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/rapidmedical/5A.003",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "landa_digital_printing",
+    "company_name": "Landa Digital Printing",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/landacorp/A4.000",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "att_israel",
+    "company_name": "AT&T Israel",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/joinattil/38.00A",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "blinkops",
+    "company_name": "BlinkOps",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/blinkops/C7.004",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "finubit",
+    "company_name": "Finubit",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/finubit/A9.002",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "plaee",
+    "company_name": "Plaee",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/plaee/5B.004",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "tenengroup",
+    "company_name": "Tenengroup",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/Tenengroup/93.00C",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "innovid",
+    "company_name": "Innovid",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/innovid/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "beamup",
+    "company_name": "BeamUP",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/beamup/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "credible",
+    "company_name": "Credible",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/credible/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "nift",
+    "company_name": "Nift",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/nift/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "guidde",
+    "company_name": "Guidde",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/guidde/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "unframe",
+    "company_name": "Unframe",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/unframe/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "honeycomb_insurance",
+    "company_name": "Honeycomb Insurance",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/honeycombinsurance/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "sweet_security",
+    "company_name": "Sweet Security",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/sweetsecurity/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "obligo",
+    "company_name": "Obligo",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/obligo/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "oasis_security",
+    "company_name": "Oasis Security",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/oasissecurity/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "conifers_ai",
+    "company_name": "Conifers.ai",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/conifersaicareers/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "unit",
+    "company_name": "Unit",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/unit",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "chainalysis",
+    "company_name": "Chainalysis",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/chainalysis-careers",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "nexxen",
+    "company_name": "Nexxen",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/nexxen",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "airwallex",
+    "company_name": "Airwallex",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/airwallex",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "viz_ai",
+    "company_name": "Viz.ai",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/Viz.ai",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "autofleet",
+    "company_name": "Autofleet",
+    "is_active": true,
+    "ats_type": "workable",
+    "api_url": "https://apply.workable.com/api/v3/accounts/autofleet/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Workable public listing API; account and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "tomax",
+    "company_name": "Tomax",
+    "is_active": true,
+    "ats_type": "workable",
+    "api_url": "https://apply.workable.com/api/v3/accounts/tomax/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Workable public listing API; account and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "nuvei",
+    "company_name": "Nuvei",
+    "is_active": true,
+    "ats_type": "workable",
+    "api_url": "https://apply.workable.com/api/v3/accounts/nuvei/jobs",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Workable public listing API; account and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "april_tax",
+    "company_name": "April",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/april",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "beach_bum",
+    "company_name": "Beach Bum",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/beach-bum",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "cloudinary",
+    "company_name": "Cloudinary",
+    "is_active": true,
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/cloudinary?mode=json",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Lever public postings API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "connecteam",
+    "company_name": "Connecteam",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/connecteam/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "doit",
+    "company_name": "DoiT",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/doitintl/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "electreon",
+    "company_name": "Electreon",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/electreon/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "loora",
+    "company_name": "Loora",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/loora",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "capitolis",
+    "company_name": "Capitolis",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/capitolis/jobs?content=true",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; token and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "retym",
+    "company_name": "Retym",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/retym/C6.003",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "majestic_labs",
+    "company_name": "Majestic Labs",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/majesticlabs/AA.004",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "shield_financial",
+    "company_name": "Shield",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/shieldfc/A5.00E",
+    "location_filters": [
+      "Israel"
+    ],
+    "fetch_strategy": "api",
+    "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
   }
 ]

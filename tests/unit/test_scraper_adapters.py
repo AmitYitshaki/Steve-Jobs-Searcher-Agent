@@ -1210,6 +1210,172 @@ class CompanyConfigurationTests(unittest.TestCase):
             ),
         })
 
+    def test_step8_batch2_comeet_routes_group_one(self) -> None:
+        """Pin the first eight production-verified Comeet routes."""
+
+        self._assert_step8_routes("comeet", {
+            "buildots": "https://www.comeet.com/jobs/buildots/36.004",
+            "vi_labs": "https://www.comeet.com/jobs/vi/B1.002",
+            "automat_it": "https://www.comeet.com/jobs/automatit/26.003",
+            "sentra": "https://www.comeet.com/jobs/sentra/87.00B",
+            "tastewise": "https://www.comeet.com/jobs/tastewise/F8.000",
+            "shopic": "https://www.comeet.com/jobs/shopic/E6.002",
+            "cheq": "https://www.comeet.com/jobs/cheq/65.005",
+            "guardio": "https://www.comeet.com/jobs/guardio/57.000",
+        })
+
+    def test_step8_batch2_comeet_routes_group_two(self) -> None:
+        """Pin the next eight production-verified Comeet routes."""
+
+        self._assert_step8_routes("comeet", {
+            "zenity": "https://www.comeet.com/jobs/zenity/19.000",
+            "upstream_security": "https://www.comeet.com/jobs/upstream/E4.003",
+            "orchid_security": (
+                "https://www.comeet.com/jobs/orchid_security/4A.001"
+            ),
+            "onyx_security": (
+                "https://www.comeet.com/jobs/onyxsecurity/BA.005"
+            ),
+            "surecomp": "https://www.comeet.com/jobs/Surecomp/24.00E",
+            "rapid_medical": (
+                "https://www.comeet.com/jobs/rapidmedical/5A.003"
+            ),
+            "landa_digital_printing": (
+                "https://www.comeet.com/jobs/landacorp/A4.000"
+            ),
+            "att_israel": "https://www.comeet.com/jobs/joinattil/38.00A",
+        })
+
+    def test_step8_batch2_comeet_routes_group_three(self) -> None:
+        """Pin the remaining seven production-verified Comeet routes."""
+
+        self._assert_step8_routes("comeet", {
+            "blinkops": "https://www.comeet.com/jobs/blinkops/C7.004",
+            "finubit": "https://www.comeet.com/jobs/finubit/A9.002",
+            "plaee": "https://www.comeet.com/jobs/plaee/5B.004",
+            "tenengroup": "https://www.comeet.com/jobs/Tenengroup/93.00C",
+            "retym": "https://www.comeet.com/jobs/retym/C6.003",
+            "majestic_labs": (
+                "https://www.comeet.com/jobs/majesticlabs/AA.004"
+            ),
+            "shield_financial": (
+                "https://www.comeet.com/jobs/shieldfc/A5.00E"
+            ),
+        })
+
+    def test_step8_batch2_greenhouse_routes_group_one(self) -> None:
+        """Pin the first eight production-verified Greenhouse routes."""
+
+        self._assert_step8_routes("greenhouse", {
+            "innovid": (
+                "https://boards-api.greenhouse.io/v1/boards/innovid/"
+                "jobs?content=true"
+            ),
+            "beamup": (
+                "https://boards-api.greenhouse.io/v1/boards/beamup/"
+                "jobs?content=true"
+            ),
+            "credible": (
+                "https://boards-api.greenhouse.io/v1/boards/credible/"
+                "jobs?content=true"
+            ),
+            "nift": (
+                "https://boards-api.greenhouse.io/v1/boards/nift/"
+                "jobs?content=true"
+            ),
+            "guidde": (
+                "https://boards-api.greenhouse.io/v1/boards/guidde/"
+                "jobs?content=true"
+            ),
+            "unframe": (
+                "https://boards-api.greenhouse.io/v1/boards/unframe/"
+                "jobs?content=true"
+            ),
+            "honeycomb_insurance": (
+                "https://boards-api.greenhouse.io/v1/boards/"
+                "honeycombinsurance/jobs?content=true"
+            ),
+            "sweet_security": (
+                "https://boards-api.greenhouse.io/v1/boards/"
+                "sweetsecurity/jobs?content=true"
+            ),
+        })
+
+    def test_step8_batch2_greenhouse_routes_group_two(self) -> None:
+        """Pin the other seven production-verified Greenhouse routes."""
+
+        self._assert_step8_routes("greenhouse", {
+            "obligo": (
+                "https://boards-api.greenhouse.io/v1/boards/obligo/"
+                "jobs?content=true"
+            ),
+            "oasis_security": (
+                "https://boards-api.greenhouse.io/v1/boards/"
+                "oasissecurity/jobs?content=true"
+            ),
+            "conifers_ai": (
+                "https://boards-api.greenhouse.io/v1/boards/"
+                "conifersaicareers/jobs?content=true"
+            ),
+            "connecteam": (
+                "https://boards-api.greenhouse.io/v1/boards/connecteam/"
+                "jobs?content=true"
+            ),
+            "doit": (
+                "https://boards-api.greenhouse.io/v1/boards/doitintl/"
+                "jobs?content=true"
+            ),
+            "electreon": (
+                "https://boards-api.greenhouse.io/v1/boards/electreon/"
+                "jobs?content=true"
+            ),
+            "capitolis": (
+                "https://boards-api.greenhouse.io/v1/boards/capitolis/"
+                "jobs?content=true"
+            ),
+        })
+
+    def test_step8_batch2_ashby_routes(self) -> None:
+        """Pin the eight production-verified Ashby routes."""
+
+        self._assert_step8_routes("ashby", {
+            "unit": "https://api.ashbyhq.com/posting-api/job-board/unit",
+            "chainalysis": (
+                "https://api.ashbyhq.com/posting-api/job-board/"
+                "chainalysis-careers"
+            ),
+            "nexxen": "https://api.ashbyhq.com/posting-api/job-board/nexxen",
+            "airwallex": (
+                "https://api.ashbyhq.com/posting-api/job-board/airwallex"
+            ),
+            "viz_ai": "https://api.ashbyhq.com/posting-api/job-board/Viz.ai",
+            "april_tax": "https://api.ashbyhq.com/posting-api/job-board/april",
+            "beach_bum": (
+                "https://api.ashbyhq.com/posting-api/job-board/beach-bum"
+            ),
+            "loora": "https://api.ashbyhq.com/posting-api/job-board/loora",
+        })
+
+    def test_step8_batch2_workable_routes(self) -> None:
+        """Pin the three production-verified Workable accounts."""
+
+        self._assert_step8_routes("workable", {
+            "autofleet": (
+                "https://apply.workable.com/api/v3/accounts/autofleet/jobs"
+            ),
+            "tomax": "https://apply.workable.com/api/v3/accounts/tomax/jobs",
+            "nuvei": "https://apply.workable.com/api/v3/accounts/nuvei/jobs",
+        })
+
+    def test_step8_batch2_lever_routes(self) -> None:
+        """Pin the production-verified Cloudinary Lever route."""
+
+        self._assert_step8_routes("lever", {
+            "cloudinary": (
+                "https://api.lever.co/v0/postings/cloudinary?mode=json"
+            ),
+        })
+
     def test_no_facet_workday_companies_include_israeli_office_cities(
         self,
     ) -> None:
