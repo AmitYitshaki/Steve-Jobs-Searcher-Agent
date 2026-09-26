@@ -26,3 +26,23 @@ the real ATS from page source signatures (never from the URL shape alone —
 that produced wrong guesses upstream), and where possible locate the actual
 job-data endpoint. Nothing here writes to `config/companies.json` directly;
 findings are reviewed before any entry is added there.
+
+## Mandatory activation gates
+
+A working ATS and an Israeli location are necessary but not sufficient. Before
+activation, every candidate must pass all of these checks against real current
+job data:
+
+1. The employer is not already represented under another brand, subsidiary,
+   parent, or alternate ATS feed.
+2. The endpoint is the employer's canonical careers feed, not a warehouse,
+   retail, staffing, portfolio, or other non-employer board.
+3. At least one returned title matches `TARGET_ROLE_KEYWORDS` or
+   `HEBREW_ROLE_KEYWORDS`, regardless of seniority. Run
+   `python tools/company_discovery/relevance_gate.py <jobs.json>` against the
+   saved verification payload. A non-zero exit means the company stays out.
+
+Batch findings and reports must label failures of gate 3 separately as
+`hold — no target-role jobs`; do not merge them into `zero jobs` or `ATS
+ambiguity`. Batch size is an aspiration, never an activation criterion: fewer
+qualified companies is the correct result when candidates fail these gates.

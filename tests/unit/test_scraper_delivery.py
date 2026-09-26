@@ -121,6 +121,54 @@ class ScraperProducerTests(unittest.TestCase):
         )
         self.assertEqual(decision.matched_keyword, "graduate")
 
+    def test_junior_security_roles_are_relevant(self) -> None:
+        """Accept explicit junior security roles without internship wording."""
+
+        titles = (
+            "Junior Security Engineer",
+            "Junior Security Researcher",
+            "Junior Penetration Tester",
+            "Junior SOC Analyst",
+            "Junior Security Analyst",
+            "Junior Application Security Engineer",
+            "Junior Cyber Security Engineer",
+            "Junior Threat Researcher",
+            "Junior Incident Response Analyst",
+        )
+
+        for title in titles:
+            with self.subTest(title=title):
+                decision = scraper.is_relevant_job(title)
+                self.assertTrue(decision.allowed)
+                self.assertEqual(
+                    decision.reason,
+                    "weak entry-level and target-role signals",
+                )
+
+    def test_senior_security_roles_remain_excluded(self) -> None:
+        """Keep seniority exclusions stronger than new security role terms."""
+
+        titles = (
+            "Senior Security Engineer",
+            "Lead Security Researcher",
+            "Principal SOC Analyst",
+            "Security Engineering Manager",
+        )
+
+        for title in titles:
+            with self.subTest(title=title):
+                decision = scraper.is_relevant_job(title)
+                self.assertFalse(decision.allowed)
+                self.assertEqual(decision.reason, "excluded title keyword")
+
+    def test_target_role_gate_ignores_seniority(self) -> None:
+        """Let catalog research detect target work regardless of seniority."""
+
+        self.assertTrue(
+            scraper.matches_target_role("Principal Security Researcher")
+        )
+        self.assertFalse(scraper.matches_target_role("Jewelry Designer"))
+
     def test_engineer_one_is_entry_level_but_senior_still_wins(self) -> None:
         """Recognize Engineer I only after higher seniority is excluded."""
 

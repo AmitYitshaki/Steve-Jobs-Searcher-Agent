@@ -1181,7 +1181,7 @@ class CompanyConfigurationTests(unittest.TestCase):
                 "jobs?content=true"
             ),
             "wolt_israel": (
-                "https://boards-api.greenhouse.io/v1/boards/woltisrael/"
+                "https://boards-api.greenhouse.io/v1/boards/wolt/"
                 "jobs?content=true"
             ),
         })
@@ -1247,13 +1247,12 @@ class CompanyConfigurationTests(unittest.TestCase):
         })
 
     def test_step8_batch2_comeet_routes_group_three(self) -> None:
-        """Pin the remaining seven production-verified Comeet routes."""
+        """Pin the remaining active production-verified Comeet routes."""
 
         self._assert_step8_routes("comeet", {
             "blinkops": "https://www.comeet.com/jobs/blinkops/C7.004",
             "finubit": "https://www.comeet.com/jobs/finubit/A9.002",
             "plaee": "https://www.comeet.com/jobs/plaee/5B.004",
-            "tenengroup": "https://www.comeet.com/jobs/Tenengroup/93.00C",
             "retym": "https://www.comeet.com/jobs/retym/C6.003",
             "majestic_labs": (
                 "https://www.comeet.com/jobs/majesticlabs/AA.004"
@@ -1375,6 +1374,26 @@ class CompanyConfigurationTests(unittest.TestCase):
                 "https://api.lever.co/v0/postings/cloudinary?mode=json"
             ),
         })
+
+    def test_tenengroup_is_inactive_for_catalog_relevance(self) -> None:
+        """Keep a non-tech retailer out of active scans."""
+
+        tenengroup = self.companies["tenengroup"]
+        self.assertFalse(tenengroup["is_active"])
+        self.assertIn("relevance", tenengroup["notes"].casefold())
+
+    def test_wolt_operations_board_is_repaired_or_inactive(self) -> None:
+        """Never treat Wolt's warehouse board as its engineering feed."""
+
+        wolt = self.companies["wolt_israel"]
+        old_operations_board = (
+            "https://boards-api.greenhouse.io/v1/boards/woltisrael/"
+            "jobs?content=true"
+        )
+        self.assertTrue(
+            not wolt["is_active"] or wolt["api_url"] != old_operations_board
+        )
+        self.assertIn("engineering", wolt["notes"].casefold())
 
     def test_no_facet_workday_companies_include_israeli_office_cities(
         self,

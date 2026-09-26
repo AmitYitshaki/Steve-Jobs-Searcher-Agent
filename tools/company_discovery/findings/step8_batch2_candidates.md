@@ -45,7 +45,7 @@ recently optimized Comeet adapter already supports this shape.
 | 19 | BlinkOps | [Comeet `blinkops/C7.004`](https://www.comeet.com/jobs/blinkops/C7.004) | Current Tel-Aviv backend engineering and product roles. | **Promote**. |
 | 20 | Finubit | [Comeet `finubit/A9.002`](https://www.comeet.com/jobs/finubit/A9.002) | Current Tel Aviv engineering roles; the board identifies the company as Bank Leumi-backed but a separate operating company. | **Promote**, subject to ordinary employer-identity check. |
 | 21 | Plaee | [Comeet `plaee/5B.004`](https://www.comeet.com/jobs/plaee/5B.004) | Current Ramat Gan first-party posting. | **Promote** after board-level count check. |
-| 22 | Tenengroup | [Comeet `Tenengroup/93.00C`](https://www.comeet.com/jobs/Tenengroup/93.00C) | Current Tel Aviv technology leadership posting; the board describes its proprietary ecommerce platform. | **Promote** after board-level smoke test. |
+| 22 | Tenengroup | [Comeet `Tenengroup/93.00C`](https://www.comeet.com/jobs/Tenengroup/93.00C) | The board returned jobs successfully, but the later target-role audit found only jewelry, retail, finance, purchasing, and marketing titles with zero software/data/product/security matches. | **Deactivated — no target-role jobs**. The working ATS does not make this a high-tech employer feed. |
 
 ## Promote-ready: Greenhouse
 
@@ -171,9 +171,11 @@ The root agent exercised every finalist through
 `scrapers.orchestrator.fetch_jobs_from_company()` and then evaluated every
 returned job with `LocationFilter(strict_mode=True)`. The verification recorded
 typed status, raw job count, unique ID count, empty title/location counts,
-strict Israel count, sample locations, and elapsed time. All 50 activated
-companies returned `SUCCESS`, at least one strict Israel match, unique IDs for
-every returned job, and no empty titles. Plaee had one non-Israel job with an
+strict Israel count, sample locations, and elapsed time. The original 50
+routes returned `SUCCESS`, at least one strict Israel match, unique IDs for
+every returned job, and no empty titles. A later catalog-relevance audit
+deactivated Tenengroup because none of those jobs matched the target-role
+vocabulary, leaving 49 active additions. Plaee had one non-Israel job with an
 empty location; its other nine jobs had explicit Bnei Brak / Ramat Gan data.
 
 Eleven additional candidates found during the root-agent endpoint audit replaced
@@ -193,12 +195,13 @@ the four rejected original finalists and brought the batch to the requested 50:
 | Majestic Labs | [Comeet board](https://www.comeet.com/jobs/majesticlabs/AA.004) | 33 / 16 | **Activated**. |
 | Shield | [Comeet board](https://www.comeet.com/jobs/shieldfc/A5.00E) | 9 / 2 | **Activated**. |
 
-Final activated ATS mix (50 total):
+Post-audit active ATS mix (49 total; Tenengroup remains as an inactive audit
+record):
 
-- 23 Comeet: Buildots, Vi, Automat-it, Sentra, Tastewise, Shopic, CHEQ,
+- 22 Comeet: Buildots, Vi, Automat-it, Sentra, Tastewise, Shopic, CHEQ,
   Guardio, Zenity, Upstream Security, Orchid Security, Onyx Security,
   Surecomp, Rapid Medical, Landa Digital Printing, AT&T Israel, BlinkOps,
-  Finubit, Plaee, Tenengroup, Retym, Majestic Labs, and Shield.
+  Finubit, Plaee, Retym, Majestic Labs, and Shield.
 - 15 Greenhouse: Innovid, BeamUP, Credible, Nift, Guidde, Unframe,
   Honeycomb Insurance, Sweet Security, Obligo, Oasis Security, Conifers.ai,
   Connecteam, DoiT, Electreon, and Capitolis.
@@ -218,6 +221,8 @@ Canonical and ownership decisions from the final gate:
   locations produced zero Israel matches.
 - REAL stayed on hold because its generic brand/domain identity remains
   ambiguous even though its Workable feed contains Tel Aviv jobs.
+- Tenengroup was deactivated after the new target-role gate found zero
+  software/data/product/security roles despite a healthy Comeet integration.
 
 ## Additional endpoint probes performed during final verification
 

@@ -124,6 +124,11 @@ TARGET_ROLE_KEYWORDS = [
     "verification engineer", "validation engineer", "v&v engineer",
     "devops", "cloud engineer", "platform engineer", "infrastructure engineer",
     "site reliability", "sre",
+    "security engineer", "security researcher", "application security",
+    "penetration tester", "soc analyst", "security analyst",
+    "cyber security engineer", "cybersecurity engineer", "threat researcher",
+    "threat analyst", "incident response", "incident responder",
+    "security operations", "malware researcher", "vulnerability researcher",
     "associate product manager", "product manager intern",
     "student product manager", "technical product manager", "product operations"
 ]
@@ -185,6 +190,27 @@ def _matching_keywords(title: str, keywords: list[str]) -> list[str]:
     ]
 
 
+def _target_role_keyword(title: str) -> str | None:
+    """Return the first configured software-adjacent role in a title."""
+
+    return _first_matching_keyword(
+        title,
+        TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS,
+    )
+
+
+def matches_target_role(title: str) -> bool:
+    """Return whether a title proves catalog relevance, ignoring seniority.
+
+    Company-discovery batches use this narrower predicate as an activation
+    gate: an employer needs at least one current target-domain role, but that
+    role does not itself need to be entry level. Candidate alert filtering
+    remains the responsibility of :func:`is_relevant_job`.
+    """
+
+    return _target_role_keyword(title) is not None
+
+
 def _blocking_exclusions(title: str, role_keyword: str | None) -> list[str]:
     """Return exclusions that are not merely part of a target role name.
 
@@ -209,10 +235,7 @@ def _blocking_exclusions(title: str, role_keyword: str | None) -> list[str]:
 def is_relevant_job(title: str) -> TitleDecision:
     """Evaluate title relevance while preserving strong-signal recall."""
 
-    role_keyword = _first_matching_keyword(
-        title,
-        TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS,
-    )
+    role_keyword = _target_role_keyword(title)
     blocking_exclusions = _blocking_exclusions(title, role_keyword)
     if blocking_exclusions:
         return TitleDecision(

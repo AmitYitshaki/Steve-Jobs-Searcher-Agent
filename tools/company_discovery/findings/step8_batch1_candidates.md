@@ -110,6 +110,13 @@ by the production location vocabulary.
 | Ashby | `moon_active`, `finout` |
 | Workday | `crowdstrike`, `mastercard` |
 
+Post-activation correction (2026-09-26): the original `woltisrael` token was
+later proven to be Wolt's Israel warehouse/store/support board, not its
+engineering organization. The catalog now uses the canonical global `wolt`
+Greenhouse board and retains strict Israel filtering. See
+[`wolt_engineering_board.md`](wolt_engineering_board.md) for the first-party
+evidence and live comparison.
+
 Live job counts ranged from one (`newphotonics`, `torii`) to 402 (`mongodb`).
 All 44 boards had a one-to-one job-count/unique-ID count. Three Comeet feeds
 contained a small number of individual records without location data
