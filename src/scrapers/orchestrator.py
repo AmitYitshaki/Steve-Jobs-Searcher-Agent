@@ -452,11 +452,30 @@ def _health_digest_message(
 
         old_status = str(previous.get("last_status", ""))
         new_status = str(current.get("last_status", ""))
-        if old_status == new_status:
-            continue
         company_name = str(
             current.get("company_name") or company_id
         )
+        if old_status == new_status:
+            # A company that has never once succeeded stays "unverified"
+            # forever regardless of current errors (see CompanyHealthTracker),
+            # so it can never cross an ANOMALY_HEALTH_STATUSES transition.
+            # Watch last_error_type directly so a newly-blocked (or
+            # newly-recovered) never-verified company still surfaces here.
+            old_error = previous.get("last_error_type")
+            new_error = current.get("last_error_type")
+            if old_error == new_error:
+                continue
+            if new_error:
+                lines.append(
+                    f"🚨 {company_name}: error appeared ({new_error}), "
+                    f"status={new_status}"
+                )
+            else:
+                lines.append(
+                    f"✅ {company_name}: error cleared "
+                    f"({old_error} -> none), status={new_status}"
+                )
+            continue
         if new_status in ANOMALY_HEALTH_STATUSES:
             details = [f"{old_status} -> {new_status}"]
             error_type = current.get("last_error_type")

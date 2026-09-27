@@ -926,6 +926,63 @@ class ScraperProducerTests(unittest.TestCase):
 
         notifier.send.assert_called_once_with(scraper.HEARTBEAT_MESSAGE)
 
+    def test_health_digest_reports_error_on_never_verified_company(
+        self,
+    ) -> None:
+        """Surface a new block even for a company stuck at 'unverified'.
+
+        A company that has never once succeeded stays "unverified" forever
+        regardless of current errors (CompanyHealthTracker never lets it
+        reach "failed"/"degraded"), so the status-transition check alone
+        would never report it. This mirrors a real production case: fiverr
+        and panorays are both permanently "unverified" and WAF_BLOCKED.
+        """
+
+        notifier = MagicMock()
+        with tempfile.TemporaryDirectory() as directory:
+            health_store = MagicMock()
+            health_store.load.return_value = {
+                "example": {
+                    "company_name": "Example",
+                    "last_success_at": None,
+                    "last_status": "unverified",
+                    "consecutive_failures": 0,
+                    "consecutive_zero_job_runs": 2,
+                    "job_count_history": [4, 0],
+                    "last_error_type": None,
+                }
+            }
+            with (
+                patch(
+                    "scrapers.orchestrator.load_json",
+                    side_effect=[[self.COMPANY]],
+                ),
+                patch(
+                    "scrapers.orchestrator.fetch_jobs_from_company",
+                    return_value=ScrapeResult(
+                        status=ScrapeStatus.WAF_BLOCKED,
+                        jobs=[],
+                        message="HTTP 403",
+                    ),
+                ),
+                patch("scrapers.orchestrator.analyze_job"),
+            ):
+                scraper.run_scraper(
+                    queue=PendingAlertQueue(
+                        Path(directory) / "pending_alerts.json"
+                    ),
+                    history_store=JobHistoryStore(
+                        Path(directory) / "jobs_history.json"
+                    ),
+                    health_store=health_store,
+                    heartbeat_notifier=notifier,
+                )
+
+        notifier.send.assert_any_call(
+            "Scraper health changes:\n"
+            "🚨 Example: error appeared (WAF_BLOCKED), status=unverified"
+        )
+
     def test_health_digest_does_not_repeat_standing_anomaly(self) -> None:
         """Do not repeat a failed company on consecutive producer runs."""
 
