@@ -8,3 +8,5 @@
 data/
 logs/
 debug_logs/
+*.pem
+config/prompts/user_profile.md

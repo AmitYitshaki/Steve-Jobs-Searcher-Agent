@@ -10,6 +10,7 @@ code, tests, configuration, runtime state, logs, and documentation.
 .
 |-- src/                                           # Installable application source.
 |   |-- paths.py                                   # Defines absolute project/config/data/log paths.
+|   |-- logging_config.py                          # Shared console+file logging setup.
 |   |-- pipeline.py                                # Top-level producer/consumer runner and CLI.
 |   |-- analysis/                                  # Rules and AI that decide what a job means.
 |   |   |-- __init__.py                            # Marks analysis as a Python package.
@@ -469,16 +470,30 @@ the lower-level pieces independently testable and prevents circular ownership.
 The architecture decision records include future design targets as well as
 completed decisions. This document describes what is implemented now:
 
-- Typed `ScrapeResult` outcomes are used by the Playwright driver. The generic
-  API client and custom adapter boundary still return job lists and represent
-  failures or no results with an empty list.
+- Typed `ScrapeResult` outcomes (`SUCCESS`/`NO_JOBS`/`WAF_BLOCKED`/`FAILED`)
+  are now returned by every adapter, not just the Playwright driver (completed
+  2026-09-24) — the generic API client, Comeet, SuccessFactors, and every
+  custom adapter included. `fetch_jobs_from_company()`'s legacy-list
+  compatibility seam was removed once nothing needed it.
 - Delivered-job history is currently a flat JSON list of IDs. The richer
   timestamped retention model described by ADR-0002 is not implemented yet.
 - ADR-0005 scraper-health isolation is implemented with a dedicated store,
-  per-company funnel metrics, unverified status, and terminal summaries.
+  per-company funnel metrics, unverified status, and terminal summaries, plus
+  a Telegram digest (`run_scraper()` → `_send_health_digest()`) sent only on
+  an actual status change into or out of `degraded`/`failed` (completed
+  2026-09-24). It shares `TELEGRAM_CHAT_ID` with the candidate feed as a
+  deliberate choice, not a dedicated admin channel.
+- Location validation now has two layers: `LocationFilter` checks the job's
+  own location field (in addition to title/URL) against a curated Israeli-city
+  allowlist, and the per-company `is_in_location()` substring check still runs
+  alongside it — a job passes if either recognizes it as Israeli (fixed
+  2026-09-25, see `docs/PROJECT_OVERVIEW.md` for the audit that found this
+  gap).
 - Title-keyword filtering and final alert assembly remain in
   `scrapers.orchestrator`; location rules and AI analysis already live in their
-  dedicated modules.
+  dedicated modules. `matches_target_role()` (seniority-agnostic) gates
+  catalog membership in `config/companies.json`, separate from
+  `is_relevant_job()` which gates candidate alerts.
 
 Use this file to locate current code. Use [`docs/CONTEXT.md`](CONTEXT.md) for the
 domain vocabulary and [`docs/adr/`](adr/) for the reasoning and intended future

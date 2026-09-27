@@ -1,9 +1,15 @@
 # Steve Jobs Searcher Agent — Project Overview
 
 An autonomous, AI-driven job-discovery agent. It scans the career surfaces of a
-growing set of Israeli tech employers, filters to junior/student
+growing set of Israeli tech employers (363 companies as of 2026-09-27), filters to junior/student
 software-adjacent roles, has each surviving candidate summarized by an LLM, and
 delivers a de-duplicated Telegram alert — running unattended on AWS EC2.
+
+> **2026-09-27 update:** this document was rewritten to match the state of the
+> `scalling-companies-amount` branch after a full audit-and-fix pass (typed
+> scrape results everywhere, pagination and location-matching fixes, a
+> catalog-relevance gate, and the 235→363 company expansion). Sections below
+> describe the current implementation, not the pre-audit roadmap.
 
 About the Author / User (Amit Yitshaki)
 Identity: Amit Yitshaki is a Computer Science student.
@@ -127,11 +133,16 @@ user-agent, viewport, `Asia/Jerusalem` timezone and locale, plus
   browser-level "scraped fine, found nothing" can be distinguished from "the
   scrape broke" (ADR-0004).
 
-This typed contract is not yet universal. The generic API client,
-SuccessFactors adapter, and the compatibility wrapper exposed to the
-orchestrator still return plain job lists and collapse both a legitimate empty
-response and many failures to `[]`. Extending `ScrapeResult` across every fetch
-path is a prerequisite for reliable per-company health reporting.
+This typed contract is now universal (completed 2026-09-24). Every adapter —
+the generic API client, Comeet, SuccessFactors, Eightfold, the per-company
+custom adapters, Google/Meta, and the universal Playwright wrapper — returns
+`ScrapeResult` natively. `fetch_jobs_from_company()`'s former legacy-list
+compatibility seam was removed once nothing needed it. Any 401/403/429 is
+classified `WAF_BLOCKED`; other request/parse failures are `FAILED`; a
+genuinely empty response is `NO_JOBS`. `CompanyHealthTracker.record_failure()`
+is called for both `FAILED` and `WAF_BLOCKED`, so `last_error_type` in
+`scraper_health.json` is now a reliable diagnostic field instead of always
+`None`.
 
 ### 1.3 Deterministic filtering and LLM analysis
 
@@ -140,6 +151,33 @@ target-role keywords, in English and Hebrew) with an exclusion blacklist
 (`senior`, `manager`, `principal`, …). Geography is decided **before** any LLM
 cost by `LocationFilter`, which blocks known foreign locations found in the
 title or URL while avoiding acronym false positives.
+
+Location validation now has two cooperating layers. `LocationFilter`
+(`src/analysis/filters/location.py`) checks title, URL, **and the job's own
+location field** against a curated Israeli-city allowlist and a foreign
+blocklist (location is checked first and wins if a known Israeli marker such
+as `Tel Aviv`, `TLV`, or `ISR` appears there, even when the per-company
+`location_filters` config is just `["Israel"]`). The per-company
+`is_in_location()` substring check still runs alongside it; a job passes if
+*either* recognizes it as Israeli. This closed a systemic gap found
+2026-09-25: 100 of 130 audited companies had at least one genuinely
+Israel-based job invisible to the old title/URL-only check because their ATS
+reports a bare city name, not the word "Israel." Two known exceptions remain
+undecided: a blocked marker elsewhere in the same text (e.g. `"Remote (US or
+Israel)"`, `/us/careers/`) currently wins over an explicit Israel signal —
+seen on `twingate` and `personetics`, both correctly held out of the catalog
+for now rather than patched ad hoc.
+
+Catalog membership itself is gated separately from candidate-job relevance.
+`matches_target_role()` — a seniority-agnostic version of the role-keyword
+check — is the activation bar for `config/companies.json`: a company is only
+added if it has at least one job, ever, in a target domain (software, data,
+product, or security), regardless of how senior. This does not affect which
+*jobs* get alerted (that's still `is_relevant_job`, which also requires an
+entry-level signal); it only prevents companies with no real tech function
+(e.g. a jewelry retailer with a working ATS) from diluting the catalog.
+`tools/company_discovery/relevance_gate.py` applies this gate during
+discovery.
 
 Survivors reach `analysis/ai/analyzer.py`, which assembles a system prompt from
 human-editable context files (`config/prompts/`) plus the verified job evidence,
@@ -182,11 +220,9 @@ it does not merge directory contents. Therefore the EC2 host must contain
 `config/companies.json` and any desired prompt files. Missing prompt files now
 fall back safely, but a missing or empty company catalog prevents useful work.
 Secrets are injected through `.env`; `.env`, runtime data, and logs are excluded
-from the image build context. Private-key files are ignored by Git, but the
-current `.dockerignore` does not yet exclude `*.pem`, and it also does not
-exclude the private `config/prompts/user_profile.md`. Production builds must not
-run with either file in the build context until explicit Docker ignore rules or
-an external build context are used.
+from the image build context. `.dockerignore` also excludes `*.pem` and the
+private `config/prompts/user_profile.md` (fixed 2026-09-27) — a `COPY . /app`
+build can no longer bake either into an image layer.
 
 ### 1.5 The subprocess-based watchdog
 
@@ -198,8 +234,10 @@ timeout:
 
 | Phase | Module | Timeout |
 | --- | --- | --- |
-| Producer | `scrapers.orchestrator` | 900 s |
-| Consumer | `notifications.dispatcher` | 300 s |
+| Producer | `scrapers.orchestrator` | 3600 s |
+| Consumer | `notifications.dispatcher` | 600 s |
+
+(Both timeouts were raised from an earlier 900s/300s to accommodate the larger, ~363-company catalog; `pipeline.E2ERunner.SCRIPT_TIMEOUTS` and `scheduler.AutonomousScheduler.PHASE_TIMEOUTS_SECONDS` are kept in sync by convention, not by shared code.)
 
 If a scrape hangs (a stalled Playwright navigation, an unresponsive host), the
 timeout **force-terminates the subprocess** and the phase returns exit code
@@ -228,6 +266,17 @@ not depend on `warp-cli` or an interactive WARP recovery prompt. The local
 pipeline supports `--non-interactive` and `--reset-state`; the latter is a
 destructive operator action because it clears both pending alerts and delivered
 history.
+
+`python -m pipeline` also writes one combined, timestamped log file per run
+(`logs/pipeline_run_<timestamp>.log`, via `PIPELINE_LOG_FILE` and
+`src/logging_config.py`) capturing the coordinator, producer, and consumer in
+one chronological trace, in addition to the live console output. This is
+opt-in by environment variable: a standalone `python -m scrapers.orchestrator`
+run, and the Docker `scheduler` entry point, both still log to console only
+(unchanged), since Docker already captures stdout via the `json-file` driver.
+The variable is deliberately read inside `pipeline.py`'s `__main__` guard, not
+at module import time, so `pytest` importing the module never creates a stray
+log file or reconfigures the test process's root logger.
 
 ### 1.7 Runtime state and invariants
 
@@ -265,25 +314,37 @@ production service. The milestones below trace that path.
 | **2026-08-13 — Production** | AWS EC2 runtime | The container runs unattended under Docker Compose, starts a cycle immediately, repeats every eight hours, preserves host-mounted state, restarts unless explicitly stopped, and rotates container logs. |
 | **2026-08-13 — Observability** | Zero-result heartbeat | A cycle with no new relevant jobs emits `Scraping cycle completed. 0 new jobs found.` when Telegram credentials are available. It distinguishes an alive producer from total silence, but does not certify every company adapter as healthy. |
 | **2026-08-13 — Resilience fix** | Gitignored prompt/profile fallback | Production exposed a `FileNotFoundError`: the personal `user_profile.md` was intentionally gitignored and absent from the server, while the config mount shadowed image contents. The analyzer now warns and falls back to generic prompts so jobs can still be analyzed and queued. |
+| **2026-09-23 — Observability** | Unified pipeline logging | `python -m pipeline` now writes one combined, timestamped log file per run alongside live console output (`src/logging_config.py`), without changing standalone-module or Docker `scheduler` behavior. |
+| **2026-09-24 — ADR-0004 completed** | Typed results everywhere | Extended `ScrapeResult` from Playwright-only to every adapter: the generic API client, Comeet, SuccessFactors, Eightfold, all per-company custom adapters, and the universal Playwright wrapper (which had been discarding its own already-typed result). `last_error_type` in `scraper_health.json` is now populated instead of always `None`. |
+| **2026-09-24 — Pagination and ID fixes** | SmartRecruiters/Amazon truncation, Workday ID collision | SmartRecruiters and Amazon Jobs were silently capped at one page (85-89% of real postings were invisible for some companies) because GET requests never applied pagination offsets — fixed generically. A second bug: Workday tenants using `bulletFields` instead of `bulletinId`/`id` produced an empty, identical job ID for every posting, which would have permanently deduplicated all but the first delivered job from that tenant. |
+| **2026-09-24 — ADR-0005 completed** | Scraper-health Telegram digest | `run_scraper()` diffs each run's health snapshot against the previous one and sends one consolidated digest — only on an actual status change into or out of `degraded`/`failed`, never repeated for a standing anomaly — through the existing heartbeat notifier/`TELEGRAM_CHAT_ID`. A company that has never once succeeded stays `unverified` and cannot trigger this digest; a known, accepted gap. |
+| **2026-09-25 — Location-matching and extraction fixes** | ~100-company data-quality gap closed | Found that 100 of 130 companies configured with `location_filters: ["Israel"]` had real Israeli jobs invisible because their location field never says "Israel" literally (bare city names). Fixed generically via `LocationFilter`. Also fixed a genuine Comeet DOM-extraction bug (reading department/seniority badge text as location on 9 boards) and, separately, its ~3s/job performance cost (down to ~60ms/job via geographic group-label detection and bounded concurrency). |
+| **2026-09-25/27 — Catalog expansion with a relevance gate** | 235 → 363 companies | Four discovery batches, each requiring live-verified ATS/ID/location evidence. After batch 2, added a fourth activation requirement (`matches_target_role()`) once a jewelry retailer and a mismatched Wolt warehouse-ops board were found to have cleared the first three checks despite having no real tech function; also closed a gap where junior security-role titles (`security engineer`, `penetration tester`, `soc analyst`, ...) were entirely unrecognized. The ~500-company target was explicitly dropped as an arbitrary goal; batch 4 (the last) added only the companies that cleared every gate, with no size target. |
 
 **Next on the roadmap** (tracked but not yet implemented):
 
-- **Broader ATS coverage** — promote `comeet`, `phenom`, `jobvite`,
-  `oracle_recruiting_cloud`, and `greenhouse_embedded` companies off the generic
-  browser fallback onto reliable JSON-API adapters with full job content.
-- **Scraper-health admin alerts (ADR-0005)** — route persisted per-company
-  anomalies to a dedicated admin channel rather than the candidate feed.
+- **One deliberate decision on blocked-marker-vs-explicit-Israel precedence** —
+  `twingate` (`"Remote (US or Israel)"`) and `personetics` (`/us/careers/`)
+  are both correctly held out of the catalog today because a blocked marker
+  elsewhere in the location/URL text wins over an explicit Israel signal.
+  Same question in both cases; needs one policy decision, not two patches.
+- **A full relevance sweep of the entire catalog** — the `matches_target_role`
+  gate was only enforced going forward from step 8 batch 3 onward; the
+  original pre-expansion companies and early step-8 batches have not been
+  swept against it yet.
 - **Bounded history retention (ADR-0002)** — a 90-day `{job_id: first_seen_at}`
   schema so a re-opened role can be re-alerted.
-- **Unified result contract (ADR-0004 completion)** — make API and custom
-  adapters return typed statuses instead of collapsing errors and empty
-  results into the same `[]` value.
-- **Production health checks and alert separation** — add a Docker healthcheck,
-  restart-count monitoring, and a dedicated admin/operations destination so
-  heartbeats and scraper failures do not share the candidate job feed.
+- **Production health checks and alert separation** — add a Docker healthcheck
+  and restart-count monitoring; the ADR-0005 digest still shares
+  `TELEGRAM_CHAT_ID` with the candidate feed by deliberate choice, not a
+  dedicated admin destination.
 - **Secrets and backup automation** — use an EC2-appropriate secret store or
   protected environment provisioning, and automate encrypted snapshots of the
   queue/history pair before deployment changes.
+- **Timeout/concurrency re-validation at the new catalog size** — the
+  3600s/600s producer/consumer budget was sized before the 363-company
+  catalog; re-check actual wall-clock time at this size before growing
+  further.
 
 ---
 
@@ -623,13 +684,22 @@ part of an automated test suite.
 
 - `.env`, `*.pem`, `data/`, runtime logs, and the personal user profile must
   remain outside version control. If a credential or private key ever enters
-  Git history, removing the file is not enough; rotate the credential and
-  consider history remediation.
-- Git ignore rules do not protect Docker build contexts. The current
-  `.dockerignore` excludes `.env`, `data/`, and logs, but still needs explicit
-  entries for `*.pem` and `config/prompts/user_profile.md`. Until that is fixed,
-  remove those files from the build context or build from a sanitized checkout;
-  otherwise `COPY . /app` can bake them into an image layer.
+  Git history, removing the file in a later commit is **not enough** — the
+  file is still fully retrievable from the earlier commit by anyone with
+  read access to the repo, forever, unless the history itself is rewritten.
+  This is a live, known case, not a hypothetical: `steve-jobs-key.pem` (an
+  AWS EC2 SSH private key) was committed in `bd22513` and removed in
+  `9d940fa`, but that removal commit is still an ancestor of `main` on this
+  **public** GitHub repo — the key's full contents remain retrievable from
+  `bd22513` right now. History rewriting was explicitly declined by the
+  project owner; the key itself must be treated as compromised and rotated
+  on the AWS side (new EC2 key pair, updated `authorized_keys`, old key pair
+  deleted) independently of the repo. Verify this has actually happened
+  before trusting SSH access to the production host.
+- Git ignore rules do not protect Docker build contexts by themselves, but
+  `.dockerignore` now explicitly excludes `.env`, `data/`, `logs/`, `*.pem`,
+  and `config/prompts/user_profile.md` (fixed 2026-09-27) — `COPY . /app` can
+  no longer bake any of them into an image layer.
 - The Docker image runs as non-root. Preserve least privilege on the EC2 host
   and grant the container only the bind mounts it needs.
 - Career pages and ATS descriptions are untrusted input. They are normalized
@@ -659,18 +729,25 @@ part of an automated test suite.
 2. **No absolute exactly-once delivery:** history-before-dequeue handles local
    crash recovery, but a crash after Telegram accepts a message and before the
    history commit can produce a retry.
-3. **Incomplete typed outcomes:** API and custom paths still collapse many
-   failures into empty lists, so scheduler success and heartbeat delivery are
-   weaker signals than per-company health.
-4. **No scraper-health admin delivery yet:** per-company state and terminal
-   summaries are implemented, but anomaly notifications are not yet routed to
-   a dedicated operations channel.
+3. **Resolved 2026-09-24 — typed outcomes are now complete.** Every adapter
+   returns `ScrapeResult`; a real failure/block is no longer indistinguishable
+   from a genuinely empty result. Kept here as history, not a current gap.
+4. **Scraper-health digest shares the candidate channel by deliberate choice,
+   not by gap.** ADR-0005's digest (implemented 2026-09-24) is a separate
+   message sent through the same `TELEGRAM_CHAT_ID`, not a dedicated admin
+   destination — still open as a "next roadmap" item, but no longer "not
+   implemented." Separately: a company that has never once succeeded stays
+   `unverified` regardless of current errors and therefore can never trigger
+   this digest — an accepted, known blind spot, not planned to change.
 5. **No 90-day history retention yet:** ADR-0002 describes a timestamped
    retention model; the current history is a flat list and grows without that
    purge policy.
-6. **No generalized pagination:** the generic ATS client performs one mapped
-   request. Large ATS catalogs, including limited Workday responses, may need
-   explicit pagination to guarantee complete coverage.
+6. **Pagination is now generalized where it was verified to matter.**
+   SmartRecruiters and Amazon Jobs (previously silently capped at 100 results)
+   and Workday now paginate correctly. Greenhouse, Ashby, and Lever were
+   live-tested and confirmed to return complete results in one request — not
+   assumed safe. Newly onboarded ATS types should still be spot-checked the
+   same way before assuming one page is enough.
 7. **Browser data can be shallow:** universal extraction primarily discovers
    links and may lack a full job description or precise location. It is less
    accurate than a dedicated ATS integration and can admit non-job links.
@@ -680,12 +757,24 @@ part of an automated test suite.
 9. **Heartbeat semantics are limited:** it reports zero *new relevant* jobs,
    which can also mean all results were old, filtered, or returned as empty by
    degraded adapters. It is a liveness clue, not a fleet-health assertion.
-10. **Docker build-context gap:** `*.pem` and the private user profile are
-    gitignored but not currently dockerignored. A normal `COPY . /app` can
-    include host-only sensitive files if they exist during the build.
+10. **Resolved 2026-09-27 — Docker build-context gap.** `*.pem` and
+    `config/prompts/user_profile.md` are now excluded in `.dockerignore` as
+    well as `.gitignore`, so a normal `COPY . /app` can no longer bake either
+    into an image layer.
 11. **Hardcoded model economics:** the analyzer's model choice and token prices
     are embedded in code. Cost estimates must be reviewed when model pricing or
     the selected model changes.
+12. **Blocked-location markers can outrank an explicit Israel signal.** A
+    `"US"`-shaped fragment anywhere in a job's location/URL text (e.g.
+    `"Remote (US or Israel)"`, `/us/careers/`) currently blocks the job before
+    an explicit Israel option elsewhere in the same text is considered. Found
+    on `twingate` and `personetics` during catalog discovery (both correctly
+    held out rather than patched ad hoc); needs one deliberate policy decision
+    covering both cases.
+13. **Catalog relevance gate was only enforced from step 8 batch 3 onward.**
+    `matches_target_role()` is not yet retroactively applied to the original
+    pre-expansion companies or the first two step-8 batches — see "Next on the
+    roadmap" above.
 
 These constraints are acceptable for the present single-user EC2 deployment,
 but they define the threshold at which the system should evolve toward typed
