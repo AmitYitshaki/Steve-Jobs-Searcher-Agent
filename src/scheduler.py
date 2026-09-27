@@ -1,4 +1,4 @@
-"""Run the job-search producer and consumer on an autonomous interval."""
+"""Run the job-search producer and consumer at fixed Israel-time daily slots."""
 
 from __future__ import annotations
 
@@ -7,30 +7,35 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
-from typing import Any, Protocol
-
-import schedule
+from datetime import datetime, time as time_of_day
+from typing import Any
+from zoneinfo import ZoneInfo
 
 LOGGER = logging.getLogger(__name__)
 
 CommandRunner = Callable[..., "subprocess.CompletedProcess[Any]"]
 SleepFunction = Callable[[float], None]
-
-
-class ScheduleModule(Protocol):
-    """Describe the small subset of ``schedule`` used by the service."""
-
-    def every(self, interval: int = 1) -> schedule.Job:
-        """Return a job builder for the requested interval."""
-
-    def run_pending(self) -> None:
-        """Run all registered jobs whose next execution time has arrived."""
+NowProvider = Callable[[], datetime]
 
 
 class AutonomousScheduler:
-    """Run the container-safe pipeline immediately and every eight hours."""
+    """Run the container-safe pipeline once on startup and at fixed times."""
 
-    INTERVAL_HOURS = 8
+    TIMEZONE = ZoneInfo("Asia/Jerusalem")
+    # Chosen to land after the morning commute, mid-afternoon, and evening --
+    # when a candidate is actually likely to see and act on a Telegram alert,
+    # rather than an arbitrary time derived from whenever the container last
+    # happened to start.
+    RUN_TIMES = (
+        time_of_day(9, 0),
+        time_of_day(14, 0),
+        time_of_day(19, 0),
+    )
+    # A poll can be delayed by a slow run_cycle() or scheduler jitter, so a
+    # due slot is honored for a window after its exact minute rather than
+    # requiring an exact-second match, which polling every 60s cannot
+    # guarantee.
+    CATCH_UP_WINDOW_SECONDS = 5 * 60
     POLL_INTERVAL_SECONDS = 60.0
     # Each phase runs as an isolated, killable subprocess. A hung Playwright
     # scrape is force-terminated when its timeout elapses, so the scheduler
@@ -52,14 +57,17 @@ class AutonomousScheduler:
     def __init__(
         self,
         command_runner: CommandRunner = subprocess.run,
-        scheduler_module: ScheduleModule = schedule,
         sleep_function: SleepFunction = time.sleep,
+        now_provider: NowProvider | None = None,
     ) -> None:
         """Inject the subprocess runner and timing dependencies for testing."""
 
         self.command_runner = command_runner
-        self.scheduler = scheduler_module
         self.sleep_function = sleep_function
+        self.now_provider = now_provider or (
+            lambda: datetime.now(self.TIMEZONE)
+        )
+        self._last_run_marker: str | None = None
 
     def run_cycle(self) -> None:
         """Run one producer-consumer cycle without terminating on failure."""
@@ -134,23 +142,44 @@ class AutonomousScheduler:
 
         return result.returncode
 
+    def _due_run_marker(self, now: datetime) -> str | None:
+        """Return a unique marker for the run slot currently due, if any.
+
+        A slot is due once `now` has reached its target time and is still
+        within ``CATCH_UP_WINDOW_SECONDS`` of it -- wide enough to absorb
+        60-second poll jitter, narrow enough that a missed window is simply
+        skipped until the next slot rather than firing hours late.
+        """
+
+        for target in self.RUN_TIMES:
+            target_today = now.replace(
+                hour=target.hour,
+                minute=target.minute,
+                second=0,
+                microsecond=0,
+            )
+            elapsed = (now - target_today).total_seconds()
+            if 0 <= elapsed < self.CATCH_UP_WINDOW_SECONDS:
+                return f"{now.date().isoformat()}T{target.isoformat()}"
+        return None
+
     def serve_forever(self) -> None:
-        """Run immediately, register the interval, and poll indefinitely."""
+        """Run immediately, then at each fixed Israel-time slot, forever."""
 
         LOGGER.info(
-            "Scheduler started; job searches will run every %s hours.",
-            self.INTERVAL_HOURS,
+            "Scheduler started; job searches will run daily at %s Israel "
+            "time.",
+            ", ".join(t.strftime("%H:%M") for t in self.RUN_TIMES),
         )
         self.run_cycle()
-        self.scheduler.every(self.INTERVAL_HOURS).hours.do(self.run_cycle)
-        LOGGER.info(
-            "Next job-search cycle scheduled in %s hours.",
-            self.INTERVAL_HOURS,
-        )
 
         while True:
             try:
-                self.scheduler.run_pending()
+                now = self.now_provider()
+                marker = self._due_run_marker(now)
+                if marker is not None and marker != self._last_run_marker:
+                    self._last_run_marker = marker
+                    self.run_cycle()
             except Exception:
                 LOGGER.exception(
                     "Scheduler polling failed; continuing to monitor jobs."
