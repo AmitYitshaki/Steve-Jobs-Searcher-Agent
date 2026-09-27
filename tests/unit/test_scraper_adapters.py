@@ -1375,6 +1375,98 @@ class CompanyConfigurationTests(unittest.TestCase):
             ),
         })
 
+    def test_step8_batch3_ashby_routes_group_one(self) -> None:
+        """Pin the first nine relevance-gated Ashby routes."""
+
+        self._assert_step8_routes("ashby", {
+            "ledge": "https://api.ashbyhq.com/posting-api/job-board/ledge",
+            "tavily": "https://api.ashbyhq.com/posting-api/job-board/tavily",
+            "pointfive": (
+                "https://api.ashbyhq.com/posting-api/job-board/pointfive"
+            ),
+            "enclave_ai": (
+                "https://api.ashbyhq.com/posting-api/job-board/enclave"
+            ),
+            "glow": "https://api.ashbyhq.com/posting-api/job-board/glow",
+            "vivid": "https://api.ashbyhq.com/posting-api/job-board/vivid",
+            "sweep": "https://api.ashbyhq.com/posting-api/job-board/sweep",
+            "pi_security": (
+                "https://api.ashbyhq.com/posting-api/job-board/pi-security"
+            ),
+            "zafran_security": (
+                "https://api.ashbyhq.com/posting-api/job-board/zafran-security"
+            ),
+        })
+
+    def test_step8_batch3_ashby_routes_group_two(self) -> None:
+        """Pin the remaining eight relevance-gated Ashby routes."""
+
+        self._assert_step8_routes("ashby", {
+            "irregular": (
+                "https://api.ashbyhq.com/posting-api/job-board/irregular"
+            ),
+            "human_security": (
+                "https://api.ashbyhq.com/posting-api/job-board/HUMAN"
+            ),
+            "reindeer_ai": (
+                "https://api.ashbyhq.com/posting-api/job-board/reindeer-ai"
+            ),
+            "lumana": "https://api.ashbyhq.com/posting-api/job-board/lumana",
+            "echo_ai": "https://api.ashbyhq.com/posting-api/job-board/echo.ai",
+            "shapes": "https://api.ashbyhq.com/posting-api/job-board/shapes",
+            "act_security": (
+                "https://api.ashbyhq.com/posting-api/job-board/act-security"
+            ),
+            "matia": "https://api.ashbyhq.com/posting-api/job-board/matia",
+        })
+
+    def test_step8_batch3_greenhouse_routes(self) -> None:
+        """Pin the five relevance-gated Greenhouse routes."""
+
+        self._assert_step8_routes("greenhouse", {
+            "myheritage": (
+                "https://boards-api.greenhouse.io/v1/boards/myheritage/"
+                "jobs?content=true"
+            ),
+            "orion_security": (
+                "https://boards-api.greenhouse.io/v1/boards/"
+                "orioncscybersecurityltd/jobs?content=true"
+            ),
+            "navan": (
+                "https://boards-api.greenhouse.io/v1/boards/tripactions/"
+                "jobs?content=true"
+            ),
+            "speechify": (
+                "https://boards-api.greenhouse.io/v1/boards/speechify/"
+                "jobs?content=true"
+            ),
+            "venn": (
+                "https://boards-api.greenhouse.io/v1/boards/venncity/"
+                "jobs?content=true"
+            ),
+        })
+
+    def test_step8_batch3_lever_route(self) -> None:
+        """Pin the relevance-gated Palantir Lever route."""
+
+        self._assert_step8_routes("lever", {
+            "palantir": "https://api.lever.co/v0/postings/palantir?mode=json",
+        })
+
+    def test_step8_batch3_smartrecruiters_routes(self) -> None:
+        """Pin the two relevance-gated SmartRecruiters routes."""
+
+        self._assert_step8_routes("smartrecruiters", {
+            "nexar": (
+                "https://api.smartrecruiters.com/v1/companies/"
+                "NexarInc/postings"
+            ),
+            "nielseniq": (
+                "https://api.smartrecruiters.com/v1/companies/"
+                "NielsenIQ/postings"
+            ),
+        })
+
     def test_tenengroup_is_inactive_for_catalog_relevance(self) -> None:
         """Keep a non-tech retailer out of active scans."""
 

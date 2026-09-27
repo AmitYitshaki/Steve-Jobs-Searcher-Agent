@@ -4229,5 +4229,255 @@
     ],
     "fetch_strategy": "api",
     "notes": "Comeet board; first-party endpoint and live Israel jobs verified through the production adapter during step 8 batch 2."
+  },
+  {
+    "company_id": "ledge",
+    "company_name": "Ledge",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/ledge",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "tavily",
+    "company_name": "Tavily",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/tavily",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Canonical Ashby board linked by the official careers page; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "pointfive",
+    "company_name": "PointFive",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/pointfive",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "enclave_ai",
+    "company_name": "Enclave AI",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/enclave",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "glow",
+    "company_name": "Glow",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/glow",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Current canonical Ashby board; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "vivid",
+    "company_name": "Vivid",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/vivid",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "sweep",
+    "company_name": "Sweep",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/sweep",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "pi_security",
+    "company_name": "Pi Security",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/pi-security",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel security and AI roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "zafran_security",
+    "company_name": "Zafran Security",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/zafran-security",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel engineering and security roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "irregular",
+    "company_name": "Irregular",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/irregular",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel jobs and target-role relevance verified during step 8 batch 3."
+  },
+  {
+    "company_id": "human_security",
+    "company_name": "HUMAN",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/HUMAN",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel backend roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "reindeer_ai",
+    "company_name": "Reindeer AI",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/reindeer-ai",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel engineering roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "lumana",
+    "company_name": "Lumana",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/lumana",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel software roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "echo_ai",
+    "company_name": "Echo.ai",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/echo.ai",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official echo.ai careers page links this Ashby board; live Israel engineering roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "shapes",
+    "company_name": "Shapes",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/shapes",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel software roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "act_security",
+    "company_name": "Act Security",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/act-security",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel software and data roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "matia",
+    "company_name": "Matia",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/matia",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Ashby public job-board API; live Israel software and DevOps roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "myheritage",
+    "company_name": "MyHeritage",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/myheritage/jobs?content=true",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; live Israel ML and security roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "orion_security",
+    "company_name": "ORION Security",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/orioncscybersecurityltd/jobs?content=true",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; live Israel software role verified during step 8 batch 3."
+  },
+  {
+    "company_id": "navan",
+    "company_name": "Navan",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/tripactions/jobs?content=true",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Canonical Greenhouse board (legacy TripActions token); live Israel engineering roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "speechify",
+    "company_name": "Speechify",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/speechify/jobs?content=true",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; live Haifa, Jerusalem, and Tel Aviv software roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "venn",
+    "company_name": "Venn",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/venncity/jobs?content=true",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Greenhouse public boards API; live Israel data and full-stack roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "palantir",
+    "company_name": "Palantir",
+    "is_active": true,
+    "ats_type": "lever",
+    "api_url": "https://api.lever.co/v0/postings/palantir?mode=json",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Lever public postings API; live Tel Aviv software role verified during step 8 batch 3."
+  },
+  {
+    "company_id": "nexar",
+    "company_name": "Nexar",
+    "is_active": true,
+    "ats_type": "smartrecruiters",
+    "api_url": "https://api.smartrecruiters.com/v1/companies/NexarInc/postings",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "SmartRecruiters public postings API; live Tel Aviv junior and senior software roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "nielseniq",
+    "company_name": "NielsenIQ",
+    "is_active": true,
+    "ats_type": "smartrecruiters",
+    "api_url": "https://api.smartrecruiters.com/v1/companies/NielsenIQ/postings",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "SmartRecruiters public postings API; live Yokneam backend and AI roles verified during step 8 batch 3."
   }
 ]
