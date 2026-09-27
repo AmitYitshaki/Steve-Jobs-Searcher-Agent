@@ -4479,5 +4479,95 @@
     "location_filters": ["Israel"],
     "fetch_strategy": "api",
     "notes": "SmartRecruiters public postings API; live Yokneam backend and AI roles verified during step 8 batch 3."
+  },
+  {
+    "company_id": "playtika",
+    "company_name": "Playtika",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/playtikaltd/jobs?content=true",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official careers page embeds the playtikaltd Greenhouse board; live Israel data-science role verified during step 8 batch 4."
+  },
+  {
+    "company_id": "tomorrow_io",
+    "company_name": "Tomorrow.io",
+    "is_active": true,
+    "ats_type": "greenhouse",
+    "api_url": "https://boards-api.greenhouse.io/v1/boards/tomorrow/jobs?content=true",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official careers page uses a Greenhouse board; live Tel Aviv DevOps and full-stack roles verified during step 8 batch 4."
+  },
+  {
+    "company_id": "snowflake",
+    "company_name": "Snowflake",
+    "is_active": true,
+    "ats_type": "ashby",
+    "api_url": "https://api.ashbyhq.com/posting-api/job-board/snowflake",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official EMEA careers page links to the Snowflake Ashby board; live Israel role and target-domain roles verified during step 8 batch 4."
+  },
+  {
+    "company_id": "earnix",
+    "company_name": "Earnix",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/earnix/93.00B",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official Israel careers page exposes the canonical Comeet board; live Ramat Gan data-science and backend roles verified during step 8 batch 4."
+  },
+  {
+    "company_id": "riverside",
+    "company_name": "Riverside",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/riverside-fm/66.009",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official careers site resolves to the Riverside Comeet feed; live Tel Aviv DevOps, full-stack, and backend roles verified during step 8 batch 4."
+  },
+  {
+    "company_id": "scytale",
+    "company_name": "Scytale",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/scytale/2A.009",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official careers source embeds Comeet company UID 2A.009; live Tel Aviv role and target-domain engineering roles verified during step 8 batch 4."
+  },
+  {
+    "company_id": "nova",
+    "company_name": "Nova",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/nova/A5.007",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official Israel careers page exposes Comeet company UID A5.007; live Rehovot deep-learning role verified during step 8 batch 4."
+  },
+  {
+    "company_id": "nanox",
+    "company_name": "Nanox",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/nanox/43.00F",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official careers source embeds Comeet company UID 43.00F; live Petah Tikva junior software and DevOps roles verified during step 8 batch 4."
+  },
+  {
+    "company_id": "minute_media",
+    "company_name": "Minute Media",
+    "is_active": true,
+    "ats_type": "comeet",
+    "api_url": "https://www.comeet.com/jobs/minute/45.00A",
+    "location_filters": ["Israel"],
+    "fetch_strategy": "api",
+    "notes": "Official careers source links the Comeet company UID 45.00A feed; live Tel Aviv data-science and full-stack roles verified during step 8 batch 4."
   }
 ]

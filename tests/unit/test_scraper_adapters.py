@@ -1467,6 +1467,41 @@ class CompanyConfigurationTests(unittest.TestCase):
             ),
         })
 
+    def test_step8_batch4_greenhouse_routes(self) -> None:
+        """Pin the two final-batch Greenhouse routes."""
+
+        self._assert_step8_routes("greenhouse", {
+            "playtika": (
+                "https://boards-api.greenhouse.io/v1/boards/playtikaltd/"
+                "jobs?content=true"
+            ),
+            "tomorrow_io": (
+                "https://boards-api.greenhouse.io/v1/boards/tomorrow/"
+                "jobs?content=true"
+            ),
+        })
+
+    def test_step8_batch4_ashby_route(self) -> None:
+        """Pin the final-batch Snowflake Ashby route."""
+
+        self._assert_step8_routes("ashby", {
+            "snowflake": (
+                "https://api.ashbyhq.com/posting-api/job-board/snowflake"
+            ),
+        })
+
+    def test_step8_batch4_comeet_routes(self) -> None:
+        """Pin the six final-batch Comeet routes."""
+
+        self._assert_step8_routes("comeet", {
+            "earnix": "https://www.comeet.com/jobs/earnix/93.00B",
+            "riverside": "https://www.comeet.com/jobs/riverside-fm/66.009",
+            "scytale": "https://www.comeet.com/jobs/scytale/2A.009",
+            "nova": "https://www.comeet.com/jobs/nova/A5.007",
+            "nanox": "https://www.comeet.com/jobs/nanox/43.00F",
+            "minute_media": "https://www.comeet.com/jobs/minute/45.00A",
+        })
+
     def test_tenengroup_is_inactive_for_catalog_relevance(self) -> None:
         """Keep a non-tech retailer out of active scans."""
 
