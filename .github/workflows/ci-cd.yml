@@ -1,0 +1,115 @@
+name: CI/CD
+
+# Tests run on every push and pull request. A push to main that passes the
+# tests and touches runtime files is deployed to the EC2 host over SSH.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Deploy main even if no runtime files changed"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Matches the Python shipped in the Playwright jammy production image.
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+          pip install -e .
+
+      - name: Run test suite
+        run: pytest -q
+
+      - name: Check pipeline entry point
+        run: python -m pipeline --help
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    # Covers waiting out one in-progress scan cycle on the host, plus a rebuild.
+    timeout-minutes: 90
+    # One deploy at a time; a newer push queues behind a running deploy.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether this push needs a deploy
+        id: changes
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_deploy }}
+          HAS_HOST: ${{ secrets.EC2_HOST != '' }}
+        run: |
+          if [[ "$HAS_HOST" != "true" ]]; then
+            echo "::notice::EC2 secrets are not configured; skipping deploy."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$FORCE" == "true" ]] || [[ -z "$BEFORE_SHA" ]] \
+             || [[ "$BEFORE_SHA" =~ ^0+$ ]] \
+             || ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")"
+          echo "Changed files:"; echo "$changed"
+          if echo "$changed" | grep -qE '^(src/|config/|deploy/|Dockerfile$|docker-compose\.yml$|requirements\.txt$|pyproject\.toml$|\.dockerignore$)'; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Only non-runtime files changed (docs, tests, tooling); skipping deploy."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure SSH
+        if: steps.changes.outputs.deploy == 'true'
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pinned host key: refuse to connect if the server identity changes.
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        if: steps.changes.outputs.deploy == 'true'
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+              -o ServerAliveInterval=60 \
+              "$EC2_USER@$EC2_HOST" \
+              'bash -s' -- "$EC2_APP_DIR" "$GITHUB_SHA" < deploy/remote_deploy.sh
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

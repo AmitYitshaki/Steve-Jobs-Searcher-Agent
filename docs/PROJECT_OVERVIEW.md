@@ -347,9 +347,10 @@ production service. The milestones below trace that path.
   and restart-count monitoring; the ADR-0005 digest still shares
   `TELEGRAM_CHAT_ID` with the candidate feed by deliberate choice, not a
   dedicated admin destination.
-- **Secrets and backup automation** — use an EC2-appropriate secret store or
-  protected environment provisioning, and automate encrypted snapshots of the
-  queue/history pair before deployment changes.
+- **Secrets and backup hardening** — use an EC2-appropriate secret store or
+  protected environment provisioning. Pre-deploy snapshots of the queue/history
+  pair are now automated (`deploy/remote_deploy.sh`); they are not yet
+  encrypted or copied off the host.
 - **Timeout/concurrency re-validation at the new catalog size** — the
   3600s/600s producer/consumer budget was sized before the 363-company
   catalog; re-check actual wall-clock time at this size before growing
@@ -612,10 +613,53 @@ container is started.
 
 ### 5.3 Updating production
 
-Before rebuilding, take a protected snapshot of `data/pending_alerts.json` and
-`data/jobs_history.json` together, plus host-only prompt configuration. Then
-pull the intended revision, rebuild, and recreate the service. Verify the new
-container's immediate cycle before considering the deployment complete.
+Production is updated automatically by `.github/workflows/ci-cd.yml`:
+
+1. Every push and pull request runs the test suite and the
+   `python -m pipeline --help` gate on Python 3.10.
+2. A push to `main` that passes and changes a runtime path (`src/`, `config/`,
+   `deploy/`, `Dockerfile`, `docker-compose.yml`, `requirements.txt`,
+   `pyproject.toml`, `.dockerignore`) runs the `deploy` job. Docs-, test- and
+   tooling-only pushes skip it, so they never restart the service.
+3. The job connects over SSH with a pinned host key and pipes
+   `deploy/remote_deploy.sh` to the host, which:
+   - waits (up to 65 minutes) while a producer or consumer phase is running,
+     so a consumer is never killed between a Telegram send and its history
+     write;
+   - snapshots `data/` (and `user_profile.md` if present) to
+     `~/backups/state-<UTC timestamp>.tgz`, keeping the newest 10;
+   - fast-forwards to the exact commit CI tested (`--ff-only` refuses to
+     overwrite local edits on the host);
+   - runs `docker compose up -d --build`, prunes dangling images, and fails
+     the job if the container is not running 20 seconds later, printing the
+     rollback command.
+
+Deploys are serialized (one at a time), and the job can also be started by
+hand from the Actions tab (`workflow_dispatch`, deploys even without runtime
+changes). Restarting the container starts one scan cycle immediately, as on
+any start.
+
+**One-time setup.** Create a dedicated deploy key pair (not your personal SSH
+key), append its public key to `~/.ssh/authorized_keys` on the host, then add
+these repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+| --- | --- |
+| `EC2_HOST` | Public DNS name or IP of the instance |
+| `EC2_USER` | SSH user, e.g. `ubuntu` |
+| `EC2_SSH_KEY` | The deploy key's private key, full text |
+| `EC2_KNOWN_HOSTS` | Output of `ssh-keyscan -t ed25519 <host>`, verified against the host's own key |
+| `EC2_APP_DIR` | Absolute path of the repository clone on the host |
+
+Until `EC2_HOST` is set, the deploy job logs a notice and skips. The host's
+security group must allow SSH (port 22) from GitHub-hosted runners, whose
+addresses change; with key-only authentication that is acceptable for this
+deployment, and moving to AWS SSM would remove the open port.
+
+**Manual fallback.** If Actions is unavailable, run the same steps by hand:
+snapshot `data/pending_alerts.json` and `data/jobs_history.json` together, plus
+host-only prompt configuration, pull the intended revision, rebuild, recreate
+the service, and verify the new container's immediate cycle.
 
 Do not delete `data/` during image cleanup. Do not use `--reset-state` as a
 deployment convenience. The runtime state is intentionally outside the image

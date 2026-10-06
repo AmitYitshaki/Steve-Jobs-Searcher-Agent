@@ -7,7 +7,7 @@ each with a short AI-written summary.
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Playwright](https://img.shields.io/badge/playwright-1.62-green)
 ![Docker](https://img.shields.io/badge/deploy-Docker%20%2B%20AWS%20EC2-informational)
-![Tests](https://img.shields.io/badge/tests-273%20passing-brightgreen)
+[![CI/CD](https://github.com/AmitYitshaki/Steve-Jobs-Searcher-Agent/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/AmitYitshaki/Steve-Jobs-Searcher-Agent/actions/workflows/ci-cd.yml)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## Why
@@ -27,7 +27,7 @@ and delivers a de-duplicated alert.
 | ATS platforms | 15: Comeet, Greenhouse, Ashby, Workday, Lever, SmartRecruiters, Workable, SuccessFactors, Phenom, Oracle, Eightfold, Amazon, plus custom sites |
 | Fetch paths | 295 companies via JSON APIs, 68 via a stealth headless browser |
 | Schedule | Daily at 09:00, 14:00 and 19:00 Israel time |
-| Tests | 273 tests, every external service mocked |
+| Tests | 273 tests, every external service mocked, run in CI on every push |
 | Runs on | Docker Compose on AWS EC2 |
 
 ## What it does
@@ -116,7 +116,8 @@ Alerts are written in Hebrew. The format looks like this (illustrative values):
 ## Tech stack
 
 Python 3.10+, `requests`, Playwright + `playwright-stealth`, BeautifulSoup4,
-lxml, OpenAI API, Telegram Bot API, pytest, Docker, Docker Compose, AWS EC2.
+lxml, OpenAI API, Telegram Bot API, pytest, Docker, Docker Compose, GitHub
+Actions, AWS EC2.
 
 ## Project structure
 
@@ -140,6 +141,8 @@ config/
   prompts/                LLM system-prompt context
 tests/unit/               Automated suite (all external services mocked)
 tools/company_discovery/  Scripts used to verify and add new companies
+deploy/remote_deploy.sh   Host-side deploy script run by CI/CD
+.github/workflows/        CI/CD: tests on every push, deploy on main
 docs/                     Architecture, domain glossary, ADRs
 ```
 
@@ -178,6 +181,16 @@ docker compose logs -f steve_jobs_agent
 
 The container runs as a non-root user. `data/`, `logs/` and `config/` are
 mounted from the host so state survives rebuilds.
+
+### Continuous deployment
+
+GitHub Actions runs the tests on every push and pull request. When a push to
+`main` passes and changes runtime code or config, it deploys to EC2 over SSH:
+it waits for any running scan to finish, snapshots state, moves the host to the
+tested commit, rebuilds and checks that the container is up. See
+[`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) and
+[`deploy/remote_deploy.sh`](deploy/remote_deploy.sh); setup is in
+[`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) section 5.3.
 
 ## Documentation
 
