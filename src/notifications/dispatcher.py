@@ -60,7 +60,7 @@ class AlertConsumer:
                 self.queue.remove(alert.job_id)
                 skipped += 1
                 LOGGER.info(
-                    "ℹ️ %s כבר בהיסטוריה והוסר מהתור.", alert.job_id
+                    "ℹ️ %s is already in history; removed from the queue.", alert.job_id
                 )
                 continue
 
@@ -69,7 +69,7 @@ class AlertConsumer:
             except Exception as error:
                 failed += 1
                 LOGGER.error(
-                    "❌ שליחת %s נכשלה (%s); ההתראה נשארה בתור.",
+                    "❌ Sending %s failed (%s); the alert stays queued.",
                     alert.job_id,
                     type(error).__name__,
                 )
@@ -78,8 +78,8 @@ class AlertConsumer:
             if not result.success:
                 failed += 1
                 LOGGER.error(
-                    "❌ שליחת %s נכשלה (%s, %s ניסיונות); "
-                    "ההתראה נשארה בתור.",
+                    "❌ Sending %s failed (%s, %s attempts); "
+                    "the alert stays queued.",
                     alert.job_id,
                     result.status.value,
                     result.attempts,
@@ -92,7 +92,7 @@ class AlertConsumer:
             self.queue.remove(alert.job_id)
             sent += 1
             LOGGER.info(
-                "✅ ההתראה עבור %s (%s) נשלחה ונשמרה בהיסטוריה.",
+                "✅ Alert for %s (%s) sent and recorded in history.",
                 alert.company_name,
                 alert.job_id,
             )
@@ -116,11 +116,11 @@ def main() -> int:
                 notifier=notifier,
             ).run()
     except (OSError, ValueError) as error:
-        LOGGER.error("❌ לא ניתן לעבד את תור ההתראות: %s", error)
+        LOGGER.error("❌ Could not process the alert queue: %s", error)
         return 1
 
     LOGGER.info(
-        "🏁 עיבוד התור הסתיים: %s נשלחו, %s נכשלו, %s דולגו.",
+        "🏁 Queue processing finished: %s sent, %s failed, %s skipped.",
         summary.sent,
         summary.failed,
         summary.skipped,

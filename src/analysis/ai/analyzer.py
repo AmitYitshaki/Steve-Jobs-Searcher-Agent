@@ -9,7 +9,7 @@ from paths import DATA_DIR, PROMPTS_DIR
 
 LOGGER = logging.getLogger(__name__)
 
-# טעינת מפתח ה-API מקובץ .env
+# Load OPENAI_API_KEY (and other settings) from .env.
 load_dotenv()
 
 # The client is built on first use, not at import time. Importing this
@@ -48,12 +48,11 @@ DEFAULT_USER_PROFILE_PROMPT = (
 )
 
 def log_cost(prompt_tokens, completion_tokens):
-    """מחשב את עלות הקריאה ורושם אותה לקובץ לוג"""
-    # תעריפי gpt-4o-mini (בדולרים למיליון טוקנים)
+    """Estimate the cost of one LLM call and append it to the cost log."""
+    # gpt-4o-mini prices, USD per one million tokens.
     input_price_per_1m = 0.15
     output_price_per_1m = 0.60
 
-    # חישוב עלות
     cost = (prompt_tokens / 1_000_000) * input_price_per_1m + (completion_tokens / 1_000_000) * output_price_per_1m
 
     log_entry = {
@@ -64,7 +63,7 @@ def log_cost(prompt_tokens, completion_tokens):
         "cost_usd": round(cost, 6)
     }
 
-    # קריאת היסטוריית העלויות (אם קיימת)
+    # Read the existing cost history, if any.
     logs = []
     if os.path.exists(COSTS_FILE):
         try:
@@ -73,7 +72,7 @@ def log_cost(prompt_tokens, completion_tokens):
         except Exception:
             pass
 
-    # הוספת הרשומה החדשה ושמירה
+    # Append the new record and save.
     logs.append(log_entry)
     COSTS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(COSTS_FILE, "w", encoding="utf-8") as f:
@@ -165,7 +164,7 @@ def analyze_job(
 ) -> str:
     """Analyze a job without treating a URL as its description."""
 
-    # 1. טעינת קבצי ההקשר של סטיב (עם fallback אם קובץ חסר בשרת)
+    # 1. Load Steve's context files (with a fallback if one is missing on the server).
     soul = load_file(
         PROMPTS_DIR / "agent_soul.md",
         fallback=DEFAULT_SOUL_PROMPT,
@@ -182,7 +181,7 @@ def analyze_job(
         label="User profile",
     )
 
-    # 2. הרכבת ה-System Prompt המלא
+    # 2. Assemble the full system prompt.
     system_prompt = f"""
     {identity}
     
@@ -192,14 +191,14 @@ def analyze_job(
     {user_profile}
     """
 
-    # 3. הנחיות הניתוח למשרה הספציפית
+    # 3. Job-specific analysis instructions.
     user_prompt = build_job_analysis_prompt(
         job_title=job_title,
         job_location=job_location,
         job_content=job_content,
     )
 
-    # 4. קריאה ל-API
+    # 4. Call the API.
     response = get_client().chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -209,14 +208,13 @@ def analyze_job(
         temperature=0.2
     )
 
-    # 5. מעקב טוקנים ושמירה ללוג
+    # 5. Track token usage and log the cost.
     prompt_tokens = response.usage.prompt_tokens
     completion_tokens = response.usage.completion_tokens
     cost = log_cost(prompt_tokens, completion_tokens)
     
-    # הדפסה נחמדה שתופיע ליד הלוגים של טלגרם
     LOGGER.info(
-        "💰 [מעקב עלויות] צריכה: %s טוקנים | עלות: $%.6f",
+        "💰 [cost tracking] usage: %s tokens | cost: $%.6f",
         prompt_tokens + completion_tokens,
         cost,
     )
@@ -224,7 +222,7 @@ def analyze_job(
     return response.choices[0].message.content
 
 if __name__ == "__main__":
-    # משרת בדיקה לדוגמה
+    # Sample job for a manual run.
     sample_job = """
     Company: SAP Israel (Raanana)
     Role: Student Developer - Backend
@@ -236,7 +234,7 @@ if __name__ == "__main__":
     - Willingness to work 20 hours per week.
     """
     
-    print("🤖 סטיב מנתח את המשרה...\n")
+    print("🤖 Steve is analyzing the job...\n")
     result = analyze_job(
         job_title="Student Developer - Backend",
         job_location="Raanana, Israel",

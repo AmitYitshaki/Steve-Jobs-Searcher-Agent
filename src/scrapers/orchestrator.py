@@ -40,7 +40,7 @@ from storage.queue import PendingAlert, PendingAlertQueue
 configure_logging()
 LOGGER = logging.getLogger(__name__)
 
-# טעינת משתני הסביבה
+# Load environment variables from .env.
 load_dotenv()
 
 HISTORY_FILE = DATA_DIR / "jobs_history.json"
@@ -80,7 +80,7 @@ class OperationalMessageSender(Protocol):
     def send(self, message: str) -> Any:
         """Send one operational message."""
 
-# חדש: רשימה שחורה - משרות שנדחה מיד גם אם יש בהן מילות סטודנט
+# Blacklist: reject these titles even when they contain student keywords.
 EXCLUDE_KEYWORDS = [
     "senior", "staff", "lead", "manager", "director", "principal",
     "head", "vp", "expert", "architect", "sales", "marketing",
@@ -378,7 +378,7 @@ def fetch_jobs_from_company(company: Mapping[str, Any]) -> ScrapeResult:
     elif company.get("fetch_strategy") == "browser":
         return scrape_universal_playwright(company)
 
-    # 4. אם מסיבה כלשהי משהו נפל בין הכיסאות
+    # 4. Nothing matched: no route exists for this company.
     else:
         LOGGER.warning(
             "No adapter available; skipping company_id=%s ats_type=%s",
@@ -539,8 +539,8 @@ def run_scraper(
     changes. Health delivery never affects candidate-job processing.
     """
 
-    LOGGER.info("🚀 מתחיל סריקת משרות...")
-    total_start_time = time.time()  # תחילת המדידה הכוללת
+    LOGGER.info("🚀 Starting job scan...")
+    total_start_time = time.time()
     alert_queue = queue or PendingAlertQueue(PENDING_ALERTS_FILE)
     active_history_store = history_store or JobHistoryStore(HISTORY_FILE)
     active_health_store = health_store or ScraperHealthStore(HEALTH_FILE)
@@ -557,7 +557,7 @@ def run_scraper(
             ", ".join(unroutable_company_ids),
         )
     if not companies:
-        LOGGER.warning("⚠️ קובץ config/companies.json ריק.")
+        LOGGER.warning("⚠️ config/companies.json is empty.")
         return
 
     history = active_history_store.load()
@@ -567,7 +567,7 @@ def run_scraper(
     new_jobs_found = []
     queued_job_ids = set()
 
-    # --- שלב 1: סריקת החברות ---
+    # --- Phase 1: scan companies ---
     for company in companies:
         if not company.get("is_active", True):
             continue
@@ -696,21 +696,21 @@ def run_scraper(
         new_health_state,
     )
 
-    scraping_end_time = time.time()  # סיום שלב הסריקה
+    scraping_end_time = time.time()
 
-    # --- שלב 2: ניתוח והוספה לתור ---
+    # --- Phase 2: analyze and enqueue ---
     if not new_jobs_found:
-        LOGGER.info("😴 לא נמצאו משרות חדשות רלוונטיות הפעם.")
+        LOGGER.info("😴 No new relevant jobs found this time.")
         _send_heartbeat(heartbeat_notifier)
     else:
         LOGGER.info(
-            "✅ נמצאו %s משרות חדשות רלוונטיות. מעביר לסטיב...",
+            "✅ Found %s new relevant jobs. Sending to Steve for analysis...",
             len(new_jobs_found),
         )
 
         for job in new_jobs_found:
             LOGGER.info(
-                "🤖 מנתח את: %s במיקום %s", job["title"], job["location"]
+                "🤖 Analyzing: %s in %s", job["title"], job["location"]
             )
 
             try:
@@ -721,7 +721,7 @@ def run_scraper(
                 )
             except Exception as error:
                 LOGGER.error(
-                    "❌ ניתוח המשרה נכשל; המשרה לא תיכנס לתור: %s",
+                    "❌ Job analysis failed; the job will not be queued: %s",
                     type(error).__name__,
                 )
                 continue
@@ -745,25 +745,25 @@ def run_scraper(
             )
             if alert_queue.append(alert):
                 pending_ids.add(job["id"])
-                LOGGER.info("✅ המשרה %s נשמרה בתור ההתראות.", job["id"])
+                LOGGER.info("✅ Job %s added to the alert queue.", job["id"])
             else:
-                LOGGER.info("ℹ️ המשרה %s כבר קיימת בתור.", job["id"])
+                LOGGER.info("ℹ️ Job %s is already queued.", job["id"])
             LOGGER.info("-" * 40)
     
-    analysis_end_time = time.time()  # סיום שלב הניתוח
+    analysis_end_time = time.time()
     
-    # --- סיכום זמנים ---
+    # --- Timing summary ---
     scraping_duration = scraping_end_time - total_start_time
     analysis_duration = analysis_end_time - scraping_end_time
     total_duration = analysis_end_time - total_start_time
     
-    LOGGER.info("🏁 הסריקה הושלמה.")
-    LOGGER.info("⏱️ דו\"ח ביצועים:")
-    LOGGER.info("   - זמן סריקת אתרים: %.1f שניות", scraping_duration)
+    LOGGER.info("🏁 Scan complete.")
+    LOGGER.info("⏱️ Performance report:")
+    LOGGER.info("   - Site scanning time: %.1f s", scraping_duration)
     LOGGER.info(
-        "   - זמן ניתוח (AI) ושמירה לתור: %.1f שניות", analysis_duration
+        "   - AI analysis and queueing time: %.1f s", analysis_duration
     )
-    LOGGER.info("   - סך הכל זמן ריצה: %.1f שניות", total_duration)
+    LOGGER.info("   - Total run time: %.1f s", total_duration)
 
 if __name__ == "__main__":
     heartbeat_notifier: TelegramNotifier | None = None

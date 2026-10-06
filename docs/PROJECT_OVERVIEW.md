@@ -415,15 +415,15 @@ Per-company scraping status uses a consistent emoji vocabulary:
 | Symbol | Meaning |
 | --- | --- |
 | 🔍 `Scanning <Company> (ATS: <type>)` | Started fetching this company. |
-| 🕵️ `מפעיל סורק אוניברסלי (Playwright)` | Falling back to the universal browser scraper. |
+| 🕵️ `Running the universal Playwright scraper for <id>` | Falling back to the universal browser scraper. |
 | 🚫 `Rejecting <id>: blocked foreign location …` | A job was filtered out by `LocationFilter`. |
-| ⚠️ `<id> החזיר 0 משרות` | Browser navigation completed but extraction found no matching links (`NO_JOBS`); this can be legitimate or a stale selector. |
-| 🛡️ `<id> נחסם … WAF` | A bot/WAF challenge blocked the page (`WAF_BLOCKED`). |
-| ❌ `שגיאה בסריקה … <id>` | The scrape itself failed (`FAILED`). |
-| ✅ `נמצאו N משרות חדשות רלוונטיות` | N new jobs passed all filters and go to analysis. |
+| ⚠️ `<id> returned 0 jobs` | Browser navigation completed but extraction found no matching links (`NO_JOBS`); this can be legitimate or a stale selector. |
+| 🛡️ `<id> was blocked by a WAF challenge` | A bot/WAF challenge blocked the page (`WAF_BLOCKED`). |
+| ❌ `Universal scrape failed for <id>` | The scrape itself failed (`FAILED`). |
+| ✅ `Found N new relevant jobs` | N new jobs passed all filters and go to analysis. |
 
 The cycle ends with a performance report (site-scan time, AI/analysis time,
-total) and the consumer's tally: `X נשלחו, Y נכשלו, Z דולגו`
+total) and the consumer's tally: `X sent, Y failed, Z skipped`.
 (sent / failed / skipped).
 
 ### 3.3 ATS failure reports
@@ -456,7 +456,7 @@ signal** from **actionable faults**.
 - 🚫 `Rejecting … blocked foreign location` — this is the location filter
   **working**. A cycle rejecting Budapest/Shanghai/Netherlands roles is behaving
   correctly.
-- ⚠️ `החזיר 0 משרות` from a company that genuinely has no matching openings.
+- ⚠️ `returned 0 jobs` from a company that genuinely has no matching openings.
 - The **heartbeat** message on a zero-result cycle — proof the scheduler is
   alive and reached the zero-new-job branch, not a fault. It is **not** proof
   that all ATS integrations succeeded — check the per-company health summary

@@ -85,10 +85,9 @@ code, tests, configuration, runtime state, logs, and documentation.
 |-- logs/                                          # Git-ignored runtime diagnostics.
 |   `-- artifacts/                                 # Browser HTML/screenshots appear here on failure.
 |       `-- .gitkeep                               # Keeps the otherwise-empty directory in Git.
-`-- docs/                                          # Architecture, domain, migration, and workflow docs.
+`-- docs/                                          # Architecture, domain, and workflow docs.
     |-- ARCHITECTURE.md                            # This human-readable code map.
     |-- CONTEXT.md                                 # Shared domain glossary and project context.
-    |-- migration-handoff.md                       # Completed migration plan and ticket mappings.
     |-- adr/                                       # Permanent architecture decisions.
     |   |-- 0001-file-based-json-state.md          # Why local JSON is the persistence mechanism.
     |   |-- 0002-ninety-day-history-retention.md   # Intended delivered-job retention policy.

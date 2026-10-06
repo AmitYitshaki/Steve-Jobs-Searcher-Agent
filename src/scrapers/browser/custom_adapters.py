@@ -2073,20 +2073,20 @@ def scrape_universal_playwright(
     """Run the OOP Playwright scraper and preserve its typed outcome."""
 
     company_id = str(company.get("company_id", "unknown"))
-    LOGGER.info("🕵️ מפעיל סורק אוניברסלי (Playwright) עבור %s...", company_id)
+    LOGGER.info("🕵️ Running the universal Playwright scraper for %s...", company_id)
 
     result = PlaywrightJobScraper().scrape(company)
     if result.status is ScrapeStatus.WAF_BLOCKED:
         LOGGER.warning(
-            "🛡️ %s נחסם על ידי אתגר WAF: %s. בדוק את logs/api_discovery_log.json.",
+            "🛡️ %s was blocked by a WAF challenge: %s. See logs/api_discovery_log.json.",
             company_id,
             result.message,
         )
     elif result.status is ScrapeStatus.NO_JOBS:
-        LOGGER.warning("⚠️ %s החזיר 0 משרות: %s", company_id, result.message)
+        LOGGER.warning("⚠️ %s returned 0 jobs: %s", company_id, result.message)
     elif result.status is ScrapeStatus.FAILED:
         LOGGER.error(
-            "❌ שגיאה בסריקה אוניברסלית של %s: %s",
+            "❌ Universal scrape failed for %s: %s",
             company_id,
             result.message,
         )
