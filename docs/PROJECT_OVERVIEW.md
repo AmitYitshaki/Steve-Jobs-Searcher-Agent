@@ -746,13 +746,14 @@ part of an automated test suite.
   Git history, removing the file in a later commit is **not enough** — the
   file is still fully retrievable from the earlier commit by anyone with
   read access to the repo, forever, unless the history itself is rewritten.
-  This happened once: `steve-jobs-key.pem` (an AWS EC2 SSH private key) was
-  committed in `bd22513` and removed in `9d940fa`, and its contents remain
-  retrievable from `bd22513` on this **public** GitHub repo because history
-  rewriting was declined. **Resolved 2026-10-06:** the project owner rotated
-  the key on the AWS side, so the key in history is dead and no longer grants
-  access to the production host. Any future leak must be handled the same
-  way — rotate first; deleting the file is not a fix.
+  This happened twice: an AWS EC2 SSH private key (`steve-jobs-key.pem`) and
+  an early personal profile with contact details (`user_profile.md`) were both
+  committed before they were ignored. **Resolved 2026-10-06:** the key was
+  rotated on the AWS side, and the Git history was rewritten with
+  `git filter-repo` to remove both files and earlier personal details from
+  every commit (all commit hashes before that date changed). Any future leak
+  must be handled the same way: rotate the credential first, then purge the
+  history; deleting the file in a new commit is not a fix.
 - Git ignore rules do not protect Docker build contexts by themselves, but
   `.dockerignore` now explicitly excludes `.env`, `data/`, `logs/`, `*.pem`,
   and `config/prompts/user_profile.md` (fixed 2026-09-27) — `COPY . /app` can
