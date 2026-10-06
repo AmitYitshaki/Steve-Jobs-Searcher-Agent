@@ -100,8 +100,11 @@ goes through `AtomicJsonListStore`: write to a temp file → `flush` + `fsync` �
 atomic `os.replace`, with bounded retries for Windows file-lock contention.
 
 **Failure propagation** is intentionally asymmetric. If the producer exits
-non-zero, the scheduler skips the consumer for that cycle. If the consumer
-fails, already queued alerts remain on disk for the next run. Per-company
+non-zero, the scheduler logs a warning but **still runs the consumer**: the
+durable queue can hold alerts analyzed in an earlier cycle, and a failed scrape
+must not strand work that is ready to send. The cycle is then reported as
+finished with a failed producer, never as clean. If the consumer fails, already
+queued alerts remain on disk for the next run. Per-company
 network and parsing errors are generally caught inside adapters so one broken
 career site does not abort the full company scan. This also means the producer
 can exit successfully while one or more companies were degraded; operators
@@ -227,8 +230,14 @@ build can no longer bake either into an image layer.
 ### 1.5 The subprocess-based watchdog
 
 The `AutonomousScheduler` (`src/scheduler.py`) is the container entry point. It
-runs one cycle immediately on start, registers an 8-hour interval, then polls
-every 60 seconds. Crucially, it does **not** run the producer and consumer
+runs one cycle immediately on start, then polls every 60 seconds and runs a
+cycle at three fixed daily slots in Israel time (`Asia/Jerusalem`): **09:00,
+14:00, and 19:00** (`RUN_TIMES`). The slots are chosen for when a candidate is
+likely to see and act on an alert, rather than drifting with whenever the
+container last started. A slot is honored for a 5-minute catch-up window
+(`CATCH_UP_WINDOW_SECONDS`) to absorb poll jitter; a slot missed beyond that
+window is skipped until the next one rather than firing hours late, and a
+per-slot marker prevents the same slot from running twice. Crucially, it does **not** run the producer and consumer
 in-process — it launches each phase as an isolated subprocess under a hard
 timeout:
 
@@ -247,8 +256,8 @@ a native Playwright call cannot be forcibly killed, whereas a child process can.
 Resilience is layered — the cycle body, the poll loop, and each phase launch are
 each wrapped so no single failure can take the container down.
 
-The scheduler launches the consumer only after a zero exit code from the
-producer. A non-zero consumer exit is logged but does not delete its undelivered
+The scheduler launches the consumer after every producer run, whatever its
+exit code (see 1.1 — failure propagation). A non-zero consumer exit is logged but does not delete its undelivered
 queue entries. Exit code `127` represents a phase that could not be launched;
 `124` represents a watchdog timeout.
 
@@ -258,7 +267,7 @@ There are two top-level orchestration modes with different purposes:
 
 | Entry point | Intended environment | Behavior |
 | --- | --- | --- |
-| `python -m scheduler` | Docker / EC2 | Runs immediately and every eight hours; launches producer and consumer directly as bounded subprocesses. |
+| `python -m scheduler` | Docker / EC2 | Runs immediately on start, then daily at 09:00, 14:00, and 19:00 Israel time; launches producer and consumer directly as bounded subprocesses. |
 | `python -m pipeline` | Local Windows operation | Runs one end-to-end cycle and coordinates Cloudflare WARP: disconnect before scraping, reconnect before Telegram delivery, and always attempt restoration on exit. |
 
 The Docker `CMD` uses `scheduler`, not `pipeline`. Production therefore does
@@ -310,8 +319,8 @@ production service. The milestones below trace that path.
 | **2026-08-09/10 — Architecture (ADR-0006)** | `src/`-layout refactor | Introduced domain-oriented packages (`scrapers`, `analysis`, `notifications`, `storage`, `models`) and module-based entry points. Runtime state moved to `data/`, configuration to `config/`, diagnostics to `logs/`, and automated tests to `tests/unit/`. |
 | **2026-08-13 — Containerization** | Production Docker infrastructure and autonomous scheduler | Added `Dockerfile`, `.dockerignore`, `docker-compose.yml`, pinned Playwright dependencies, non-root execution, persistent mounts, and `scheduler.py`, making the service reproducible and deployable on EC2. |
 | **2026-08-13 — Stability** | Subprocess watchdog | Each phase became a separately killable subprocess with a 900-second producer timeout and 300-second consumer timeout, preventing a stuck scrape from permanently blocking future schedules. |
-| **2026-08-13 — Security hardening** | Private-key cleanup and ignore rules | Removed host key material from repository tracking and added `*.pem` to `.gitignore`; `.env` and runtime artifacts remain excluded from Git and the Docker build context. Previously exposed credentials or keys must still be rotated outside the repository. |
-| **2026-08-13 — Production** | AWS EC2 runtime | The container runs unattended under Docker Compose, starts a cycle immediately, repeats every eight hours, preserves host-mounted state, restarts unless explicitly stopped, and rotates container logs. |
+| **2026-08-13 — Security hardening** | Private-key cleanup and ignore rules | Removed host key material from repository tracking and added `*.pem` to `.gitignore`; `.env` and runtime artifacts remain excluded from Git and the Docker build context. The exposed EC2 key was later rotated on the AWS side (2026-10-06). |
+| **2026-08-13 — Production** | AWS EC2 runtime | The container runs unattended under Docker Compose, starts a cycle immediately, repeats on a fixed schedule (originally every eight hours), preserves host-mounted state, restarts unless explicitly stopped, and rotates container logs. |
 | **2026-08-13 — Observability** | Zero-result heartbeat | A cycle with no new relevant jobs emits `Scraping cycle completed. 0 new jobs found.` when Telegram credentials are available. It distinguishes an alive producer from total silence, but does not certify every company adapter as healthy. |
 | **2026-08-13 — Resilience fix** | Gitignored prompt/profile fallback | Production exposed a `FileNotFoundError`: the personal `user_profile.md` was intentionally gitignored and absent from the server, while the config mount shadowed image contents. The analyzer now warns and falls back to generic prompts so jobs can still be analyzed and queued. |
 | **2026-09-23 — Observability** | Unified pipeline logging | `python -m pipeline` now writes one combined, timestamped log file per run alongside live console output (`src/logging_config.py`), without changing standalone-module or Docker `scheduler` behavior. |
@@ -359,7 +368,7 @@ appear live). On the EC2 host:
 docker compose ps
 docker compose logs -f --tail 100 --timestamps steve_jobs_agent
 docker compose logs --tail 200 --timestamps steve_jobs_agent
-docker compose logs --since 8h --timestamps steve_jobs_agent
+docker compose logs --since 6h --timestamps steve_jobs_agent
 ```
 
 Logs are captured by Docker's `json-file` driver and rotated at 10 MB × 3 files,
@@ -388,13 +397,12 @@ A healthy cycle has a predictable skeleton. These lifecycle lines come from the
 scheduler and are your anchors:
 
 ```
-INFO - Scheduler started; job searches will run every 8 hours.
+INFO - Scheduler started; job searches will run daily at 09:00, 14:00, 19:00 Israel time.
 INFO - Starting scheduled Steve Jobs search cycle.
 INFO - Starting Producer scraping phase: scrapers.orchestrator
   ... per-company scraping output ...
 INFO - Starting Consumer alerting phase: notifications.dispatcher
 INFO - Scheduled Steve Jobs search cycle completed.
-INFO - Next job-search cycle scheduled in 8 hours.
 ```
 
 Per-company scraping status uses a consistent emoji vocabulary:
@@ -430,7 +438,7 @@ Failures are not all equal. The message tail tells you the class:
 | `Page.content: … page is navigating` | Warning | Diagnostics could not be captured because the page was still moving; secondary to the real error on the next line. |
 | `Prompt file not found … falling back` | Degraded analysis | Availability is preserved, but candidate-specific analysis may be less accurate until the host prompt is provisioned. |
 | `Heartbeat delivery did not succeed` | Operational notification failure | The scrape path continued, but the liveness signal did not reach Telegram. Check credentials and Telegram transport logs. |
-| `Producer phase exited with code 124` | Watchdog timeout | The 900-second producer limit was reached and delivery was skipped for the cycle. |
+| `Producer phase exited with code 124` | Watchdog timeout | The 3600-second producer limit was reached and the producer was killed; the consumer still runs to deliver anything already queued. |
 | `Alert delivery exited with code …` | Consumer failure | Pending entries remain queued. Inspect the consumer tally and Telegram status. |
 
 ### 3.4 Noise vs. real system errors
@@ -446,8 +454,8 @@ signal** from **actionable faults**.
 - ⚠️ `החזיר 0 משרות` from a company that genuinely has no matching openings.
 - The **heartbeat** message on a zero-result cycle — proof the scheduler is
   alive and reached the zero-new-job branch, not a fault. It is **not** proof
-  that all ATS integrations succeeded because several adapters represent
-  failures as empty lists.
+  that all ATS integrations succeeded — check the per-company health summary
+  and `scraper_health.json` for `FAILED`/`WAF_BLOCKED` companies.
 
 **Data-quality noise (worth improving, not urgent):**
 
@@ -468,14 +476,16 @@ signal** from **actionable faults**.
   planned scraper-health alerts, ADR-0005).
 - Any `ERROR`/`exception` from the **scheduler** itself, or a phase repeatedly
   exiting `124` (timeout) — investigate the host or the specific hung company.
-- `Producer phase exited with code …; skipping alert delivery` — the consumer
-  did not run in that cycle, even if older alerts were already pending.
+- `Producer phase exited with code …; still delivering any alerts already
+  queued` followed by `Scheduled cycle finished with a failed producer` — the
+  scan did not complete for that cycle, even though queued alerts were still
+  delivered.
 - Repeated consumer failures or a steadily growing `pending_alerts.json` —
   Telegram delivery is degraded and retained work is accumulating.
 - `Unroutable active company configurations` or an empty company file — active
   companies cannot be dispatched to an implementation.
 - Repeated container restarts, bind-mount permission errors, or no scheduler
-  cycle start for more than eight hours while the service is expected to run.
+  cycle start at an expected 09:00/14:00/19:00 slot while the service is expected to run.
 
 ### 3.5 Practical triage sequence
 
@@ -492,7 +502,7 @@ signal** from **actionable faults**.
    anything. Never launch a second consumer concurrently with the scheduled
    one.
 7. Treat a single transient failure as an observation; escalate repeated
-   failures across consecutive eight-hour cycles or failures that affect an
+   failures across consecutive scheduled cycles or failures that affect an
    entire integration family.
 
 ### 3.6 Current observability boundary
@@ -500,9 +510,10 @@ signal** from **actionable faults**.
 The Producer now persists `scraper_health.json` and prints a per-company
 health summary, including prominent unverified adapters. The final scheduler
 success line still does not mean every company returned valid job data.
-Until ADR-0004 is completed across all adapters, the health summaries,
-per-company log stream, and Playwright artifacts remain complementary
-diagnostic evidence.
+With ADR-0004 complete, every adapter reports a typed outcome, but the health
+summaries, per-company log stream, and Playwright artifacts remain
+complementary diagnostic evidence — a typed `NO_JOBS` can still hide a stale
+selector.
 
 ---
 
@@ -613,8 +624,8 @@ and must survive rebuilds, host reboots, and rollbacks.
 ### 5.4 Recovery rules
 
 - **Producer failed:** fix the configuration, network, or adapter issue and let
-  the next cycle rescan. The consumer is skipped by the scheduler for that
-  failed cycle.
+  the next cycle rescan. The consumer still runs in that cycle and delivers
+  anything already queued.
 - **Consumer failed:** preserve the queue. After fixing Telegram connectivity
   or credentials, allow the next scheduled consumer to retry it.
 - **Container restarted:** inspect why it restarted; durable queue/history
@@ -649,7 +660,7 @@ Core coverage areas include:
 - Telegram HTML sanitization, retries, rate limits, and permanent failures.
 - Producer enqueueing, zero-result heartbeat behavior, and analysis failures.
 - Consumer sent/failed/skipped outcomes and preservation of failed alerts.
-- Scheduler phase ordering, timeouts, launch failures, interval registration,
+- Scheduler phase ordering, timeouts, launch failures, fixed daily-slot timing,
   and survival after errors.
 - Local pipeline WARP recovery, subprocess timeouts, state reset, and exit
   codes.
@@ -687,15 +698,13 @@ part of an automated test suite.
   Git history, removing the file in a later commit is **not enough** — the
   file is still fully retrievable from the earlier commit by anyone with
   read access to the repo, forever, unless the history itself is rewritten.
-  This is a live, known case, not a hypothetical: `steve-jobs-key.pem` (an
-  AWS EC2 SSH private key) was committed in `bd22513` and removed in
-  `9d940fa`, but that removal commit is still an ancestor of `main` on this
-  **public** GitHub repo — the key's full contents remain retrievable from
-  `bd22513` right now. History rewriting was explicitly declined by the
-  project owner; the key itself must be treated as compromised and rotated
-  on the AWS side (new EC2 key pair, updated `authorized_keys`, old key pair
-  deleted) independently of the repo. Verify this has actually happened
-  before trusting SSH access to the production host.
+  This happened once: `steve-jobs-key.pem` (an AWS EC2 SSH private key) was
+  committed in `bd22513` and removed in `9d940fa`, and its contents remain
+  retrievable from `bd22513` on this **public** GitHub repo because history
+  rewriting was declined. **Resolved 2026-10-06:** the project owner rotated
+  the key on the AWS side, so the key in history is dead and no longer grants
+  access to the production host. Any future leak must be handled the same
+  way — rotate first; deleting the file is not a fix.
 - Git ignore rules do not protect Docker build contexts by themselves, but
   `.dockerignore` now explicitly excludes `.env`, `data/`, `logs/`, `*.pem`,
   and `config/prompts/user_profile.md` (fixed 2026-09-27) — `COPY . /app` can
