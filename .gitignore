@@ -26,3 +26,8 @@ env/
 # Debug and Logs
 artifacts/debug_logs/
 logs/
+
+# Third-party agent skills (installed locally per developer, not project code)
+.agents/
+.claude/skills/
+skills-lock.json
