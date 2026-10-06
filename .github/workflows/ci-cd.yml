@@ -17,12 +17,12 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           # Matches the Python shipped in the Playwright jammy production image.
           python-version: "3.10"
@@ -43,7 +43,7 @@ jobs:
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Covers waiting out one in-progress scan cycle on the host, plus a rebuild.
     timeout-minutes: 90
     # One deploy at a time; a newer push queues behind a running deploy.
@@ -52,7 +52,7 @@ jobs:
       cancel-in-progress: false
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
