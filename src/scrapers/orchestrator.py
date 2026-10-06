@@ -6,7 +6,7 @@ import re
 import time
 import unicodedata
 from dataclasses import dataclass
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Callable, Container, Mapping, Protocol, Sequence
 
 from dotenv import load_dotenv
 
@@ -157,229 +157,245 @@ class TitleDecision:
 
 
 def normalize_text(text: str) -> str:
+    """Lower-case and strip punctuation so phrases match whole words only."""
+
     if not text:
         return ""
     text = unicodedata.normalize("NFKC", text).lower()
     text = re.sub(r"[-_/]+", " ", text)
-    text = re.sub(r"[^\w\u0590-\u05FF\s]", " ", text)
+    text = re.sub(r"[^\w֐-׿\s]", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
+
 def contains_phrase(text: str, phrase: str) -> bool:
+    """Return whether ``phrase`` appears in ``text`` as a whole phrase."""
+
     normalized_text = normalize_text(text)
     normalized_phrase = normalize_text(phrase)
     pattern = rf"(?<!\w){re.escape(normalized_phrase)}(?!\w)"
     return re.search(pattern, normalized_text) is not None
 
-def _first_matching_keyword(
-    title: str,
-    keywords: list[str],
-) -> str | None:
-    """Return the first complete keyword phrase found in ``title``."""
 
-    return next(
-        (keyword for keyword in keywords if contains_phrase(title, keyword)),
-        None,
-    )
+class TitleRelevanceFilter:
+    """Decide from a job title alone whether it is an entry-level tech role.
 
-
-def _matching_keywords(title: str, keywords: list[str]) -> list[str]:
-    """Return every complete keyword phrase found in ``title``."""
-
-    return [
-        keyword for keyword in keywords if contains_phrase(title, keyword)
-    ]
-
-
-def _target_role_keyword(title: str) -> str | None:
-    """Return the first configured software-adjacent role in a title."""
-
-    return _first_matching_keyword(
-        title,
-        TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS,
-    )
-
-
-def matches_target_role(title: str) -> bool:
-    """Return whether a title proves catalog relevance, ignoring seniority.
-
-    Company-discovery batches use this narrower predicate as an activation
-    gate: an employer needs at least one current target-domain role, but that
-    role does not itself need to be entry level. Candidate alert filtering
-    remains the responsibility of :func:`is_relevant_job`.
+    Rules, in order: an exclusion keyword (senior, manager, sales, ...) blocks
+    the title unless it is part of the matched target-role phrase; a strong
+    entry-level signal (student, intern) admits it; a weak signal (junior,
+    graduate) admits it only together with a target-role keyword.
     """
 
-    return _target_role_keyword(title) is not None
+    def __init__(
+        self,
+        exclude_keywords: Sequence[str] = tuple(EXCLUDE_KEYWORDS),
+        strong_keywords: Sequence[str] = tuple(
+            STRONG_ENTRY_LEVEL_KEYWORDS + HEBREW_ENTRY_LEVEL_KEYWORDS
+        ),
+        weak_keywords: Sequence[str] = tuple(WEAK_ENTRY_LEVEL_KEYWORDS),
+        role_keywords: Sequence[str] = tuple(
+            TARGET_ROLE_KEYWORDS + HEBREW_ROLE_KEYWORDS
+        ),
+    ) -> None:
+        """Store the keyword tiers; defaults are the module-level lists."""
+
+        self._exclude_keywords = tuple(exclude_keywords)
+        self._strong_keywords = tuple(strong_keywords)
+        self._weak_keywords = tuple(weak_keywords)
+        self._role_keywords = tuple(role_keywords)
+
+    @staticmethod
+    def _first_match(title: str, keywords: Sequence[str]) -> str | None:
+        """Return the first complete keyword phrase found in ``title``."""
+
+        return next(
+            (keyword for keyword in keywords if contains_phrase(title, keyword)),
+            None,
+        )
+
+    @staticmethod
+    def _all_matches(title: str, keywords: Sequence[str]) -> list[str]:
+        """Return every complete keyword phrase found in ``title``."""
+
+        return [
+            keyword for keyword in keywords if contains_phrase(title, keyword)
+        ]
+
+    def target_role_keyword(self, title: str) -> str | None:
+        """Return the first configured software-adjacent role in a title."""
+
+        return self._first_match(title, self._role_keywords)
+
+    def matches_target_role(self, title: str) -> bool:
+        """Return whether a title proves catalog relevance, ignoring seniority.
+
+        Company-discovery batches use this narrower predicate as an activation
+        gate: an employer needs at least one current target-domain role, but
+        that role does not itself need to be entry level. Candidate alert
+        filtering remains the responsibility of :meth:`evaluate`.
+        """
+
+        return self.target_role_keyword(title) is not None
+
+    def _blocking_exclusions(
+        self,
+        title: str,
+        role_keyword: str | None,
+    ) -> list[str]:
+        """Return exclusions that are not merely part of a target role name.
+
+        Exclusion keywords hold seniority and out-of-scope function words, but
+        some of them appear inside role names we explicitly target: "manager"
+        is a substring of "product manager intern", which the target list
+        holds verbatim. Excluding on such a word contradicts our own target
+        list, so an exclusion contained in the matched role phrase is
+        discarded. Any exclusion outside that phrase ("senior", "sales")
+        still blocks the title.
+        """
+
+        exclusions = self._all_matches(title, self._exclude_keywords)
+        if role_keyword is None:
+            return exclusions
+        return [
+            keyword
+            for keyword in exclusions
+            if not contains_phrase(role_keyword, keyword)
+        ]
+
+    def evaluate(self, title: str) -> TitleDecision:
+        """Evaluate title relevance while preserving strong-signal recall."""
+
+        role_keyword = self.target_role_keyword(title)
+        blocking_exclusions = self._blocking_exclusions(title, role_keyword)
+        if blocking_exclusions:
+            return TitleDecision(
+                allowed=False,
+                reason="excluded title keyword",
+                matched_keyword=blocking_exclusions[0],
+            )
+
+        strong_keyword = self._first_match(title, self._strong_keywords)
+        if strong_keyword is not None:
+            return TitleDecision(
+                allowed=True,
+                reason="strong entry-level signal",
+                matched_keyword=strong_keyword,
+            )
+
+        weak_keyword = self._first_match(title, self._weak_keywords)
+        if weak_keyword is not None and role_keyword is not None:
+            return TitleDecision(
+                allowed=True,
+                reason="weak entry-level and target-role signals",
+                matched_keyword=weak_keyword,
+            )
+        if weak_keyword is not None:
+            return TitleDecision(
+                allowed=False,
+                reason="weak entry-level signal without target role",
+                matched_keyword=weak_keyword,
+            )
+        return TitleDecision(
+            allowed=False,
+            reason="no qualifying entry-level title signal",
+        )
 
 
-def _blocking_exclusions(title: str, role_keyword: str | None) -> list[str]:
-    """Return exclusions that are not merely part of a target role name.
+class CompanyRouter:
+    """Route a configured company to the adapter that can fetch its jobs.
 
-    ``EXCLUDE_KEYWORDS`` holds seniority and out-of-scope function words, but
-    some of them appear inside role names we explicitly target: "manager" is a
-    substring of "product manager intern", which ``TARGET_ROLE_KEYWORDS`` lists
-    verbatim. Excluding on such a word contradicts our own target list, so an
-    exclusion contained in the matched role phrase is discarded. Any exclusion
-    outside that phrase ("senior", "sales") still blocks the title.
+    Adapter tables and adapter functions are read from module scope on every
+    call, so a test can patch any of them on ``scrapers.orchestrator``.
     """
 
-    exclusions = _matching_keywords(title, EXCLUDE_KEYWORDS)
-    if role_keyword is None:
-        return exclusions
-    return [
-        keyword
-        for keyword in exclusions
-        if not contains_phrase(role_keyword, keyword)
-    ]
+    DIRECTLY_ROUTED_ATS_TYPES = frozenset({"successfactors", "eightfold"})
 
+    def unroutable_company_ids(
+        self,
+        companies: Sequence[Mapping[str, Any]],
+    ) -> list[str]:
+        """Return active company IDs without a configured fetch route."""
 
-def is_relevant_job(title: str) -> TitleDecision:
-    """Evaluate title relevance while preserving strong-signal recall."""
+        unroutable_company_ids: list[str] = []
+        for company in companies:
+            if not company.get("is_active", True):
+                continue
+            if not self._has_route(company):
+                unroutable_company_ids.append(
+                    str(company.get("company_id", "<missing>"))
+                )
+        return unroutable_company_ids
 
-    role_keyword = _target_role_keyword(title)
-    blocking_exclusions = _blocking_exclusions(title, role_keyword)
-    if blocking_exclusions:
-        return TitleDecision(
-            allowed=False,
-            reason="excluded title keyword",
-            matched_keyword=blocking_exclusions[0],
-        )
-
-    strong_keyword = _first_matching_keyword(
-        title,
-        STRONG_ENTRY_LEVEL_KEYWORDS + HEBREW_ENTRY_LEVEL_KEYWORDS,
-    )
-    if strong_keyword is not None:
-        return TitleDecision(
-            allowed=True,
-            reason="strong entry-level signal",
-            matched_keyword=strong_keyword,
-        )
-
-    weak_keyword = _first_matching_keyword(
-        title,
-        WEAK_ENTRY_LEVEL_KEYWORDS,
-    )
-    if weak_keyword is not None and role_keyword is not None:
-        return TitleDecision(
-            allowed=True,
-            reason="weak entry-level and target-role signals",
-            matched_keyword=weak_keyword,
-        )
-    if weak_keyword is not None:
-        return TitleDecision(
-            allowed=False,
-            reason="weak entry-level signal without target role",
-            matched_keyword=weak_keyword,
-        )
-    return TitleDecision(
-        allowed=False,
-        reason="no qualifying entry-level title signal",
-    )
-
-def load_json(filepath):
-    if not os.path.exists(filepath):
-        return []
-    with open(filepath, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-def is_in_location(job_location, location_filters):
-    if not location_filters:
-        return True
-    if not job_location:
-        return False
-    job_loc_lower = job_location.lower()
-    return any(loc.lower() in job_loc_lower for loc in location_filters)
-
-
-def validate_company_routing(companies: list[dict]) -> list[str]:
-    """Return active company IDs without a configured fetch route."""
-
-    directly_routed_ats_types = frozenset({"successfactors", "eightfold"})
-    unroutable_company_ids: list[str] = []
-
-    for company in companies:
-        if not company.get("is_active", True):
-            continue
+    def _has_route(self, company: Mapping[str, Any]) -> bool:
+        """Mirror :meth:`fetch` to decide whether a company can be routed."""
 
         ats_type = company.get("ats_type")
         company_id = str(company.get("company_id", "<missing>"))
+        fetch_strategy = company.get("fetch_strategy")
         has_custom_api_route = (
             ats_type == "custom"
-            and company.get("fetch_strategy") == "api"
+            and fetch_strategy == "api"
             and company_id in CUSTOM_API_ADAPTERS
         )
-        # Mirrors the ats_type-keyed branch in fetch_jobs_from_company. Without
-        # it, every ATS served by a shared custom adapter (oracle_recruiting_
-        # cloud today) is reported unroutable on every run despite routing fine.
+        # Mirrors the ats_type-keyed branch in fetch(). Without it, every ATS
+        # served by a shared custom adapter (oracle_recruiting_cloud today)
+        # is reported unroutable on every run despite routing fine.
         has_custom_api_route_by_ats_type = (
-            company.get("fetch_strategy") == "api"
+            fetch_strategy == "api"
             and ats_type in CUSTOM_API_ADAPTERS_BY_ATS_TYPE
         )
-        has_route = (
+        return (
             ats_type in ATS_FIELD_MAP
-            or ats_type in directly_routed_ats_types
-            or company.get("fetch_strategy") == "browser"
+            or ats_type in self.DIRECTLY_ROUTED_ATS_TYPES
+            or fetch_strategy == "browser"
             or has_custom_api_route
             or has_custom_api_route_by_ats_type
         )
-        if not has_route:
-            unroutable_company_ids.append(company_id)
 
-    return unroutable_company_ids
+    def fetch(self, company: Mapping[str, Any]) -> ScrapeResult:
+        """Dispatch one company and always expose a typed scrape outcome."""
 
+        ats_type = company.get("ats_type")
+        api_url = company.get("api_url")
+        company_id = company.get("company_id")
+        fetch_strategy = company.get("fetch_strategy")
 
-def fetch_jobs_from_company(company: Mapping[str, Any]) -> ScrapeResult:
-    """Dispatch one company and always expose a typed scrape outcome."""
+        LOGGER.info(
+            "🔍 Scanning %s (ATS: %s)...", company.get("company_name"), ats_type
+        )
 
-    ats_type = company.get("ats_type")
-    api_url = company.get("api_url")
-    company_id = company.get("company_id")
+        custom_api_adapter = CUSTOM_API_ADAPTERS.get(str(company_id))
+        if (
+            ats_type == "custom"
+            and fetch_strategy == "api"
+            and custom_api_adapter is not None
+        ):
+            return custom_api_adapter(company)
 
-    LOGGER.info(
-        "🔍 Scanning %s (ATS: %s)...", company.get("company_name"), ats_type
-    )
+        custom_api_adapter_by_ats_type = CUSTOM_API_ADAPTERS_BY_ATS_TYPE.get(
+            str(ats_type)
+        )
+        if fetch_strategy == "api" and custom_api_adapter_by_ats_type is not None:
+            return custom_api_adapter_by_ats_type(company)
 
-    custom_api_adapter = CUSTOM_API_ADAPTERS.get(str(company_id))
-    if (
-        ats_type == "custom"
-        and company.get("fetch_strategy") == "api"
-        and custom_api_adapter is not None
-    ):
-        return custom_api_adapter(company)
+        custom_browser_adapter = CUSTOM_BROWSER_ADAPTERS.get(str(ats_type))
+        if fetch_strategy == "browser" and custom_browser_adapter is not None:
+            return custom_browser_adapter(company)
 
-    custom_api_adapter_by_ats_type = CUSTOM_API_ADAPTERS_BY_ATS_TYPE.get(
-        str(ats_type)
-    )
-    if (
-        company.get("fetch_strategy") == "api"
-        and custom_api_adapter_by_ats_type is not None
-    ):
-        return custom_api_adapter_by_ats_type(company)
+        if ats_type in ATS_FIELD_MAP:
+            return fetch_ats_jobs(company, ATS_FIELD_MAP[ats_type])
 
-    custom_browser_adapter = CUSTOM_BROWSER_ADAPTERS.get(str(ats_type))
-    if (
-        company.get("fetch_strategy") == "browser"
-        and custom_browser_adapter is not None
-    ):
-        return custom_browser_adapter(company)
+        # SuccessFactors renders HTML rather than JSON.
+        if ats_type == "successfactors":
+            return scrape_successfactors(company)
 
-    if ats_type in ATS_FIELD_MAP:
-        return fetch_ats_jobs(company, ATS_FIELD_MAP[ats_type])
+        # Eightfold API, with a universal Playwright fallback inside.
+        if ats_type == "eightfold":
+            return scrape_eightfold(str(company_id), str(api_url))
 
-    # 1. SuccessFactors (HTML)
-    elif ats_type == "successfactors":
-        return scrape_successfactors(company)
+        # Browser-configured career sites use the universal Playwright scraper.
+        if fetch_strategy == "browser":
+            return scrape_universal_playwright(company)
 
-    # 2. Eightfold API with Universal Playwright fallback
-    elif ats_type == "eightfold":
-        return scrape_eightfold(str(company_id), str(api_url))
-
-    # 3. Browser-configured career sites (Universal Playwright)
-    elif company.get("fetch_strategy") == "browser":
-        return scrape_universal_playwright(company)
-
-    # 4. Nothing matched: no route exists for this company.
-    else:
         LOGGER.warning(
             "No adapter available; skipping company_id=%s ats_type=%s",
             company_id,
@@ -390,6 +406,193 @@ def fetch_jobs_from_company(company: Mapping[str, Any]) -> ScrapeResult:
             jobs=[],
             message=f"No adapter for ats_type={ats_type!r}.",
         )
+
+
+class OperationalReporter:
+    """Send producer operational messages without ever failing the run.
+
+    Covers the zero-job heartbeat and the scraper-health digest. Both go
+    through an optional notifier; a missing notifier or a failed send is
+    logged and ignored, so candidate-job processing is never affected.
+    """
+
+    def __init__(self, notifier: OperationalMessageSender | None) -> None:
+        """Wrap an optional transport (``None`` disables all messages)."""
+
+        self._notifier = notifier
+
+    def send_heartbeat(self) -> None:
+        """Notify operators that the cycle succeeded with zero new jobs."""
+
+        self._send(HEARTBEAT_MESSAGE, "Heartbeat")
+
+    def send_health_digest(
+        self,
+        previous_state: Mapping[str, Mapping[str, Any]],
+        current_state: Mapping[str, Mapping[str, Any]],
+    ) -> None:
+        """Send one digest when scraper-health anomaly state changed."""
+
+        message = self.build_health_digest(previous_state, current_state)
+        if message is not None:
+            self._send(message, "Scraper-health digest")
+
+    def _send(self, message: str, message_kind: str) -> None:
+        """Deliver one message, logging rather than raising on failure."""
+
+        if self._notifier is None:
+            return
+        try:
+            result = self._notifier.send(message)
+        except Exception as error:
+            LOGGER.warning(
+                "%s delivery raised %s; the cycle still succeeded.",
+                message_kind,
+                type(error).__name__,
+            )
+            return
+        if not getattr(result, "success", True):
+            LOGGER.warning("%s delivery did not succeed.", message_kind)
+
+    @staticmethod
+    def build_health_digest(
+        previous_state: Mapping[str, Mapping[str, Any]],
+        current_state: Mapping[str, Mapping[str, Any]],
+    ) -> str | None:
+        """Build one digest for meaningful scraper-health transitions."""
+
+        lines: list[str] = []
+        for company_id, current in current_state.items():
+            previous = previous_state.get(company_id)
+            if previous is None:
+                continue
+
+            old_status = str(previous.get("last_status", ""))
+            new_status = str(current.get("last_status", ""))
+            company_name = str(current.get("company_name") or company_id)
+            if old_status == new_status:
+                # A company that has never once succeeded stays "unverified"
+                # forever regardless of current errors (see
+                # CompanyHealthTracker), so it can never cross an
+                # ANOMALY_HEALTH_STATUSES transition. Watch last_error_type
+                # directly so a newly-blocked (or newly-recovered)
+                # never-verified company still surfaces here.
+                old_error = previous.get("last_error_type")
+                new_error = current.get("last_error_type")
+                if old_error == new_error:
+                    continue
+                if new_error:
+                    lines.append(
+                        f"🚨 {company_name}: error appeared ({new_error}), "
+                        f"status={new_status}"
+                    )
+                else:
+                    lines.append(
+                        f"✅ {company_name}: error cleared "
+                        f"({old_error} -> none), status={new_status}"
+                    )
+                continue
+            if new_status in ANOMALY_HEALTH_STATUSES:
+                details = [f"{old_status} -> {new_status}"]
+                error_type = current.get("last_error_type")
+                if error_type:
+                    details.append(f"error={error_type}")
+                if new_status == "failed":
+                    details.append(
+                        "consecutive failures="
+                        f"{current.get('consecutive_failures', 0)}"
+                    )
+                else:
+                    details.append(
+                        "consecutive zero-job runs="
+                        f"{current.get('consecutive_zero_job_runs', 0)}"
+                    )
+                lines.append(f"🚨 {company_name}: " + " | ".join(details))
+            elif (
+                old_status in ANOMALY_HEALTH_STATUSES
+                and new_status == "healthy"
+            ):
+                lines.append(
+                    f"✅ {company_name}: recovered ({old_status} -> healthy)"
+                )
+
+        if not lines:
+            return None
+        return "Scraper health changes:\n" + "\n".join(lines)
+
+
+class TelegramAlertFormatter:
+    """Render one candidate job and its LLM analysis as a Telegram alert."""
+
+    @staticmethod
+    def format(job: Mapping[str, Any], analysis: str) -> str:
+        """Return Telegram HTML with escaped job fields and the analysis.
+
+        The labels stay in Hebrew: this is the message the candidate reads.
+        """
+
+        def escape(value: Any) -> str:
+            return html.escape(str(value), quote=False)
+
+        return (
+            f"🚨 <b>משרה חדשה נמצאה: {escape(job['title'])}</b> 🚨\n"
+            f"🏢 חברה: {escape(job['company_name'])}\n"
+            f"📍 מיקום: {escape(job['location'])}\n"
+            f"🔗 קישור: {escape(job['job_url'])}\n\n"
+            f"{analysis}"
+        )
+
+
+_TITLE_FILTER = TitleRelevanceFilter()
+_ROUTER = CompanyRouter()
+
+
+def matches_target_role(title: str) -> bool:
+    """Module-level entry point for :meth:`TitleRelevanceFilter.matches_target_role`."""
+
+    return _TITLE_FILTER.matches_target_role(title)
+
+
+def is_relevant_job(title: str) -> TitleDecision:
+    """Module-level entry point for :meth:`TitleRelevanceFilter.evaluate`."""
+
+    return _TITLE_FILTER.evaluate(title)
+
+
+def validate_company_routing(companies: list[dict]) -> list[str]:
+    """Return active company IDs without a configured fetch route."""
+
+    return _ROUTER.unroutable_company_ids(companies)
+
+
+def fetch_jobs_from_company(company: Mapping[str, Any]) -> ScrapeResult:
+    """Dispatch one company and always expose a typed scrape outcome."""
+
+    return _ROUTER.fetch(company)
+
+
+def load_json(filepath: str | os.PathLike[str]) -> Any:
+    """Load a JSON file, returning an empty list when it does not exist."""
+
+    if not os.path.exists(filepath):
+        return []
+    with open(filepath, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def is_in_location(
+    job_location: str | None,
+    location_filters: Sequence[str] | None,
+) -> bool:
+    """Return whether a job location contains any configured filter string."""
+
+    if not location_filters:
+        return True
+    if not job_location:
+        return False
+    job_loc_lower = job_location.lower()
+    return any(loc.lower() in job_loc_lower for loc in location_filters)
+
 
 def extract_job_url(job: Mapping[str, Any]) -> str:
     """Extract the best available job URL from an adapter result."""
@@ -408,121 +611,289 @@ def extract_job_url(job: Mapping[str, Any]) -> str:
     return match.group(0).rstrip(".,);]")
 
 
-def _send_operational_message(
-    notifier: OperationalMessageSender | None,
-    message: str,
-    message_kind: str,
-) -> None:
-    """Deliver an operational message without failing the producer run."""
+class JobProducer:
+    """One producer cycle: scan companies, filter, dedupe, analyze, enqueue.
 
-    if notifier is None:
-        return
-    try:
-        result = notifier.send(message)
-    except Exception as error:
-        LOGGER.warning(
-            "%s delivery raised %s; the cycle still succeeded.",
-            message_kind,
-            type(error).__name__,
-        )
-        return
-    if not getattr(result, "success", True):
-        LOGGER.warning("%s delivery did not succeed.", message_kind)
+    It never contacts Telegram for candidate jobs; those only reach the
+    durable queue. Fetching, analysis and config loading go through the
+    module-level ``fetch_jobs_from_company``, ``analyze_job`` and
+    ``load_json`` names so tests can patch them on ``scrapers.orchestrator``.
+    """
 
+    def __init__(
+        self,
+        queue: PendingAlertQueue,
+        location_filter: LocationFilter,
+        history_store: JobHistoryStore,
+        health_store: ScraperHealthStore,
+        reporter: OperationalReporter,
+    ) -> None:
+        """Inject every store and collaborator the cycle touches."""
 
-def _send_heartbeat(
-    notifier: OperationalMessageSender | None,
-) -> None:
-    """Notify operators that the cycle succeeded with zero new jobs."""
+        self._queue = queue
+        self._location_filter = location_filter
+        self._history_store = history_store
+        self._health_store = health_store
+        self._reporter = reporter
 
-    _send_operational_message(notifier, HEARTBEAT_MESSAGE, "Heartbeat")
+    def run(self) -> None:
+        """Run one full cycle and log a timing report."""
 
+        LOGGER.info("🚀 Starting job scan...")
+        total_start_time = time.time()
 
-def _health_digest_message(
-    previous_state: Mapping[str, Mapping[str, Any]],
-    current_state: Mapping[str, Mapping[str, Any]],
-) -> str | None:
-    """Build one digest for meaningful scraper-health transitions."""
+        companies = load_json(CONFIG_DIR / "companies.json")
+        unroutable_company_ids = validate_company_routing(companies)
+        if unroutable_company_ids:
+            LOGGER.error(
+                "Unroutable active company configurations: %s",
+                ", ".join(unroutable_company_ids),
+            )
+        if not companies:
+            LOGGER.warning("⚠️ config/companies.json is empty.")
+            return
 
-    lines: list[str] = []
-    for company_id, current in current_state.items():
-        previous = previous_state.get(company_id)
-        if previous is None:
-            continue
+        new_jobs = self._scan_companies(companies)
+        scraping_end_time = time.time()
 
-        old_status = str(previous.get("last_status", ""))
-        new_status = str(current.get("last_status", ""))
-        company_name = str(
-            current.get("company_name") or company_id
-        )
-        if old_status == new_status:
-            # A company that has never once succeeded stays "unverified"
-            # forever regardless of current errors (see CompanyHealthTracker),
-            # so it can never cross an ANOMALY_HEALTH_STATUSES transition.
-            # Watch last_error_type directly so a newly-blocked (or
-            # newly-recovered) never-verified company still surfaces here.
-            old_error = previous.get("last_error_type")
-            new_error = current.get("last_error_type")
-            if old_error == new_error:
+        self._analyze_and_enqueue(new_jobs)
+        analysis_end_time = time.time()
+
+        self._log_timings(total_start_time, scraping_end_time, analysis_end_time)
+
+    def _scan_companies(
+        self,
+        companies: Sequence[Mapping[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Phase 1: fetch every active company and collect new relevant jobs."""
+
+        history = self._history_store.load()
+        health_state = self._health_store.load()
+        new_health_state = dict(health_state)
+        pending_ids = self._queue.ids()
+        new_jobs: list[dict[str, Any]] = []
+        queued_job_ids: set[str] = set()
+
+        for company in companies:
+            if not company.get("is_active", True):
                 continue
-            if new_error:
-                lines.append(
-                    f"🚨 {company_name}: error appeared ({new_error}), "
-                    f"status={new_status}"
-                )
-            else:
-                lines.append(
-                    f"✅ {company_name}: error cleared "
-                    f"({old_error} -> none), status={new_status}"
-                )
-            continue
-        if new_status in ANOMALY_HEALTH_STATUSES:
-            details = [f"{old_status} -> {new_status}"]
-            error_type = current.get("last_error_type")
-            if error_type:
-                details.append(f"error={error_type}")
-            if new_status == "failed":
-                details.append(
-                    "consecutive failures="
-                    f"{current.get('consecutive_failures', 0)}"
-                )
-            else:
-                details.append(
-                    "consecutive zero-job runs="
-                    f"{current.get('consecutive_zero_job_runs', 0)}"
-                )
-            lines.append(
-                f"🚨 {company_name}: " + " | ".join(details)
+
+            company_id = str(company.get("company_id", "<missing>"))
+            tracker = CompanyHealthTracker(
+                company_id=company_id,
+                company_name=str(company.get("company_name", company_id)),
+                previous_state=health_state.get(company_id, {}),
             )
-        elif (
-            old_status in ANOMALY_HEALTH_STATUSES
-            and new_status == "healthy"
-        ):
-            lines.append(
-                f"✅ {company_name}: recovered "
-                f"({old_status} -> healthy)"
+            try:
+                self._scan_company(
+                    company,
+                    tracker,
+                    seen_ids=(history, pending_ids, queued_job_ids),
+                    new_jobs=new_jobs,
+                )
+            except Exception as error:
+                tracker.record_failure(error)
+                LOGGER.exception("Company scrape failed for %s.", company_id)
+            finally:
+                new_health_state[company_id] = tracker.snapshot()
+                LOGGER.info("%s", tracker.summary_line())
+
+        self._health_store.save(new_health_state)
+        self._reporter.send_health_digest(health_state, new_health_state)
+        return new_jobs
+
+    def _scan_company(
+        self,
+        company: Mapping[str, Any],
+        tracker: CompanyHealthTracker,
+        seen_ids: tuple[Container[str], Container[str], set[str]],
+        new_jobs: list[dict[str, Any]],
+    ) -> None:
+        """Fetch one company and append its new, relevant jobs to ``new_jobs``.
+
+        ``seen_ids`` is (delivered history, pending queue, queued this scan);
+        a job found in any of them is a duplicate. The third set is updated.
+        """
+
+        company_id = str(company.get("company_id", "<missing>"))
+        company_name = str(company.get("company_name", company_id))
+        history, pending_ids, queued_job_ids = seen_ids
+
+        scrape_result = fetch_jobs_from_company(company)
+        if scrape_result.status in {
+            ScrapeStatus.FAILED,
+            ScrapeStatus.WAF_BLOCKED,
+        }:
+            tracker.record_failure(scrape_result.status.name)
+            LOGGER.warning(
+                "Scrape failed for %s (%s): %s",
+                company_id,
+                scrape_result.status.value,
+                scrape_result.message,
             )
+            return
 
-    if not lines:
-        return None
-    return "Scraper health changes:\n" + "\n".join(lines)
+        jobs = scrape_result.jobs
+        tracker.record_fetch(len(jobs))
+        location_filters = company.get("location_filters", [])
 
+        for job in jobs:
+            job_url = self._accepted_job_url(
+                company, job, location_filters, tracker
+            )
+            if job_url is None:
+                continue
 
-def _send_health_digest(
-    notifier: OperationalMessageSender | None,
-    previous_state: Mapping[str, Mapping[str, Any]],
-    current_state: Mapping[str, Mapping[str, Any]],
-) -> None:
-    """Send one operational digest when anomaly state changed."""
+            tracker.record_relevant()
+            is_new = (
+                job["id"] not in history
+                and job["id"] not in pending_ids
+                and job["id"] not in queued_job_ids
+            )
+            if not is_new:
+                tracker.record_duplicate()
+                continue
 
-    message = _health_digest_message(previous_state, current_state)
-    if message is None:
-        return
-    _send_operational_message(
-        notifier,
-        message,
-        "Scraper-health digest",
-    )
+            tracker.record_new()
+            new_jobs.append({
+                **job,
+                "company_name": company_name,
+                "job_url": job_url,
+            })
+            queued_job_ids.add(job["id"])
+
+    def _accepted_job_url(
+        self,
+        company: Mapping[str, Any],
+        job: Mapping[str, Any],
+        location_filters: Sequence[str],
+        tracker: CompanyHealthTracker,
+    ) -> str | None:
+        """Apply title and location rules; return the job URL if accepted.
+
+        Returns ``None`` (after recording the rejection) when the job fails
+        the title filter, the foreign-location filter, or both location
+        checks together.
+        """
+
+        title_decision = is_relevant_job(job["title"])
+        if not title_decision.allowed:
+            tracker.record_title_rejection()
+            match_details = ""
+            if title_decision.matched_keyword is not None:
+                match_details = f" '{title_decision.matched_keyword}'"
+            LOGGER.debug(
+                "Rejecting %s: title %s%s.",
+                job["id"],
+                title_decision.reason,
+                match_details,
+            )
+            return None
+
+        job_url = extract_job_url(job) or str(company.get("api_url", ""))
+        location_decision = self._location_filter.evaluate(
+            job_title=job["title"],
+            job_url=job_url,
+            job_location=job["location"],
+        )
+        if not location_decision.allowed:
+            tracker.record_location_rejection()
+            match_details = ""
+            if location_decision.matched_location is not None:
+                match_details = (
+                    f" '{location_decision.matched_location}'"
+                    f" in {location_decision.source}"
+                )
+            LOGGER.debug(
+                "Rejecting %s: location %s%s.",
+                job["id"],
+                location_decision.reason,
+                match_details,
+            )
+            return None
+
+        # A job passes if either the configured substring filters or the
+        # LocationFilter's Israeli-city recognition accepts its location.
+        location_match = is_in_location(job["location"], location_filters)
+        recognized_israeli_location = (
+            location_decision.source == "location"
+            and location_decision.matched_location is not None
+        )
+        if not location_match and not recognized_israeli_location:
+            tracker.record_location_rejection()
+            LOGGER.debug(
+                "Rejecting %s: adapter location %r does not match "
+                "configured filters %r.",
+                job["id"],
+                job["location"],
+                location_filters,
+            )
+            return None
+
+        return job_url
+
+    def _analyze_and_enqueue(self, new_jobs: Sequence[Mapping[str, Any]]) -> None:
+        """Phase 2: analyze each new job with the LLM and queue its alert."""
+
+        if not new_jobs:
+            LOGGER.info("😴 No new relevant jobs found this time.")
+            self._reporter.send_heartbeat()
+            return
+
+        LOGGER.info(
+            "✅ Found %s new relevant jobs. Sending to Steve for analysis...",
+            len(new_jobs),
+        )
+        for job in new_jobs:
+            LOGGER.info("🤖 Analyzing: %s in %s", job["title"], job["location"])
+
+            try:
+                analysis = analyze_job(
+                    job_title=job["title"],
+                    job_location=job["location"],
+                    job_content=job.get("content", ""),
+                )
+            except Exception as error:
+                LOGGER.error(
+                    "❌ Job analysis failed; the job will not be queued: %s",
+                    type(error).__name__,
+                )
+                continue
+
+            alert = PendingAlert(
+                job_id=job["id"],
+                company_name=job["company_name"],
+                job_url=job["job_url"],
+                llm_summary=TelegramAlertFormatter.format(job, analysis),
+            )
+            if self._queue.append(alert):
+                LOGGER.info("✅ Job %s added to the alert queue.", job["id"])
+            else:
+                LOGGER.info("ℹ️ Job %s is already queued.", job["id"])
+            LOGGER.info("-" * 40)
+
+    @staticmethod
+    def _log_timings(
+        total_start_time: float,
+        scraping_end_time: float,
+        analysis_end_time: float,
+    ) -> None:
+        """Log how long scanning, analysis and the whole cycle took."""
+
+        LOGGER.info("🏁 Scan complete.")
+        LOGGER.info("⏱️ Performance report:")
+        LOGGER.info(
+            "   - Site scanning time: %.1f s",
+            scraping_end_time - total_start_time,
+        )
+        LOGGER.info(
+            "   - AI analysis and queueing time: %.1f s",
+            analysis_end_time - scraping_end_time,
+        )
+        LOGGER.info(
+            "   - Total run time: %.1f s",
+            analysis_end_time - total_start_time,
+        )
 
 
 def run_scraper(
@@ -539,233 +910,18 @@ def run_scraper(
     changes. Health delivery never affects candidate-job processing.
     """
 
-    LOGGER.info("🚀 Starting job scan...")
-    total_start_time = time.time()
-    alert_queue = queue or PendingAlertQueue(PENDING_ALERTS_FILE)
-    active_history_store = history_store or JobHistoryStore(HISTORY_FILE)
-    active_health_store = health_store or ScraperHealthStore(HEALTH_FILE)
-    active_location_filter = (
-        location_filter
-        or LocationFilter(strict_mode=False)
-    )
-    
-    companies = load_json(CONFIG_DIR / "companies.json")
-    unroutable_company_ids = validate_company_routing(companies)
-    if unroutable_company_ids:
-        LOGGER.error(
-            "Unroutable active company configurations: %s",
-            ", ".join(unroutable_company_ids),
-        )
-    if not companies:
-        LOGGER.warning("⚠️ config/companies.json is empty.")
-        return
+    JobProducer(
+        queue=queue or PendingAlertQueue(PENDING_ALERTS_FILE),
+        location_filter=location_filter or LocationFilter(strict_mode=False),
+        history_store=history_store or JobHistoryStore(HISTORY_FILE),
+        health_store=health_store or ScraperHealthStore(HEALTH_FILE),
+        reporter=OperationalReporter(heartbeat_notifier),
+    ).run()
 
-    history = active_history_store.load()
-    health_state = active_health_store.load()
-    new_health_state = dict(health_state)
-    pending_ids = alert_queue.ids()
-    new_jobs_found = []
-    queued_job_ids = set()
 
-    # --- Phase 1: scan companies ---
-    for company in companies:
-        if not company.get("is_active", True):
-            continue
+def main() -> None:
+    """Run one producer cycle with Telegram operational messages if configured."""
 
-        company_id = str(company.get("company_id", "<missing>"))
-        company_name = str(
-            company.get("company_name", company_id)
-        )
-        previous_company_state = health_state.get(company_id, {})
-        tracker = CompanyHealthTracker(
-            company_id=company_id,
-            company_name=company_name,
-            previous_state=previous_company_state,
-        )
-
-        try:
-            scrape_result = fetch_jobs_from_company(company)
-            if scrape_result.status in {
-                ScrapeStatus.FAILED,
-                ScrapeStatus.WAF_BLOCKED,
-            }:
-                tracker.record_failure(scrape_result.status.name)
-                LOGGER.warning(
-                    "Scrape failed for %s (%s): %s",
-                    company_id,
-                    scrape_result.status.value,
-                    scrape_result.message,
-                )
-                continue
-            jobs = scrape_result.jobs
-            tracker.record_fetch(len(jobs))
-            location_filters = company.get("location_filters", [])
-
-            for job in jobs:
-                title_decision = is_relevant_job(job["title"])
-                if not title_decision.allowed:
-                    tracker.record_title_rejection()
-                    match_details = ""
-                    if title_decision.matched_keyword is not None:
-                        match_details = (
-                            f" '{title_decision.matched_keyword}'"
-                        )
-                    LOGGER.debug(
-                        "Rejecting %s: title %s%s.",
-                        job["id"],
-                        title_decision.reason,
-                        match_details,
-                    )
-                    continue
-
-                job_url = (
-                    extract_job_url(job)
-                    or str(company.get("api_url", ""))
-                )
-                location_decision = active_location_filter.evaluate(
-                    job_title=job["title"],
-                    job_url=job_url,
-                    job_location=job["location"],
-                )
-                if not location_decision.allowed:
-                    tracker.record_location_rejection()
-                    match_details = ""
-                    if location_decision.matched_location is not None:
-                        match_details = (
-                            f" '{location_decision.matched_location}'"
-                            f" in {location_decision.source}"
-                        )
-                    LOGGER.debug(
-                        "Rejecting %s: location %s%s.",
-                        job["id"],
-                        location_decision.reason,
-                        match_details,
-                    )
-                    continue
-
-                location_match = is_in_location(
-                    job["location"],
-                    location_filters,
-                )
-                recognized_israeli_location = (
-                    location_decision.source == "location"
-                    and location_decision.matched_location is not None
-                )
-                if not location_match and not recognized_israeli_location:
-                    tracker.record_location_rejection()
-                    LOGGER.debug(
-                        "Rejecting %s: adapter location %r does not match "
-                        "configured filters %r.",
-                        job["id"],
-                        job["location"],
-                        location_filters,
-                    )
-                    continue
-
-                tracker.record_relevant()
-                is_new = (
-                    job["id"] not in history
-                    and job["id"] not in pending_ids
-                    and job["id"] not in queued_job_ids
-                )
-                if not is_new:
-                    tracker.record_duplicate()
-                    continue
-
-                tracker.record_new()
-                new_jobs_found.append({
-                    **job,
-                    "company_name": company_name,
-                    "job_url": job_url,
-                })
-                queued_job_ids.add(job["id"])
-        except Exception as error:
-            tracker.record_failure(error)
-            LOGGER.exception(
-                "Company scrape failed for %s.",
-                company_id,
-            )
-        finally:
-            new_health_state[company_id] = tracker.snapshot()
-            LOGGER.info("%s", tracker.summary_line())
-
-    active_health_store.save(new_health_state)
-    _send_health_digest(
-        heartbeat_notifier,
-        health_state,
-        new_health_state,
-    )
-
-    scraping_end_time = time.time()
-
-    # --- Phase 2: analyze and enqueue ---
-    if not new_jobs_found:
-        LOGGER.info("😴 No new relevant jobs found this time.")
-        _send_heartbeat(heartbeat_notifier)
-    else:
-        LOGGER.info(
-            "✅ Found %s new relevant jobs. Sending to Steve for analysis...",
-            len(new_jobs_found),
-        )
-
-        for job in new_jobs_found:
-            LOGGER.info(
-                "🤖 Analyzing: %s in %s", job["title"], job["location"]
-            )
-
-            try:
-                analysis = analyze_job(
-                    job_title=job["title"],
-                    job_location=job["location"],
-                    job_content=job.get("content", ""),
-                )
-            except Exception as error:
-                LOGGER.error(
-                    "❌ Job analysis failed; the job will not be queued: %s",
-                    type(error).__name__,
-                )
-                continue
-
-            telegram_alert = (
-                "🚨 <b>משרה חדשה נמצאה: "
-                f"{html.escape(str(job['title']), quote=False)}</b> 🚨\n"
-                "🏢 חברה: "
-                f"{html.escape(str(job['company_name']), quote=False)}\n"
-                "📍 מיקום: "
-                f"{html.escape(str(job['location']), quote=False)}\n"
-                "🔗 קישור: "
-                f"{html.escape(str(job['job_url']), quote=False)}\n\n"
-                f"{analysis}"
-            )
-            alert = PendingAlert(
-                job_id=job["id"],
-                company_name=job["company_name"],
-                job_url=job["job_url"],
-                llm_summary=telegram_alert,
-            )
-            if alert_queue.append(alert):
-                pending_ids.add(job["id"])
-                LOGGER.info("✅ Job %s added to the alert queue.", job["id"])
-            else:
-                LOGGER.info("ℹ️ Job %s is already queued.", job["id"])
-            LOGGER.info("-" * 40)
-    
-    analysis_end_time = time.time()
-    
-    # --- Timing summary ---
-    scraping_duration = scraping_end_time - total_start_time
-    analysis_duration = analysis_end_time - scraping_end_time
-    total_duration = analysis_end_time - total_start_time
-    
-    LOGGER.info("🏁 Scan complete.")
-    LOGGER.info("⏱️ Performance report:")
-    LOGGER.info("   - Site scanning time: %.1f s", scraping_duration)
-    LOGGER.info(
-        "   - AI analysis and queueing time: %.1f s", analysis_duration
-    )
-    LOGGER.info("   - Total run time: %.1f s", total_duration)
-
-if __name__ == "__main__":
     heartbeat_notifier: TelegramNotifier | None = None
     try:
         heartbeat_notifier = TelegramNotifier.from_environment()
@@ -777,3 +933,7 @@ if __name__ == "__main__":
     finally:
         if heartbeat_notifier is not None:
             heartbeat_notifier.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -212,7 +212,20 @@ when launched from an appropriate installed environment.
 #### `scrapers/orchestrator.py`
 
 This is the producer's application service. It joins the smaller scraper,
-analysis, and storage modules into one scan:
+analysis, and storage modules into one scan. Each responsibility is a class:
+
+| Class | Responsibility |
+| --- | --- |
+| `TitleRelevanceFilter` | Title rules: exclusions, strong/weak entry-level signals, target roles (English and Hebrew) |
+| `CompanyRouter` | Picks the adapter for a company and reports active companies with no route |
+| `JobProducer` | Runs one cycle: scan companies, filter, dedupe, analyze, enqueue, log timings |
+| `TelegramAlertFormatter` | Renders a job and its analysis as the Hebrew Telegram alert |
+| `OperationalReporter` | Sends the zero-job heartbeat and the scraper-health digest, never failing the run |
+
+The module-level functions (`run_scraper`, `is_relevant_job`,
+`matches_target_role`, `fetch_jobs_from_company`, `validate_company_routing`)
+are thin entry points over these classes and stay the stable public API. In one
+scan the module:
 
 - loads and validates company routes from `config/companies.json`;
 - selects a JSON API adapter or browser adapter;
@@ -272,7 +285,7 @@ locations, optionally applies a strict allowed-location list, and avoids common
 acronym false positives. `LocationDecision` explains the result rather than
 returning only an unexplained boolean.
 
-Title-keyword filtering currently remains in `scrapers/orchestrator.py`.
+Title-keyword filtering lives in `TitleRelevanceFilter` in `scrapers/orchestrator.py`.
 
 #### `analysis/ai/analyzer.py`
 

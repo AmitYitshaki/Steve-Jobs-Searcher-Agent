@@ -424,7 +424,6 @@ Per-company scraping status uses a consistent emoji vocabulary:
 
 The cycle ends with a performance report (site-scan time, AI/analysis time,
 total) and the consumer's tally: `X sent, Y failed, Z skipped`.
-(sent / failed / skipped).
 
 ### 3.3 ATS failure reports
 
