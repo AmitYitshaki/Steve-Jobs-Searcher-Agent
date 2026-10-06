@@ -90,8 +90,16 @@ jobs:
           KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          # Keys pasted from a browser terminal often carry CRLF or trailing
+          # spaces, which OpenSSH rejects as "error in libcrypto".
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' | sed 's/[[:space:]]*$//' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null; then
+            echo "::error::EC2_SSH_KEY is not a valid private key. Re-copy it, including the BEGIN and END lines."
+            exit 1
+          fi
+          # The fingerprint is public; compare it with ssh-keygen output on the host.
+          echo "Deploy key fingerprint: $(ssh-keygen -y -f ~/.ssh/deploy_key | ssh-keygen -lf - | cut -d' ' -f2)"
           # Pinned host key: refuse to connect if the server identity changes.
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
