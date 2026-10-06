@@ -215,6 +215,10 @@ Key production properties of the image and compose stack:
   and survive image rebuilds.
 - **`restart: unless-stopped`** — the scheduler is a long-running process, so
   the container is expected to stay up.
+- **`init: true` (tini as PID 1)** — headless Chromium leaves orphaned
+  helper processes after each scrape. The scheduler, as PID 1, never reaped
+  them, so zombies accumulated (611 after 8 days, ~137 per scan cycle) until
+  this was added on 2026-10-06. tini reaps orphans automatically.
 - **Log rotation** — the `json-file` driver is capped at `max-size: 10m`,
   `max-file: 3` to protect the EC2 disk over time.
 
